@@ -7,9 +7,9 @@ import { closeTask } from './close.ts';
 import { hasCommit, listBranches, readKnownCommits, readLastWorkCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
 import { listReady, namesTask, readBranchName } from './next.ts';
-import { renderShown, renderWhy } from './query.ts';
+import { listRows, renderList, renderShown, renderWhy, STATES } from './query.ts';
 import { findRoot, initRoadmap, readRoadmap, RoadmapError } from './source.ts';
-import { describeTask, explainWait, readStates } from './state.ts';
+import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
 const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
 
@@ -20,6 +20,8 @@ Commands:
   check                      find what makes the plan unsound
   show <ID> [--json]         a task: its block, done when, what it requires and unblocks, and where it stands
   why <ID> [--json]          what a task waits on, down to the tasks that can be taken now
+  list [--block CODE] [--state done|started|ready|waiting] [--json]
+                             every task with its state, by block
 
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
@@ -28,11 +30,13 @@ const OPTIONS = {
   root: { type: 'string' },
   commit: { type: 'string' },
   json: { type: 'boolean' },
+  block: { type: 'string' },
+  state: { type: 'string' },
   help: { type: 'boolean' },
 } as const;
 
 /** How many arguments each command takes after its name. */
-const ARITY: Record<string, number> = { init: 0, next: 0, check: 0, close: 1, show: 1, why: 1, help: 0 };
+const ARITY: Record<string, number> = { init: 0, next: 0, check: 0, close: 1, show: 1, why: 1, list: 0, help: 0 };
 
 /** What a command reads from and writes to: where it runs, its environment, and its output. */
 export type Io = { cwd: string; env: Record<string, string | undefined>; out: (text: string) => void };
@@ -43,6 +47,8 @@ type Command = {
   root: string | undefined;
   commit: string | undefined;
   json: boolean;
+  block: string | undefined;
+  state: string | undefined;
   help: boolean;
 };
 
@@ -61,7 +67,31 @@ function readCommand(args: string[], env: Io['env']): Command {
     throw new RoadmapError(arity === 0 ? `${name} takes no arguments.` : `${name} takes ${arity} argument.`);
   }
   const root = values.root ?? (env.AGENTIC_ROADMAP_ROOT || undefined);
-  return { name, operands, root, commit: values.commit, json: values.json === true, help: values.help === true };
+  return {
+    name,
+    operands,
+    root,
+    commit: values.commit,
+    json: values.json === true,
+    block: values.block,
+    state: values.state,
+    help: values.help === true,
+  };
+}
+
+function isState(value: string): value is TaskState {
+  return STATES.some((state) => state === value);
+}
+
+function list(root: string, command: Command, out: Io['out']): void {
+  const { block, state } = command;
+  if (state !== undefined && !isState(state)) throw new RoadmapError(`--state is one of ${STATES.join(', ')}.`);
+  const roadmap = readSoundRoadmap(root);
+  if (block !== undefined && !roadmap.blocks.some((each) => each.code === block)) {
+    throw new RoadmapError(`No block ${block} in this roadmap.`);
+  }
+  const rows = listRows(roadmap, listBranches(root), { block, state });
+  out(command.json ? `${JSON.stringify(rows, null, 2)}\n` : renderList(roadmap, rows));
 }
 
 function readTaskId(command: Command): string {
@@ -169,6 +199,9 @@ export function run(args: string[], io: Io): number {
         return 0;
       case 'why':
         why(root(), command, io.out);
+        return 0;
+      case 'list':
+        list(root(), command, io.out);
         return 0;
       case undefined:
       case 'help':

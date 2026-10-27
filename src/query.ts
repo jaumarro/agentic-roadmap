@@ -1,4 +1,43 @@
-import type { ShownTask, Wait } from './state.ts';
+import type { Roadmap } from './model.ts';
+import { readStates, type ShownTask, type TaskState, type Wait } from './state.ts';
+
+export const STATES: TaskState[] = ['done', 'started', 'ready', 'waiting'];
+
+export type Row = { id: string; block: string; state: TaskState; title: string };
+
+/** Every task as a row, in the plan's order, narrowed to `block` and `state` when given. */
+export function listRows(roadmap: Roadmap, branches: string[], filter: { block?: string; state?: TaskState }): Row[] {
+  const states = readStates(roadmap, branches);
+  return roadmap.blocks
+    .filter((block) => filter.block === undefined || block.code === filter.block)
+    .flatMap((block) =>
+      block.tasks.map((task) => ({
+        id: task.id,
+        block: block.code,
+        state: states.get(task.id) ?? 'waiting',
+        title: task.title,
+      })),
+    )
+    .filter((row) => filter.state === undefined || row.state === filter.state);
+}
+
+/** The rows under their block's heading, each heading with how much of the whole block is done. */
+export function renderList(roadmap: Roadmap, rows: Row[]): string {
+  if (rows.length === 0) return 'No task matches.\n';
+  const idWidth = Math.max(...rows.map((row) => row.id.length));
+  const stateWidth = Math.max(...STATES.map((state) => state.length));
+  return roadmap.blocks
+    .filter((block) => rows.some((row) => row.block === block.code))
+    .map((block) => {
+      const done = block.tasks.filter((task) => task.commit !== undefined).length;
+      const heading = `${block.code} · ${block.name} (${done}/${block.tasks.length} done)\n`;
+      const lines = rows
+        .filter((row) => row.block === block.code)
+        .map((row) => `  ${row.id.padEnd(idWidth)}  ${row.state.padEnd(stateWidth)}  ${row.title}\n`);
+      return heading + lines.join('');
+    })
+    .join('');
+}
 
 function readLines(lines: number | 'doc'): string {
   return lines === 'doc' ? 'a document' : `~${lines} lines`;
