@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -119,15 +119,52 @@ describe('next', () => {
 
     expect(capture(['next'], root)).toEqual({
       code: 1,
-      text: 'The plan has problems; fix them first:\n  GET.2 requires GET.9, which no task has\n\n',
+      text: 'The plan has problems; fix them first:\n  GET.2 requires GET.9, which no task has\n',
     });
   });
 
-  it('says a task is already started when a branch names it', () => {
+  it('never offers a task a branch started, and lists it as in progress', () => {
     const root = repo();
     git(root, 'branch', 'get-1/first-block');
 
-    expect(capture(['next'], root).text).toContain('Already started on get-1/first-block');
+    const { text } = capture(['next'], root);
+
+    expect(text).not.toContain('Next: GET.1');
+    expect(text).toContain(
+      'In progress:\n  GET.1 · Write the first real block of this roadmap (on get-1/first-block)\n',
+    );
+  });
+});
+
+describe('close, against what could corrupt the plan', () => {
+  it('writes the commit a branch, a tag or HEAD names, as its sha', () => {
+    const root = repo();
+    const work = commit(root, 'feat: work');
+    git(root, 'tag', '-a', 'v1', '-m', 'one');
+
+    capture(['close', 'GET.1', '--commit', 'v1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(work);
+    expect(capture(['check'], root).code).toBe(0);
+  });
+
+  it('refuses a task whose requirements are not done', () => {
+    const root = repo();
+    commit(root, 'feat: work');
+
+    expect(capture(['close', 'GET.2'], root)).toEqual({ code: 1, text: 'GET.2 still waits on GET.1.\n' });
+  });
+
+  it('fails cleanly on a block file it cannot write', () => {
+    const root = repo();
+    commit(root, 'feat: work');
+    chmodSync(join(root, 'roadmap', 'GET.yaml'), 0o444);
+
+    expect(capture(['close', 'GET.1'], root)).toEqual({ code: 1, text: 'Could not write roadmap/GET.yaml: EACCES.\n' });
+  });
+
+  it('refuses an empty --commit', () => {
+    expect(capture(['close', 'GET.1', '--commit', ''], repo()).text).toBe('--commit needs a commit.\n');
   });
 });
 

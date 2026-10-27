@@ -54,19 +54,28 @@ describe('describeTask', () => {
 });
 
 describe('explainWait', () => {
-  it('walks the requirements not done down to the ones that can be taken', () => {
+  it('walks the requirements not done down to the ones that can be taken, each expanded once', () => {
     expect(explainWait(PLAN, ['abc-3/start'], 'XYZ.2')).toEqual([
       {
         id: 'XYZ.1',
         title: 'Do XYZ.1',
         state: 'waiting',
+        seenAbove: false,
         waitsOn: [
-          { id: 'ABC.2', title: 'Do ABC.2', state: 'ready', waitsOn: [] },
-          { id: 'ABC.3', title: 'Do ABC.3', state: 'started', waitsOn: [] },
+          { id: 'ABC.2', title: 'Do ABC.2', state: 'ready', seenAbove: false, waitsOn: [] },
+          { id: 'ABC.3', title: 'Do ABC.3', state: 'started', seenAbove: false, waitsOn: [] },
         ],
       },
-      { id: 'ABC.2', title: 'Do ABC.2', state: 'ready', waitsOn: [] },
+      { id: 'ABC.2', title: 'Do ABC.2', state: 'ready', seenAbove: true, waitsOn: [] },
     ]);
+  });
+
+  it('stays small on a ladder of diamonds, where every task requires the two before it', () => {
+    const tasks: Task[] = [task('LAD.1'), task('LAD.2', ['LAD.1'])];
+    for (let n = 3; n <= 40; n += 1) tasks.push(task(`LAD.${n}`, [`LAD.${n - 1}`, `LAD.${n - 2}`]));
+    const ladder: Roadmap = { blocks: [{ code: 'LAD', name: 'Ladder', tasks }] };
+
+    expect(JSON.stringify(explainWait(ladder, [], 'LAD.40')).length).toBeLessThan(20_000);
   });
 
   it('is empty for a task that waits on nothing', () => {

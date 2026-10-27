@@ -84,7 +84,7 @@ describe('why', () => {
     expect(answer).toEqual({
       id: 'GET.3',
       state: 'waiting',
-      waitsOn: [{ id: 'GET.2', title: 'Second', state: 'ready', waitsOn: [] }],
+      waitsOn: [{ id: 'GET.2', title: 'Second', state: 'ready', seenAbove: false, waitsOn: [] }],
     });
   });
 });
