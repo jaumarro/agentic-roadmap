@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
+import { readKnownCommits } from './git.ts';
 import { initRoadmap, readRoadmap } from './source.ts';
 
 function git(root: string, ...args: string[]): string {
@@ -83,6 +84,15 @@ describe('close', () => {
     expect(capture(['close', 'GET.9'], root).text).toContain('No task GET.9');
     capture(['close', 'GET.1'], root);
     expect(capture(['close', 'GET.1'], root).text).toContain('GET.1 is already done');
+  });
+});
+
+describe('readKnownCommits', () => {
+  it('keeps the commits the repo has and drops the rest, in one ask', () => {
+    const root = repo();
+    const work = commit(root, 'feat: work');
+
+    expect(readKnownCommits(root, [work, 'abcdef1', work])).toEqual(new Set([work]));
   });
 });
 
