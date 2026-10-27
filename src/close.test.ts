@@ -72,7 +72,7 @@ describe('close', () => {
     capture(['close', 'GET.1'], root);
 
     const after = readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8');
-    expect(after.replace(`    commit: "${work}"\n`, '')).toBe(before);
+    expect(after.replace(`    commit: '${work}'\n`, '')).toBe(before);
   });
 
   it('refuses a commit the repo does not have, a task it does not know and one already done', () => {

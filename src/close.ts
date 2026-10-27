@@ -17,7 +17,7 @@ export function closeTask(root: string, roadmap: Roadmap, id: string, sha: strin
   if (!isMap(node)) throw new RoadmapError(`${id} could not be found in ${ROADMAP_DIR}/${block.code}.yaml.`);
   // Quoted, or an all-digit sha would read back as a number.
   const commit = new Scalar(sha);
-  commit.type = Scalar.QUOTE_DOUBLE;
+  commit.type = Scalar.QUOTE_SINGLE;
   node.set('commit', commit);
   writeFileSync(path, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   return block.code;
