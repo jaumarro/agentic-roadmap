@@ -44,6 +44,26 @@ describe('close', () => {
     expect(capture(['next'], root).text).toContain('Next: GET.2');
   });
 
+  it('takes the feature commit over the tests that follow it', () => {
+    const root = repo();
+    const feature = commit(root, 'feat: write the first block');
+    commit(root, 'test: cover the first block');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(feature);
+  });
+
+  it('takes the newest commit that is not a docs one when none is a conventional change', () => {
+    const root = repo();
+    const work = commit(root, 'write the first block');
+    commit(root, 'docs: note it');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(work);
+  });
+
   it('writes the commit quoted and keeps the file as it was otherwise', () => {
     const root = repo();
     const before = readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8');
