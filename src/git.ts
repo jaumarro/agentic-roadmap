@@ -9,8 +9,9 @@ function git(root: string, args: string[]): string | null {
   }
 }
 
-export function hasCommit(root: string, sha: string): boolean {
-  return git(root, ['cat-file', '-e', `${sha}^{commit}`]) !== null;
+/** The short sha of the commit `revision` names (a sha, a branch, a tag, HEAD); null when it names none. */
+export function resolveCommit(root: string, revision: string): string | null {
+  return git(root, ['rev-parse', '--verify', '--quiet', '--short', '--end-of-options', `${revision}^{commit}`]);
 }
 
 /** The ones of `shas` this repo has as commits, asked of one git process: one per sha takes seconds on a big plan. */

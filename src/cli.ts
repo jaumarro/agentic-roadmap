@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { checkRoadmap, findMissingCommits } from './check.ts';
 import { closeTask } from './close.ts';
-import { hasCommit, listBranches, readKnownCommits, readLastWorkCommit } from './git.ts';
+import { listBranches, readKnownCommits, readLastWorkCommit, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
 import { listReady, namesTask, readBranchName } from './next.ts';
 import { listRows, renderList, renderShown, renderWhy, STATES } from './query.ts';
@@ -125,7 +125,9 @@ function listProblems(problems: string[]): string {
 function readSoundRoadmap(root: string): Roadmap {
   const roadmap = readRoadmap(root);
   const problems = checkRoadmap(roadmap);
-  if (problems.length > 0) throw new RoadmapError(`The plan has problems; fix them first:\n${listProblems(problems)}`);
+  if (problems.length > 0) {
+    throw new RoadmapError(`The plan has problems; fix them first:\n${listProblems(problems).trimEnd()}`);
+  }
   return roadmap;
 }
 
@@ -136,29 +138,41 @@ function describeNothingReady(roadmap: Roadmap): string {
   return 'Nothing is ready: every task left waits on one that is not done.';
 }
 
+function listInProgress(roadmap: Roadmap, branches: string[]): string {
+  const tasks = roadmap.blocks.flatMap((block) => block.tasks).filter((task) => task.commit === undefined);
+  const lines = tasks.flatMap((task) => {
+    const on = branches.filter((branch) => namesTask(branch, task.id));
+    return on.length === 0 ? [] : [`  ${task.id} · ${task.title} (on ${on.join(', ')})\n`];
+  });
+  return lines.length === 0 ? '' : `\nIn progress:\n${lines.join('')}`;
+}
+
+/** The task to take, never one a branch already started, then the others ready and those in progress. */
 function next(root: string, out: Io['out']): void {
   const roadmap = readSoundRoadmap(root);
-  const [first, ...rest] = listReady(roadmap);
+  const branches = listBranches(root);
+  const states = readStates(roadmap, branches);
+  const [first, ...rest] = listReady(roadmap).filter((task) => states.get(task.id) === 'ready');
+  const inProgress = listInProgress(roadmap, branches);
   if (first === undefined) {
-    out(`${describeNothingReady(roadmap)}\n`);
+    out(`${describeNothingReady(roadmap)}\n${inProgress}`);
     return;
   }
   out(`Next: ${first.id} · ${first.title}\n  Done when: ${first.doneWhen}\n`);
-  const started = listBranches(root).filter((branch) => namesTask(branch, first.id));
-  const place =
-    started.length > 0
-      ? `Already started on ${started.join(', ')}`
-      : `Start it on a branch named ${readBranchName(first.id)}…`;
-  out(`  ${place}\n`);
+  out(`  Start it on a branch named ${readBranchName(first.id)}…\n`);
   if (rest.length > 0) out(`\nAlso ready:\n${rest.map((task) => `  ${task.id} · ${task.title}\n`).join('')}`);
+  out(inProgress);
 }
 
 function close(root: string, command: Command, out: Io['out']): void {
   const [id] = command.operands;
   if (id === undefined) throw new RoadmapError('Say which task to close: close <ID>.');
-  const sha = command.commit ?? readLastWorkCommit(root);
-  if (sha === null) throw new RoadmapError('No commit to close it with: commit the work first, or pass --commit.');
-  if (!hasCommit(root, sha)) throw new RoadmapError(`This repo has no commit ${sha}.`);
+  if (command.commit === '') throw new RoadmapError('--commit needs a commit.');
+  const revision = command.commit ?? readLastWorkCommit(root);
+  if (revision === null) throw new RoadmapError('No commit to close it with: commit the work first, or pass --commit.');
+  // A branch, a tag or HEAD is written as the commit it names today, which a later move cannot change.
+  const sha = resolveCommit(root, revision);
+  if (sha === null) throw new RoadmapError(`This repo has no commit ${revision}.`);
   const code = closeTask(root, readSoundRoadmap(root), id, sha);
   out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
 }

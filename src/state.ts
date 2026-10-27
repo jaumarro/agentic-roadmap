@@ -48,25 +48,26 @@ export function describeTask(roadmap: Roadmap, branches: string[], id: string): 
   };
 }
 
-export type Wait = TaskRef & { waitsOn: Wait[] };
+/** A requirement not done; one already shown on an earlier path is `seenAbove`, with what it waits on left out. */
+export type Wait = TaskRef & { seenAbove: boolean; waitsOn: Wait[] };
 
-/** The requirements of task `id` not done yet, each with its own, down to the ones that can be taken now. */
+/**
+ * The requirements of task `id` not done yet, each with its own, down to the ones that can be taken now. Each task is
+ * expanded once, depth first: on a plan full of diamonds the full tree grows exponentially with its depth.
+ */
 export function explainWait(roadmap: Roadmap, branches: string[], id: string): Wait[] {
   const states = readStates(roadmap, branches);
   const byId = new Map(roadmap.blocks.flatMap((block) => block.tasks).map((task) => [task.id, task]));
-  // Kept per task: a requirement shared by many paths is walked once, not once per path.
-  const walked = new Map<string, Wait[]>();
-  const walk = (taskId: string): Wait[] => {
-    const known = walked.get(taskId);
-    if (known !== undefined) return known;
-    const waits = (byId.get(taskId)?.requires ?? []).flatMap((required) => {
+  const shown = new Set<string>();
+  const walk = (taskId: string): Wait[] =>
+    (byId.get(taskId)?.requires ?? []).flatMap((required): Wait[] => {
       const task = byId.get(required);
       const state = states.get(required);
       if (task === undefined || state === undefined || state === 'done') return [];
-      return [{ id: task.id, title: task.title, state, waitsOn: walk(task.id) }];
+      const ref = { id: task.id, title: task.title, state };
+      if (shown.has(task.id)) return [{ ...ref, seenAbove: true, waitsOn: [] }];
+      shown.add(task.id);
+      return [{ ...ref, seenAbove: false, waitsOn: walk(task.id) }];
     });
-    walked.set(taskId, waits);
-    return waits;
-  };
   return walk(id);
 }

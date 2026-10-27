@@ -29,12 +29,18 @@ function findCycles(tasks: Task[]): string[][] {
   return cycles;
 }
 
+/** Each block once, as first listed: a block listed twice is one problem, not every one of its tasks twice. */
+function readBlocksOnce(roadmap: Roadmap): Roadmap['blocks'] {
+  return roadmap.blocks.filter((block, at) => roadmap.blocks.findIndex((each) => each.code === block.code) === at);
+}
+
 /** What makes the plan unsound on its own, without git: each problem in words a person can act on. */
 export function checkRoadmap(roadmap: Roadmap): string[] {
-  const tasks = roadmap.blocks.flatMap((block) => block.tasks);
+  const blocks = readBlocksOnce(roadmap);
+  const tasks = blocks.flatMap((block) => block.tasks);
   const ids = new Set(tasks.map((task) => task.id));
   const repeatedBlocks = readRepeated(roadmap.blocks.map((block) => block.code));
-  const outside = roadmap.blocks.flatMap((block) =>
+  const outside = blocks.flatMap((block) =>
     block.tasks.filter((task) => !task.id.startsWith(`${block.code}.`)).map((task) => ({ task, block })),
   );
   const unknown = tasks.flatMap((task) =>
@@ -51,7 +57,7 @@ export function checkRoadmap(roadmap: Roadmap): string[] {
 
 /** The done tasks whose commit `hasCommit` does not find. */
 export function findMissingCommits(roadmap: Roadmap, hasCommit: (sha: string) => boolean): string[] {
-  return roadmap.blocks
+  return readBlocksOnce(roadmap)
     .flatMap((block) => block.tasks)
     .flatMap((task) =>
       task.commit === undefined || hasCommit(task.commit)

@@ -40,7 +40,9 @@ export function renderList(roadmap: Roadmap, rows: Row[]): string {
 }
 
 function readLines(lines: number | 'doc'): string {
-  return lines === 'doc' ? 'a document' : `~${lines} lines`;
+  if (lines === 'doc') return 'a document';
+  const unit = lines === 1 ? 'line' : 'lines';
+  return `~${lines} ${unit}`;
 }
 
 function readPlace(shown: ShownTask): string {
@@ -70,7 +72,10 @@ export function renderShown(shown: ShownTask): string {
 function renderWaits(waits: Wait[], depth: number): string {
   const indent = '  '.repeat(depth);
   return waits
-    .map((wait) => `${indent}${wait.id} · ${wait.title} (${wait.state})\n${renderWaits(wait.waitsOn, depth + 1)}`)
+    .map((wait) => {
+      const mark = wait.seenAbove ? ', see above' : '';
+      return `${indent}${wait.id} · ${wait.title} (${wait.state}${mark})\n${renderWaits(wait.waitsOn, depth + 1)}`;
+    })
     .join('');
 }
 
