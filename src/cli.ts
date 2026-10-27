@@ -29,6 +29,11 @@ Commands:
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
 
+// The plan has to be on the base branch before a task's branch can mark anything started.
+const AFTER_INIT = `Write your blocks, run check, then commit roadmap/ on your base branch, as «docs: start the roadmap».
+Each task then gets its own branch from there, named after it, as abc-1/short-slug.
+`;
+
 const OPTIONS = {
   root: { type: 'string' },
   commit: { type: 'string' },
@@ -221,7 +226,7 @@ export function run(args: string[], io: Io): number {
     }
     switch (command.name) {
       case 'init':
-        io.out(`Started a roadmap in ${initRoadmap(given ?? io.cwd)}.\n`);
+        io.out(`Started a roadmap in ${initRoadmap(given ?? io.cwd)}.\n${AFTER_INIT}`);
         return 0;
       case 'next':
         next(root(), io.out);
