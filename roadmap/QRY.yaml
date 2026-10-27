@@ -5,6 +5,7 @@ tasks:
     requires: [COR.3]
     doneWhen: show ID gives its block, done when, requirements with their state, what it unblocks, and its commit or branch; why ID walks the requirements not done down to the ones ready to take; both with --json
     lines: 120
+    commit: '31de877'
   - id: QRY.2
     title: List the plan with filters
     requires: [QRY.1]
