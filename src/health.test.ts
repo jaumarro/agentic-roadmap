@@ -1,0 +1,125 @@
+import { describe, expect, it } from 'vitest';
+import { measureHealth } from './health.ts';
+import type { Roadmap, Task } from './model.ts';
+
+function task(id: string, requires: string[] = [], lines: number | 'doc' = 10, commit?: string): Task {
+  return { id, title: id, requires, doneWhen: 'x', lines, ...(commit ? { commit } : {}) };
+}
+
+function plan(...tasks: Task[]): Roadmap {
+  const codes = [...new Set(tasks.map((each) => each.id.split('.')[0] ?? ''))];
+  return {
+    blocks: codes.map((code) => ({ code, name: code, tasks: tasks.filter((t) => t.id.startsWith(`${code}.`)) })),
+  };
+}
+
+describe('measureHealth', () => {
+  it('weighs the critical path by lines and counts only the work left', () => {
+    const health = measureHealth(
+      plan(
+        task('ABC.1', [], 50, 'abc1234'),
+        task('ABC.2', ['ABC.1'], 30),
+        task('ABC.3', ['ABC.2'], 20),
+        task('ABC.4', [], 40),
+      ),
+    );
+
+    expect(health.tasksLeft).toBe(3);
+    expect(health.workLeft).toBe(90);
+    expect(health.criticalPath).toEqual({ lines: 50, tasks: ['ABC.2', 'ABC.3'] });
+    expect(health.parallelism).toBeCloseTo(1.8);
+  });
+
+  it('counts a document as a fixed weight', () => {
+    expect(measureHealth(plan(task('ABC.1', [], 'doc'))).workLeft).toBe(20);
+  });
+
+  it('finds the most tasks that can run at once, not just the ready ones', () => {
+    // ABC.1 → {ABC.2, ABC.3, ABC.4}: one ready now, three at once after it.
+    const health = measureHealth(
+      plan(task('ABC.1'), task('ABC.2', ['ABC.1']), task('ABC.3', ['ABC.1']), task('ABC.4', ['ABC.1'])),
+    );
+
+    expect(health.readyNow).toBe(1);
+    expect(health.width).toBe(3);
+  });
+
+  it('measures width as the largest set of tasks no one of which needs another, across chains', () => {
+    // Two chains of three: at most two at once.
+    const health = measureHealth(
+      plan(
+        task('ABC.1'),
+        task('ABC.2', ['ABC.1']),
+        task('ABC.3', ['ABC.2']),
+        task('XYZ.1'),
+        task('XYZ.2', ['XYZ.1']),
+        task('XYZ.3', ['XYZ.2']),
+      ),
+    );
+
+    expect(health.width).toBe(2);
+  });
+
+  it('names the tasks most of the work left waits on', () => {
+    const health = measureHealth(
+      plan(task('ABC.1', [], 10), task('ABC.2', ['ABC.1'], 40), task('ABC.3', ['ABC.1'], 40), task('ABC.4', [], 10)),
+    );
+
+    // Measured against the rest of the work: its own 10 lines are not something it waits on.
+    expect(health.bottlenecks[0]).toMatchObject({ id: 'ABC.1', blocks: 80 });
+    expect(health.bottlenecks[0]?.share).toBeCloseTo(80 / 90);
+  });
+
+  it('finds a requirement another one already implies', () => {
+    const health = measureHealth(plan(task('ABC.1'), task('ABC.2', ['ABC.1']), task('ABC.3', ['ABC.2', 'ABC.1'])));
+
+    expect(health.redundant).toEqual([{ id: 'ABC.3', requires: 'ABC.1', through: 'ABC.2' }]);
+  });
+
+  it('measures the share of requirements that cross blocks', () => {
+    const health = measureHealth(
+      plan(task('ABC.1'), task('ABC.2', ['ABC.1']), task('XYZ.1', ['ABC.2']), task('XYZ.2', ['XYZ.1'])),
+    );
+
+    expect(health.crossBlockShare).toBeCloseTo(1 / 3);
+  });
+
+  it('lists the tasks over the size cap', () => {
+    expect(measureHealth(plan(task('ABC.1', [], 400), task('ABC.2', [], 100))).oversized).toEqual([
+      { id: 'ABC.1', lines: 400 },
+    ]);
+  });
+
+  it('gives an empty plan zero work and no problems', () => {
+    const health = measureHealth(plan(task('ABC.1', [], 10, 'abc1234')));
+
+    expect(health).toMatchObject({ tasksLeft: 0, workLeft: 0, parallelism: 0, width: 0, problems: [] });
+  });
+});
+
+describe('the problems it ranks', () => {
+  it('flags a plan that is a single queue', () => {
+    const chain = Array.from({ length: 6 }, (_, at) => task(`ABC.${at + 1}`, at === 0 ? [] : [`ABC.${at}`]));
+
+    expect(measureHealth(plan(...chain)).problems[0]).toMatch(/^The plan is a queue: parallelism 1\.0/);
+  });
+
+  it('ranks an oversized task, then a queue, then a bottleneck, then a redundant requirement', () => {
+    const health = measureHealth(
+      plan(
+        task('ABC.1', [], 400),
+        task('ABC.2', ['ABC.1']),
+        task('ABC.3', ['ABC.2', 'ABC.1']),
+        task('XYZ.1'),
+        task('XYZ.2'),
+      ),
+    );
+
+    expect(health.problems.map((problem) => problem.split(':')[0])).toEqual([
+      'ABC.1 is ~400 lines, over the cap of 150',
+      'The plan is a queue',
+      'ABC.1 blocks 50 % of the rest of the work',
+      'ABC.3 requires ABC.1, which ABC.2 already requires',
+    ]);
+  });
+});
