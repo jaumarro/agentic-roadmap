@@ -118,8 +118,54 @@ describe('the problems it ranks', () => {
     expect(health.problems.map((problem) => problem.split(':')[0])).toEqual([
       'ABC.1 is ~400 lines, over the cap of 150',
       'The plan is a queue',
-      'ABC.1 blocks 50 % of the rest of the work',
-      'ABC.3 requires ABC.1, which ABC.2 already requires',
+      'Requirements another one already implies',
     ]);
+  });
+
+  it('flags a bottleneck only while it waits, not one that can be taken now', () => {
+    // ABC.2 waits on ABC.1 and blocks the rest; ABC.1 is a ready first step.
+    const health = measureHealth(
+      plan(
+        task('ABC.1'),
+        task('ABC.2', ['ABC.1']),
+        task('ABC.3', ['ABC.2'], 40),
+        task('ABC.4', ['ABC.2'], 40),
+        task('XYZ.1'),
+        task('XYZ.2'),
+      ),
+    );
+
+    const flagged = health.problems.filter((problem) => problem.includes('blocks'));
+    expect(flagged).toEqual([expect.stringMatching(/^ABC\.2 blocks \d+ % of the rest of the work while it waits/)]);
+  });
+
+  it('gives every redundant requirement in one problem', () => {
+    const health = measureHealth(
+      plan(
+        task('ABC.1'),
+        task('ABC.2', ['ABC.1']),
+        task('ABC.3', ['ABC.2', 'ABC.1']),
+        task('ABC.4', ['ABC.3', 'ABC.2']),
+      ),
+    );
+
+    expect(health.problems).toContain(
+      'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2), ABC.4 → ABC.2 (via ABC.3): drop them',
+    );
+  });
+
+  it('takes a requirement on an earlier block as normal and flags one on a later block', () => {
+    const health = measureHealth(plan(task('ABC.1', ['XYZ.1']), task('XYZ.1'), task('XYZ.2', ['ABC.1'])));
+
+    expect(health.backward).toEqual([{ id: 'ABC.1', requires: 'XYZ.1' }]);
+    expect(health.problems.at(-1)).toBe(
+      'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml',
+    );
+  });
+
+  it('says how many problems it left out past the first five', () => {
+    const big = Array.from({ length: 7 }, (_, at) => task(`ABC.${at + 1}`, [], 200));
+
+    expect(measureHealth(plan(...big)).problems.at(-1)).toBe('… and 2 more: health --json lists every figure');
   });
 });

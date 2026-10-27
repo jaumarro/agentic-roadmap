@@ -76,7 +76,10 @@ describe('init', () => {
   it('names the folder it started, not its roadmap subfolder', () => {
     const root = project();
 
-    expect(capture(['init'], root).text).toBe(`Started a roadmap in ${root}.\n`);
+    const { text } = capture(['init'], root);
+
+    expect(text).toMatch(new RegExp(`^Started a roadmap in ${root.replaceAll('.', '\\.')}\\.\\n`));
+    expect(text).toContain('commit roadmap/ on your base branch');
   });
 });
 
