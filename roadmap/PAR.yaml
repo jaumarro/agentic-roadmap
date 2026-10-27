@@ -5,6 +5,7 @@ tasks:
     requires: [COR.3]
     doneWhen: free 3 hands out three different ready tasks no branch started, in next's order; next --json and free --json give the same rows
     lines: 70
+    commit: 'bb57c90'
   - id: PAR.2
     title: Put a block or a task first with focus
     requires: [PAR.1]
