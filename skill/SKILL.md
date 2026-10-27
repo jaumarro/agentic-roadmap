@@ -1,0 +1,36 @@
+---
+name: roadmap-workflow
+description: Work from a repo's agentic-roadmap plan, the roadmap/ folder of YAML blocks. Use it to find what to do next, to start and close a task, to ask why a task is not ready, and to write or change the plan so its health holds. Use it whenever a repo has roadmap/roadmap.yaml, or the user asks what to work on next.
+---
+
+# Working from the roadmap
+
+The plan lives in `roadmap/`: `roadmap.yaml` lists the blocks in order, and each block is `roadmap/<CODE>.yaml` with its tasks. The `agentic-roadmap` command reads and writes it; before it is installed, run it as `node <path to agentic-roadmap>/src/cli.ts`. It finds `roadmap/` from any folder below it. `agentic-roadmap help` lists every command.
+
+Ids and commits are the tool's to write. Never type a `commit:` into the YAML: `close` writes it, quoted, after checking the commit exists.
+
+## Taking the next task
+
+1. Run `agentic-roadmap next`. Take the task it names as **Next**. It never names one a branch already started; those show under «In progress».
+2. Read the task before you start: `agentic-roadmap show <ID>` gives its block, its «Done when», what it requires and what it unblocks. «Done when» is what you must make true, and how it is checked.
+3. Branch from the base branch, named after the task: its id in lower case with a hyphen, then a short slug, as `abc-3/close-command`. That branch is what marks the task started for everyone else.
+4. Do the work with conventional commits: the change as `feat:`, `fix:`, `refactor:` or `perf:`, its tests after it as `test:`.
+5. Close it: `agentic-roadmap close <ID>`. It writes the newest `feat`, `fix`, `refactor` or `perf` commit as the task's commit. A task that is only a document has no such commit: pass the one that did it, as `close <ID> --commit <sha>`. It refuses a task whose requirements are not all done.
+6. Commit what `close` wrote as its own commit, `docs: close <ID>`, on the same branch, and integrate the branch.
+
+## Asking the plan
+
+- `agentic-roadmap why <ID>`: what a task waits on, down to the tasks that can be taken now. Use it before choosing something that is not Next.
+- `agentic-roadmap list --state ready` (or `done`, `started`, `waiting`), and `--block <CODE>`: the plan, or a slice of it.
+- `show`, `why`, `list` and `health` take `--json`: read that instead of parsing the text.
+
+## Writing or changing the plan
+
+1. Add or change tasks in their block's file. A task has `id` (`CODE.N`, the next free number in its block; never reuse or renumber one), `title`, `requires` (ids), `doneWhen` (checkable by a command, a test or a screen) and `lines` (its logic in lines, or `doc`).
+2. Keep each task a vertical slice that can be used and checked on its own, at most about 150 lines of logic: split a bigger one.
+3. A new block is a three-letter code, a file `roadmap/<CODE>.yaml` with its `name` and `tasks`, and its code in `roadmap.yaml`'s `blocks`, after the blocks it requires.
+4. Run `agentic-roadmap check`. It must say «The plan is sound»: it refuses unknown requirements, repeated ids or blocks, cycles, an id outside its block, and commits the repo does not have.
+5. Run `agentic-roadmap health` and fix the problems it ranks, worst first: tasks over the size cap, a plan that is a queue, a waiting task most of the work depends on, requirements another one already implies, and requirements on a block listed later. Rerun it until it says «No problems», or say which problem you leave and why.
+6. Commit the plan as `docs:`, on its own.
+
+A new roadmap starts with `agentic-roadmap init`. Commit `roadmap/` on the base branch before any task: a task's branch can only mark it started once the plan is there.
