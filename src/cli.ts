@@ -12,6 +12,7 @@ import { setFocus } from './focus.ts';
 import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
+import { installSkill } from './install-skill.ts';
 import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
 import { checkMarkdown, measureProgress, renderProgress, syncMarkdown, writeMarkdown } from './render.ts';
 import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
@@ -41,6 +42,7 @@ Commands:
   add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID]
                              add a task with the next free id, here and on every local branch
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
+  install-skill              copy the agents' workflow into .claude/skills, next to roadmap/; again to update it
 
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
@@ -81,6 +83,7 @@ const ARITY: Record<string, number> = {
   health: 0,
   add: 2,
   'install-merge-driver': 0,
+  'install-skill': 0,
   'merge-block': 3,
   help: 0,
 };
@@ -366,6 +369,9 @@ export function run(args: string[], io: Io): number {
         return 0;
       case 'install-merge-driver':
         io.out(`git now merges roadmap/*.yaml task by task; the attribute is in ${installMergeDriver(root())}.\n`);
+        return 0;
+      case 'install-skill':
+        io.out(`Installed the roadmap-workflow skill in ${installSkill(root())}.\n`);
         return 0;
       case 'merge-block': {
         // Git runs this itself, with the three versions' paths: see install-merge-driver.
