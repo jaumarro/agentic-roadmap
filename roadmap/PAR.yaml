@@ -1,0 +1,12 @@
+name: Several sessions at once
+tasks:
+  - id: PAR.1
+    title: Started tasks, free tasks, focus and the full ordering, with --json
+    requires: [COR.3]
+    doneWhen: a branch named abc-2/x makes next skip ABC.2; free 3 hands out three different tasks; focus XYZ puts XYZ first; ⚠︎ tasks go last
+    lines: 180
+  - id: PAR.4
+    title: Chapters, and the plan-size warnings, in check
+    requires: [COR.3]
+    doneWhen: roadmap.yaml can name chapters; check refuses a task requiring one from a later chapter, and warns on a block outside 5 to 25 tasks and a chain of more than 5 pending tasks
+    lines: 60

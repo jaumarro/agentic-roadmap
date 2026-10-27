@@ -1,0 +1,23 @@
+name: The core loop
+tasks:
+  - id: COR.1
+    title: Set up the package with its tools and a CLI that prints its usage
+    doneWhen: pnpm test, typecheck, lint and format:check pass on a CLI that prints its usage
+    lines: 50
+    commit: '283754d'
+  - id: COR.2
+    title: Start a roadmap with init and name the task to take with next
+    requires: [COR.1]
+    doneWhen: init in an empty folder, then next from a subfolder names the right task and its branch
+    lines: 150
+    commit: '47910e8'
+  - id: COR.3
+    title: Close a task with its commit, and check the plan
+    requires: [COR.2]
+    doneWhen: close writes the sha of the last non-docs commit and next moves on; check fails on an unknown requirement, a repeated id, a cycle and a sha this repo does not have
+    lines: 150
+  - id: COR.4
+    title: Add a task with an id the tool picks
+    requires: [COR.3]
+    doneWhen: two branches that each add a task to the same block get different ids, and check passes after merging both
+    lines: 120

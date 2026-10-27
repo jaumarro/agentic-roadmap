@@ -1,0 +1,7 @@
+name: A plan readable on GitHub
+tasks:
+  - id: DOC.1
+    title: Render the plan as Markdown, and show progress with status
+    requires: [COR.3]
+    doneWhen: render writes the Markdown the config names, with no progress table; status shows each block's progress; check fails when the Markdown was edited by hand
+    lines: 150

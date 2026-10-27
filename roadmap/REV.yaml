@@ -1,0 +1,12 @@
+name: reviewer adopts it
+tasks:
+  - id: REV.1
+    title: Make the package installable, by npm or a git dependency, with the maintainer's yes
+    requires: [AGT.1]
+    doneWhen: reviewer can add agentic-roadmap as a dependency without a local path
+    lines: doc
+  - id: REV.2
+    title: Move reviewer's plan to the package and drop its plan scripts
+    requires: [REV.1]
+    doneWhen: reviewer's pnpm scripts call the CLI, scripts/plan-* are gone and /api/roadmap answers the same JSON as before
+    lines: 150
