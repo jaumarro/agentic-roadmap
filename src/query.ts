@@ -4,7 +4,9 @@ import { readStates, type ShownTask, type TaskState, type Wait } from './state.t
 
 export const STATES: TaskState[] = ['done', 'started', 'ready', 'waiting'];
 
-export type Row = { id: string; block: string; state: TaskState; title: string };
+export type Row = { id: string; block: string; state: TaskState; title: string; risky: boolean };
+
+const RISKY_MARK = ' ⚠︎';
 
 /** Every task as a row, in the plan's order, narrowed to `block` and `state` when given. */
 export function listRows(roadmap: Roadmap, branches: string[], filter: { block?: string; state?: TaskState }): Row[] {
@@ -17,6 +19,7 @@ export function listRows(roadmap: Roadmap, branches: string[], filter: { block?:
         block: block.code,
         state: states.get(task.id) ?? 'waiting',
         title: task.title,
+        risky: task.risky === true,
       })),
     )
     .filter((row) => filter.state === undefined || row.state === filter.state);
@@ -34,7 +37,10 @@ export function renderList(roadmap: Roadmap, rows: Row[]): string {
       const heading = `${block.code} · ${block.name} (${done}/${block.tasks.length} done)\n`;
       const lines = rows
         .filter((row) => row.block === block.code)
-        .map((row) => `  ${row.id.padEnd(idWidth)}  ${row.state.padEnd(stateWidth)}  ${row.title}\n`);
+        .map((row) => {
+          const mark = row.risky ? RISKY_MARK : '';
+          return `  ${row.id.padEnd(idWidth)}  ${row.state.padEnd(stateWidth)}  ${row.title}${mark}\n`;
+        });
       return heading + lines.join('');
     })
     .join('');
@@ -59,11 +65,14 @@ function listRefs(title: string, refs: ShownTask['requires']): string {
 
 /** A task as a person reads it: what it is, where it stands, and what it needs and opens. */
 export function renderShown(shown: ShownTask): string {
+  const mark = shown.risky ? RISKY_MARK : '';
+  const review = shown.risky ? '  Risky: it gets a full review.\n' : '';
   return [
-    `${shown.id} · ${shown.title}\n`,
+    `${shown.id} · ${shown.title}${mark}\n`,
     `  Block: ${shown.block.code} · ${shown.block.name}\n`,
     `  Done when: ${shown.doneWhen}\n`,
     `  Size: ${readLines(shown.lines)}\n`,
+    review,
     `  ${readPlace(shown)}\n`,
     listRefs('Requires', shown.requires),
     listRefs('Unblocks', shown.unblocks),

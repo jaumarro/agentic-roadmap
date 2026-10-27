@@ -3,7 +3,7 @@ import { listReady, namesTask, readBranchName } from './next.ts';
 import { readStates } from './state.ts';
 
 /** A task free to take, with what one session needs to start it. */
-export type FreeTask = { id: string; block: string; title: string; doneWhen: string; branch: string };
+export type FreeTask = { id: string; block: string; title: string; doneWhen: string; risky: boolean; branch: string };
 
 export type InProgress = { id: string; title: string; branches: string[] };
 
@@ -18,6 +18,7 @@ export function listFree(roadmap: Roadmap, branches: string[]): FreeTask[] {
       block: blockOf.get(task.id) ?? '',
       title: task.title,
       doneWhen: task.doneWhen,
+      risky: task.risky === true,
       branch: readBranchName(task.id),
     }));
 }

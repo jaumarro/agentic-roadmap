@@ -11,6 +11,8 @@ export const taskSchema = z.strictObject({
   lines: z.union([z.number().int().positive(), z.literal('doc')], {
     error: 'lines is a positive whole number, or doc',
   }),
+  /** It touches code execution, credentials, persistence, pushes or outside text: a full review, and taken last. */
+  risky: z.boolean().optional(),
   /** The commit that closed it; a task with one is done. */
   commit: z
     .string({ error: 'a commit is a quoted sha, as commit: "1234567"' })

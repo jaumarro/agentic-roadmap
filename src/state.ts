@@ -22,6 +22,7 @@ export type ShownTask = TaskRef & {
   block: { code: string; name: string };
   doneWhen: string;
   lines: number | 'doc';
+  risky: boolean;
   commit: string | null;
   startedOn: string[];
   requires: TaskRef[];
@@ -41,6 +42,7 @@ export function describeTask(roadmap: Roadmap, branches: string[], id: string): 
     block: { code: block.code, name: block.name },
     doneWhen: task.doneWhen,
     lines: task.lines,
+    risky: task.risky === true,
     commit: task.commit ?? null,
     startedOn: branches.filter((branch) => namesTask(branch, id)),
     requires: tasks.filter((each) => task.requires.includes(each.id)).map(refer),

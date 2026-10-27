@@ -7,9 +7,14 @@ function readFocusRank(focus: string[], task: Task): number {
   return at === -1 ? focus.length : at;
 }
 
+// A document writes no code, so it weighs nothing here.
+function readSize(task: Task): number {
+  return task.lines === 'doc' ? 0 : task.lines;
+}
+
 /**
  * The tasks not done whose requirements are all done: those the focus names first, in its order, then fewest
- * requirements first, then in the plan's order.
+ * requirements, then fewest lines, a risky one last; a tie keeps the plan's order.
  */
 export function listReady(roadmap: Roadmap): Task[] {
   const focus = roadmap.focus ?? [];
@@ -17,7 +22,11 @@ export function listReady(roadmap: Roadmap): Task[] {
   const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
   const ready = tasks.filter((task) => task.commit === undefined && task.requires.every((id) => done.has(id)));
   return ready.toSorted(
-    (a, b) => readFocusRank(focus, a) - readFocusRank(focus, b) || a.requires.length - b.requires.length,
+    (a, b) =>
+      readFocusRank(focus, a) - readFocusRank(focus, b) ||
+      a.requires.length - b.requires.length ||
+      readSize(a) - readSize(b) ||
+      Number(a.risky === true) - Number(b.risky === true),
   );
 }
 
