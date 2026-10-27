@@ -2,7 +2,7 @@
 import { fileURLToPath } from 'node:url';
 import { checkRoadmap, findMissingCommits } from './check.ts';
 import { closeTask } from './close.ts';
-import { hasCommit, listBranches, readLastWorkCommit } from './git.ts';
+import { hasCommit, listBranches, readKnownCommits, readLastWorkCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
 import { listReady, namesTask, readBranchName } from './next.ts';
 import { findRoot, initRoadmap, readRoadmap, RoadmapError } from './source.ts';
@@ -69,7 +69,9 @@ function close(root: string, args: string[], out: Io['out']): void {
 
 function check(root: string, out: Io['out']): number {
   const roadmap = readRoadmap(root);
-  const problems = [...checkRoadmap(roadmap), ...findMissingCommits(roadmap, (sha) => hasCommit(root, sha))];
+  const cited = roadmap.blocks.flatMap((block) => block.tasks.flatMap((task) => (task.commit ? [task.commit] : [])));
+  const known = readKnownCommits(root, cited);
+  const problems = [...checkRoadmap(roadmap), ...findMissingCommits(roadmap, (sha) => known.has(sha))];
   out(problems.length === 0 ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(problems)}`);
   return problems.length === 0 ? 0 : 1;
 }

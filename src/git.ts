@@ -13,6 +13,21 @@ export function hasCommit(root: string, sha: string): boolean {
   return git(root, ['cat-file', '-e', `${sha}^{commit}`]) !== null;
 }
 
+/** The ones of `shas` this repo has as commits, asked of one git process: one per sha takes seconds on a big plan. */
+export function readKnownCommits(root: string, shas: string[]): Set<string> {
+  const unique = [...new Set(shas)];
+  if (unique.length === 0) return new Set();
+  try {
+    const input = unique.map((sha) => `${sha}^{commit}\n`).join('');
+    const output = execFileSync('git', ['cat-file', '--batch-check'], { cwd: root, encoding: 'utf8', input });
+    // One answer per line, in order: `<oid> commit <size>` when found, else `… missing` or `… ambiguous`.
+    const answers = output.split('\n');
+    return new Set(unique.filter((_, at) => /^[0-9a-f]+ commit /.test(answers[at] ?? '')));
+  } catch {
+    return new Set();
+  }
+}
+
 // A `docs:` commit records the plan, and tests usually follow the change they cover: the work is the change itself.
 const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
 const CHANGE_COMMIT = /^(feat|fix|refactor|perf)(\([^)]*\))?!?:/;
