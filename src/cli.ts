@@ -7,7 +7,8 @@ import { closeTask } from './close.ts';
 import { listBranches, readKnownCommits, readLastWorkCommit, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
 import { listReady, namesTask, readBranchName } from './next.ts';
-import { listRows, renderList, renderShown, renderWhy, STATES } from './query.ts';
+import { measureHealth } from './health.ts';
+import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
 import { findRoot, initRoadmap, readRoadmap, RoadmapError } from './source.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
@@ -22,6 +23,8 @@ Commands:
   why <ID> [--json]          what a task waits on, down to the tasks that can be taken now
   list [--block CODE] [--state done|started|ready|waiting] [--json]
                              every task with its state, by block
+  health [--json] [--strict] the plan's shape (critical path, parallelism, width) and its worst problems;
+                             --strict fails when there is any
 
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
@@ -32,11 +35,22 @@ const OPTIONS = {
   json: { type: 'boolean' },
   block: { type: 'string' },
   state: { type: 'string' },
+  strict: { type: 'boolean' },
   help: { type: 'boolean' },
 } as const;
 
 /** How many arguments each command takes after its name. */
-const ARITY: Record<string, number> = { init: 0, next: 0, check: 0, close: 1, show: 1, why: 1, list: 0, help: 0 };
+const ARITY: Record<string, number> = {
+  init: 0,
+  next: 0,
+  check: 0,
+  close: 1,
+  show: 1,
+  why: 1,
+  list: 0,
+  health: 0,
+  help: 0,
+};
 
 /** What a command reads from and writes to: where it runs, its environment, and its output. */
 export type Io = { cwd: string; env: Record<string, string | undefined>; out: (text: string) => void };
@@ -49,6 +63,7 @@ type Command = {
   json: boolean;
   block: string | undefined;
   state: string | undefined;
+  strict: boolean;
   help: boolean;
 };
 
@@ -75,8 +90,16 @@ function readCommand(args: string[], env: Io['env']): Command {
     json: values.json === true,
     block: values.block,
     state: values.state,
+    strict: values.strict === true,
     help: values.help === true,
   };
+}
+
+/** The plan's health; with `--strict`, a plan with any problem fails, for a check to gate on. */
+function health(root: string, command: Command, out: Io['out']): number {
+  const measured = measureHealth(readSoundRoadmap(root));
+  out(command.json ? `${JSON.stringify(measured, null, 2)}\n` : renderHealth(measured));
+  return command.strict && measured.problems.length > 0 ? 1 : 0;
 }
 
 function isState(value: string): value is TaskState {
@@ -217,6 +240,8 @@ export function run(args: string[], io: Io): number {
       case 'list':
         list(root(), command, io.out);
         return 0;
+      case 'health':
+        return health(root(), command, io.out);
       case undefined:
       case 'help':
         io.out(USAGE);

@@ -1,3 +1,4 @@
+import type { Health } from './health.ts';
 import type { Roadmap } from './model.ts';
 import { readStates, type ShownTask, type TaskState, type Wait } from './state.ts';
 
@@ -84,4 +85,35 @@ export function renderWhy(id: string, state: string, waits: Wait[]): string {
   if (state === 'done') return `${id} is done.\n`;
   if (waits.length === 0) return `${id} waits on nothing: it is ${state}.\n`;
   return `${id} waits on:\n${renderWaits(waits, 1)}`;
+}
+
+function readProblems(problems: string[]): string {
+  if (problems.length === 0) return 'No problems.\n';
+  return `Problems, worst first:\n${problems.map((problem, at) => `  ${at + 1}. ${problem}\n`).join('')}`;
+}
+
+// A longer chain reads as its start and its end; --json keeps every task.
+const CHAIN_SHOWN = 8;
+
+function shortenChain(ids: string[]): string {
+  if (ids.length <= CHAIN_SHOWN) return ids.join(' → ');
+  const left = ids.length - 6;
+  return [...ids.slice(0, 3), `… ${left} more …`, ...ids.slice(-3)].join(' → ');
+}
+
+/** The plan's health as a person reads it: its shape in a few figures, then what to fix first. */
+export function renderHealth(health: Health): string {
+  if (health.tasksLeft === 0) return 'Everything is done: there is no plan left to measure.\n';
+  const { criticalPath } = health;
+  const chain = shortenChain(criticalPath.tasks);
+  const crossing = Math.round(health.crossBlockShare * 100);
+  return [
+    `Plan health: ${health.tasksLeft} tasks left, ~${health.workLeft} lines\n`,
+    `  Critical path   ~${criticalPath.lines} lines over ${criticalPath.tasks.length} tasks: ${chain}\n`,
+    `  Parallelism     ${health.parallelism.toFixed(1)} sessions busy on average (work left ÷ critical path)\n`,
+    `  Width           ${health.width} tasks at most at once · ${health.readyNow} ready now\n`,
+    `  Across blocks   ${crossing} % of requirements\n`,
+    '\n',
+    readProblems(health.problems),
+  ].join('');
 }
