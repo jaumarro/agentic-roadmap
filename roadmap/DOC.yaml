@@ -5,3 +5,4 @@ tasks:
     requires: [COR.3]
     doneWhen: render writes the Markdown the config names, with no progress table; status shows each block's progress; check fails when the Markdown was edited by hand
     lines: 150
+    commit: '317c19d'

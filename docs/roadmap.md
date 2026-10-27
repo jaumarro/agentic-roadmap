@@ -36,7 +36,7 @@
 
 | Id | Task | Requires | Done when | Lines |
 | - | - | - | - | - |
-| DOC.1 | Render the plan as Markdown, and show progress with status | COR.3 | render writes the Markdown the config names, with no progress table; status shows each block's progress; check fails when the Markdown was edited by hand | ~150 |
+| ✅ DOC.1 | Render the plan as Markdown, and show progress with status | COR.3 | 317c19d: render writes the Markdown the config names, with no progress table; status shows each block's progress; check fails when the Markdown was edited by hand | ~150 |
 
 ## AGT · Agents follow it unprompted
 
