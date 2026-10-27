@@ -1,3 +1,4 @@
+import { isOnTrack, readChapterOf } from './chapters.ts';
 import type { Roadmap, Task } from './model.ts';
 
 /** Where `task` stands in the focus: the first entry naming it or its block, and past every entry when none does. */
@@ -14,13 +15,20 @@ function readSize(task: Task): number {
 
 /**
  * The tasks not done whose requirements are all done: those the focus names first, in its order, then fewest
- * requirements, then fewest lines, a risky one last; a tie keeps the plan's order.
+ * requirements, then fewest lines, a risky one last; a tie keeps the plan's order. A parallel track's task is another
+ * session's work, so it is here only when focused.
  */
 export function listReady(roadmap: Roadmap): Task[] {
   const focus = roadmap.focus ?? [];
   const tasks = roadmap.blocks.flatMap((block) => block.tasks);
   const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
-  const ready = tasks.filter((task) => task.commit === undefined && task.requires.every((id) => done.has(id)));
+  const chapterOf = readChapterOf(roadmap);
+  const ready = tasks.filter(
+    (task) =>
+      task.commit === undefined &&
+      task.requires.every((id) => done.has(id)) &&
+      (!isOnTrack(chapterOf, task) || readFocusRank(focus, task) < focus.length),
+  );
   return ready.toSorted(
     (a, b) =>
       readFocusRank(focus, a) - readFocusRank(focus, b) ||

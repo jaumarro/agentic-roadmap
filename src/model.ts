@@ -32,10 +32,32 @@ export const configSchema = z.strictObject({
   blocks: z.array(z.string().regex(/^[A-Z][A-Z0-9]*$/)).min(1),
   /** Blocks and tasks to take first, in this order, ahead of the rest of the plan. */
   focus: z.array(z.string()).default([]),
+  /**
+   * The chapters, in order, each with its blocks. A task may require its own chapter or an earlier one; once there are
+   * chapters, a block in none is a parallel track, which next and free leave to its own sessions unless focused.
+   */
+  chapters: z.array(z.strictObject({ name: z.string().min(1), blocks: z.array(z.string()) })).optional(),
+  /** Where check warns that the plan is getting harder to work in parallel. */
+  warnings: z
+    .strictObject({
+      blockSize: z.tuple([z.number().int().nonnegative(), z.number().int().positive()]).optional(),
+      chain: z.number().int().positive().optional(),
+      blocksWaitedOn: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
   /** Where render writes the plan as Markdown, from the folder holding roadmap/. */
   markdown: z.string().min(1).default('docs/roadmap.md'),
 });
 
 export type Task = z.infer<typeof taskSchema>;
 export type Block = z.infer<typeof blockSchema> & { code: string };
-export type Roadmap = { blocks: Block[]; focus?: string[]; markdown?: string };
+type Config = z.infer<typeof configSchema>;
+export type Chapter = NonNullable<Config['chapters']>[number];
+export type Warnings = NonNullable<Config['warnings']>;
+export type Roadmap = {
+  blocks: Block[];
+  focus?: string[];
+  markdown?: string;
+  chapters?: Chapter[];
+  warnings?: Warnings;
+};

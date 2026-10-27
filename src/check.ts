@@ -1,4 +1,5 @@
-import type { Roadmap, Task } from './model.ts';
+import { checkChapters, readChapterOf } from './chapters.ts';
+import type { Block, Roadmap, Task } from './model.ts';
 
 function countBy(values: string[]): Map<string, number> {
   const counts = new Map<string, number>();
@@ -54,8 +55,67 @@ export function checkRoadmap(roadmap: Roadmap): string[] {
     ...outside.map(({ task, block }) => `${task.id} sits in block ${block.code}`),
     ...readRepeated(tasks.map((task) => task.id)).map(([id, count]) => `${id} is given to ${count} tasks`),
     ...unknown,
+    ...checkChapters(roadmap, tasks),
     ...findCycles(tasks).map((cycle) => `a cycle: ${cycle.join(' → ')}`),
   ];
+}
+
+const BLOCK_SIZE: [number, number] = [5, 25];
+
+function countTasks(count: number): string {
+  return count === 1 ? '1 task' : `${count} tasks`;
+}
+const MAX_CHAIN = 5;
+const MAX_BLOCKS_WAITED_ON = 3;
+
+/** The longest run of pending tasks inside one block that ends at `id`; the plan has no cycle by now. */
+function readChain(id: string, byId: Map<string, Task>, chains: Map<string, number>): number {
+  const known = chains.get(id);
+  if (known !== undefined) return known;
+  const task = byId.get(id);
+  if (task === undefined || task.commit !== undefined) return 0;
+  const code = id.split('.')[0];
+  const inBlock = task.requires.filter((need) => need.split('.')[0] === code);
+  const chain = 1 + Math.max(0, ...inBlock.map((need) => readChain(need, byId, chains)));
+  chains.set(id, chain);
+  return chain;
+}
+
+/** The other blocks of its own chapter that a block's pending tasks wait on; any block when there are no chapters. */
+function readBlocksWaitedOn(block: Block, chapterOf: Map<string, number | null> | null): string[] {
+  const own = chapterOf?.get(block.code);
+  const needed = block.tasks
+    .filter((task) => task.commit === undefined)
+    .flatMap((task) => task.requires.map((id) => id.split('.')[0] ?? id))
+    .filter((code) => code !== block.code && (chapterOf === null || chapterOf.get(code) === own));
+  return [...new Set(needed)];
+}
+
+/**
+ * What makes a sound plan harder to work in parallel, without failing check: a block too small or too big, a long
+ * chain of pending tasks inside a block, and a block waiting on many blocks of its chapter.
+ */
+export function warnRoadmap(roadmap: Roadmap): string[] {
+  const [min, max] = roadmap.warnings?.blockSize ?? BLOCK_SIZE;
+  const maxChain = roadmap.warnings?.chain ?? MAX_CHAIN;
+  const maxWaitedOn = roadmap.warnings?.blocksWaitedOn ?? MAX_BLOCKS_WAITED_ON;
+  const blocks = readBlocksOnce(roadmap);
+  const chapterOf = readChapterOf(roadmap);
+  const byId = new Map(blocks.flatMap((block) => block.tasks).map((task) => [task.id, task]));
+  const chains = new Map<string, number>();
+  const perBlock = blocks.flatMap((block) => {
+    const size = block.tasks.length;
+    const waitedOn = readBlocksWaitedOn(block, chapterOf);
+    return [
+      ...(size < min || size > max ? [`${block.code} has ${countTasks(size)}, outside ${min} to ${max}`] : []),
+      ...(waitedOn.length > maxWaitedOn ? [`${block.code} waits on ${waitedOn.join(', ')}`] : []),
+    ];
+  });
+  const longChains = [...byId.keys()].flatMap((id) => {
+    const chain = readChain(id, byId, chains);
+    return chain > maxChain ? [`${id} ends a chain of ${chain} pending tasks in its block`] : [];
+  });
+  return [...perBlock, ...longChains];
 }
 
 /** The done tasks whose commit `hasCommit` does not find. */

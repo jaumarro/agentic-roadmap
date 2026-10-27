@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addTask, readNextId } from './add.ts';
-import { checkRoadmap, findMissingCommits } from './check.ts';
+import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
 import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
 import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
@@ -317,6 +317,8 @@ function check(root: string, out: Io['out']): number {
     ...checkMarkdown(root, roadmap),
   ];
   out(problems.length === 0 ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(problems)}`);
+  const warnings = warnRoadmap(roadmap);
+  if (warnings.length > 0) out(`Warnings, which do not fail it:\n${listProblems(warnings)}`);
   return problems.length === 0 ? 0 : 1;
 }
 
