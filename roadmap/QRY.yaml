@@ -23,6 +23,7 @@ tasks:
     requires: [QRY.3]
     doneWhen: health --against main shows each metric before and after, reading the other branch's roadmap from git without checking it out, and names what got worse
     lines: 80
+    commit: 'e12483e'
   - id: QRY.5
     title: Say what adding a task did to the plan's health
     requires: [QRY.3, COR.4]
