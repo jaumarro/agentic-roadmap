@@ -64,6 +64,20 @@ describe('show', () => {
   it('fails on a task the plan does not have', () => {
     expect(capture(['show', 'GET.9'], plan())).toEqual({ code: 1, text: 'No task GET.9 in this roadmap.\n' });
   });
+
+  it('marks a risky task in show and in list', () => {
+    const root = plan();
+    writeFileSync(
+      join(root, 'roadmap', 'GET.yaml'),
+      BLOCK.replace('    lines: 20\n', '    lines: 20\n    risky: true\n'),
+    );
+
+    const shown = capture(['show', 'GET.2'], root).text;
+    expect(shown).toMatch(/^GET\.2 · Second ⚠︎\n/);
+    expect(shown).toContain('  Risky: it gets a full review.\n');
+    expect(capture(['list'], root).text).toContain('GET.2  ready    Second ⚠︎\n');
+    expect(capture(['list'], root).text).toContain('GET.3  waiting  Third\n');
+  });
 });
 
 describe('why', () => {

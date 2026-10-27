@@ -23,6 +23,31 @@ describe('listReady', () => {
     expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.4', 'ABC.2']);
   });
 
+  it('takes the smaller task first among equal requirements, a document as nothing, and a risky one last', () => {
+    const plan = roadmap(
+      { ...task('ABC.1'), risky: true, lines: 5 },
+      { ...task('ABC.2'), lines: 80 },
+      { ...task('ABC.3'), lines: 'doc' },
+      { ...task('ABC.4'), lines: 5 },
+    );
+
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.4', 'ABC.1', 'ABC.2']);
+  });
+
+  it('keeps the focus and the requirements ahead of size', () => {
+    const plan = {
+      ...roadmap(
+        task('ABC.1', [], 'abc1234'),
+        task('ABC.2', ['ABC.1']),
+        { ...task('ABC.3'), lines: 90 },
+        task('ABC.4'),
+      ),
+      focus: ['ABC.3'],
+    };
+
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.4', 'ABC.2']);
+  });
+
   it('gives nothing when every task is done', () => {
     expect(listReady(roadmap(task('ABC.1', [], 'abc1234')))).toEqual([]);
   });

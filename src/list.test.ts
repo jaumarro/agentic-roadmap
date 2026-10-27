@@ -64,7 +64,7 @@ describe('list', () => {
   it('gives the rows as JSON', () => {
     const rows: unknown = JSON.parse(capture(['list', '--state', 'waiting', '--json'], plan()).text);
 
-    expect(rows).toEqual([{ id: 'MOR.1', block: 'MOR', state: 'waiting', title: 'Later' }]);
+    expect(rows).toEqual([{ id: 'MOR.1', block: 'MOR', state: 'waiting', title: 'Later', risky: false }]);
   });
 
   it('refuses a state or block it does not know, and says when nothing matches', () => {
