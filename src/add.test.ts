@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
+import { compareHealth, renderDelta } from './compare.ts';
+import { measureHealth } from './health.ts';
 import { initRoadmap, readRoadmap } from './source.ts';
 
 function git(root: string, ...args: string[]): string {
@@ -30,14 +32,39 @@ function capture(args: string[], cwd: string) {
 
 const ADD = ['--done-when', 'it is there', '--lines', '30'];
 
+describe('add, on the plan health', () => {
+  it('ends with the figures it moved, worse ones marked, and the problems it brought in', () => {
+    const text = capture(['add', 'GET', 'Big', '--done-when', 'x', '--lines', '300'], repo()).text;
+
+    expect(text).toContain(
+      'Health: critical path 40 → 300 (worse) · parallelism 1.0 → 1.1 · width 1 → 2 · problems 0 → 2 (worse)\n',
+    );
+    expect(text).toContain('  New problem: GET.3 is ~300 lines, over the cap of 150: split it into slices\n');
+  });
+
+  it('does not call a problem new when only its figure moved', () => {
+    const root = repo();
+    capture(['add', 'GET', 'Chained', '--requires', 'GET.2', ...ADD], root);
+
+    const text = capture(['add', 'GET', 'Free', '--done-when', 'x', '--lines', '5'], root).text;
+    expect(text).toContain('Health: parallelism 1.0 → 1.1 · width 1 → 2\n');
+    expect(text).not.toContain('New problem');
+  });
+
+  it('says when no figure moved', () => {
+    const health = measureHealth(readRoadmap(repo()));
+
+    expect(renderDelta(compareHealth('before', health, health))).toBe('Health: no figure moved.\n');
+  });
+});
+
 describe('add', () => {
   it('adds a task with the next id, in the plan as the rest is written', () => {
     const root = repo();
 
-    expect(capture(['add', 'GET', 'Third step', '--requires', 'GET.2', ...ADD], root)).toEqual({
-      code: 0,
-      text: 'Added GET.3 · Third step to roadmap/GET.yaml.\n',
-    });
+    const { code, text } = capture(['add', 'GET', 'Third step', '--requires', 'GET.2', ...ADD], root);
+    expect(code).toBe(0);
+    expect(text).toMatch(/^Added GET\.3 · Third step to roadmap\/GET\.yaml\.\n/);
     expect(readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8')).toContain(
       '  - id: GET.3\n    title: Third step\n    requires: [GET.2]\n    doneWhen: it is there\n    lines: 30\n',
     );
