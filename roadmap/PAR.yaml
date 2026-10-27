@@ -11,6 +11,7 @@ tasks:
     requires: [PAR.1]
     doneWhen: focus XYZ ABC.4 writes the focus in roadmap.yaml, and next and free put XYZ's tasks and ABC.4 first, in the focus's order; focus --clear empties it; check refuses a focus naming no block or task
     lines: 70
+    commit: '7259dec'
   - id: PAR.3
     title: Mark a task risky, and order the rest by size
     requires: [PAR.1]
