@@ -13,16 +13,19 @@ export function hasCommit(root: string, sha: string): boolean {
   return git(root, ['cat-file', '-e', `${sha}^{commit}`]) !== null;
 }
 
-// A conventional `docs:` commit records the plan; the work is the commit before it.
+// A `docs:` commit records the plan, and tests usually follow the change they cover: the work is the change itself.
 const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
+const CHANGE_COMMIT = /^(feat|fix|refactor|perf)(\([^)]*\))?!?:/;
 
-/** The short sha of the newest commit on HEAD that is not a `docs:` one; null when there is none. */
+/**
+ * The short sha that closes a task: the newest conventional change (`feat`, `fix`, `refactor`, `perf`) on HEAD, else
+ * the newest commit that is not a `docs:` one; null when there is none.
+ */
 export function readLastWorkCommit(root: string): string | null {
   const log = git(root, ['log', '-n', '200', '--format=%h%x09%s']) ?? '';
-  const work = log
-    .split('\n')
-    .map((line) => line.split('\t'))
-    .find(([sha, subject = '']) => sha && !PLAN_COMMIT.test(subject));
+  const commits = log.split('\n').map((line) => line.split('\t'));
+  const change = commits.find(([sha, subject = '']) => sha && CHANGE_COMMIT.test(subject));
+  const work = change ?? commits.find(([sha, subject = '']) => sha && !PLAN_COMMIT.test(subject));
   return work?.[0] ?? null;
 }
 

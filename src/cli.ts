@@ -12,7 +12,7 @@ const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
 Commands:
   init                       start a roadmap in this folder
   next                       the task to take now, and the others ready
-  close <ID> [--commit SHA]  mark a task done; the commit is the last one not starting «docs:» unless given
+  close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
   check                      find what makes the plan unsound
 `;
 
