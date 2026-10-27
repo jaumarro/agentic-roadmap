@@ -16,7 +16,7 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 3. Branch from the base branch, named after the task: its id in lower case with a hyphen, then a short slug, as `abc-3/close-command`. That branch is what marks the task started for everyone else. A task marked ⚠︎ (`risky: true`) touches code execution, credentials, persistence, pushes or outside text: it gets a full review before it is closed.
 4. Do the work with conventional commits: the change as `feat:`, `fix:`, `refactor:` or `perf:`, its tests after it as `test:`.
 5. Close it: `agentic-roadmap close <ID>`. It writes the newest `feat`, `fix`, `refactor` or `perf` commit as the task's commit. A task that is only a document has no such commit: pass the one that did it, as `close <ID> --commit <sha>`. It refuses a task whose requirements are not all done.
-6. Commit what `close` wrote as its own commit, `docs: close <ID>`, on the same branch, and integrate the branch.
+6. Commit what `close` wrote as its own commit, `docs: close <ID>`, on the same branch. Then merge the branch into the base branch the way the repo does (a pull request, or a fast-forward merge where there is none) and delete it, so it no longer marks the task started.
 
 ## Several sessions at once
 
@@ -31,8 +31,8 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 
 ## Writing or changing the plan
 
-1. Add each task with `agentic-roadmap add <BLOCK> "<title>" --done-when "<text>" --lines <N|doc> [--requires ID,ID]`. `--done-when` is checkable by a command, a test or a screen; `--lines` is its logic in lines, or `doc` for a document. `add` checks the plan with the task before writing it, and ends with what it did to the plan's health: read that line, and act on any «New problem».
-2. Keep each task a vertical slice that can be used and checked on its own, at most about 150 lines of logic: split a bigger one. Add the tasks in the order they are built, so each one's requirements exist when it is added.
+1. Add each task with `agentic-roadmap add <BLOCK> "<title>" --done-when "<text>" --lines <N|doc> [--requires ID,ID]`. `--done-when` is checkable by a command, a test or a screen; `--lines` is your estimate of the logic it adds, tests aside, or `doc` for a document. `add` checks the plan with the task before writing it, and ends with what it did to the plan's health: read that line, and act on any «New problem».
+2. Keep each task a vertical slice that can be used and checked on its own, at most about 150 lines of logic: split a bigger one. Add the tasks in the order they are built, so each one's requirements exist when it is added. Require only the tasks whose result a task uses, not every task before it: each needless requirement is a session left waiting.
 3. A new block is a three-letter code, a file `roadmap/<CODE>.yaml` with its `name` and `tasks: []`, and its code in `roadmap.yaml`'s `blocks`, after the blocks it requires; then `add` its tasks. To change a task already there (its title, «Done when», size, requirements, or `risky: true`), edit its block's file; never change its id.
 4. Run `agentic-roadmap check`. It must say «The plan is sound»: it refuses unknown requirements, repeated ids or blocks, cycles, an id outside its block, and commits the repo does not have.
 5. Run `agentic-roadmap health` and fix the problems it ranks, worst first: tasks over the size cap, a plan that is a queue, a waiting task most of the work depends on, requirements another one already implies, and requirements on a block listed later. Rerun it until it says «No problems», or say which problem you leave and why.
