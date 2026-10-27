@@ -1,0 +1,37 @@
+{
+  "name": "agentic-roadmap",
+  "version": "0.0.0",
+  "description": "A roadmap in YAML that people and coding agents follow from the command line: what to do next, who started what, and closing a task with its commit.",
+  "license": "MIT",
+  "bin": {
+    "agentic-roadmap": "./src/cli.ts",
+    "roadmap": "./src/cli.ts"
+  },
+  "files": [
+    "src",
+    "skill"
+  ],
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint --type-aware --deny-warnings",
+    "test": "vitest run",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "yaml": "2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "typescript": "7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
