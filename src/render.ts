@@ -31,7 +31,8 @@ function renderRow(task: Task): string {
 }
 
 function renderBlock(block: Block): string {
-  const heading = `## ${block.code} · ${block.name}\n\n`;
+  const intro = block.intro === undefined || block.intro === '' ? '' : `${block.intro.trim()}\n\n`;
+  const heading = `## ${block.code} · ${block.name}\n\n${intro}`;
   if (block.tasks.length === 0) return `${heading}No tasks yet.\n`;
   const table = '| Id | Task | Requires | Done when | Lines |\n| - | - | - | - | - |\n';
   return heading + table + block.tasks.map(renderRow).join('');

@@ -22,6 +22,8 @@ export const taskSchema = z.strictObject({
 
 export const blockSchema = z.strictObject({
   name: z.string().min(1),
+  /** What the block is for, as Markdown, printed above its tasks. */
+  intro: z.string().optional(),
   tasks: z.array(taskSchema),
 });
 
