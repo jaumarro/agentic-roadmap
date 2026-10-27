@@ -5,6 +5,7 @@ tasks:
     requires: [QRY.3]
     doneWhen: skill/SKILL.md tells an agent how to take the next task, branch, close it, ask the plan with show, why and list, and plan with check and health; every command it names exists and runs as it says
     lines: doc
+    commit: 'c281a02'
   - id: AGT.2
     title: Install the skill in a repo, and prove an agent follows it
     requires: [AGT.1, COR.4, PAR.1]
