@@ -17,6 +17,7 @@ tasks:
     requires: [PAR.1]
     doneWhen: a task can say risky true; next and free take, after focus and fewest requirements, the smaller task first and a risky one last; show and list mark it
     lines: 50
+    commit: '771e1ad'
   - id: PAR.4
     title: Chapters, and the plan-size warnings, in check
     requires: [COR.3]
