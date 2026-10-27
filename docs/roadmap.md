@@ -21,7 +21,7 @@
 | ✅ QRY.2 | List the plan with filters | QRY.1 | 3b327ce: list gives every task with its state, and --block, --state ready\|done\|started\|waiting narrow it; --json gives the same rows | ~80 |
 | ✅ QRY.3 | Measure the plan's health, so whoever writes it can tell whether it got better | QRY.1 | 3f266fc: health gives the critical path weighted by lines, the average parallelism, the widest set of tasks that can run at once, the tasks blocking most of the plan, the requires a longer path already implies, the share of requires across blocks and the tasks over the size cap; it ranks the 3 to 5 worst problems with the task or block to fix; --json gives the same; --strict fails past the thresholds | ~150 |
 | ✅ QRY.4 | Compare the plan's health with another branch | QRY.3 | e12483e: health --against main shows each metric before and after, reading the other branch's roadmap from git without checking it out, and names what got worse | ~80 |
-| QRY.5 | Say what adding a task did to the plan's health | QRY.3, COR.4 | add ends with the change it made, as «critical path 8 → 9 · parallelism 3.1 → 2.8», and names any problem it brought in | ~40 |
+| ✅ QRY.5 | Say what adding a task did to the plan's health | QRY.3, COR.4 | 7ca107c: add ends with the change it made, as «critical path 8 → 9 · parallelism 3.1 → 2.8», and names any problem it brought in | ~40 |
 
 ## PAR · Several sessions at once
 
