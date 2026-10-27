@@ -2,14 +2,15 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { addTask, readNextId } from './add.ts';
 import { checkRoadmap, findMissingCommits } from './check.ts';
 import { closeTask } from './close.ts';
-import { listBranches, readKnownCommits, readLastWorkCommit, resolveCommit } from './git.ts';
+import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
 import { listReady, namesTask, readBranchName } from './next.ts';
 import { measureHealth } from './health.ts';
 import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
-import { findRoot, initRoadmap, readRoadmap, RoadmapError } from './source.ts';
+import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
 const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
@@ -25,6 +26,8 @@ Commands:
                              every task with its state, by block
   health [--json] [--strict] the plan's shape (critical path, parallelism, width) and its worst problems;
                              --strict fails when there is any
+  add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID]
+                             add a task with the next free id, here and on every local branch
 
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
@@ -41,6 +44,9 @@ const OPTIONS = {
   block: { type: 'string' },
   state: { type: 'string' },
   strict: { type: 'boolean' },
+  requires: { type: 'string' },
+  'done-when': { type: 'string' },
+  lines: { type: 'string' },
   help: { type: 'boolean' },
 } as const;
 
@@ -54,6 +60,7 @@ const ARITY: Record<string, number> = {
   why: 1,
   list: 0,
   health: 0,
+  add: 2,
   help: 0,
 };
 
@@ -69,6 +76,9 @@ type Command = {
   block: string | undefined;
   state: string | undefined;
   strict: boolean;
+  requires: string | undefined;
+  doneWhen: string | undefined;
+  lines: string | undefined;
   help: boolean;
 };
 
@@ -96,8 +106,41 @@ function readCommand(args: string[], env: Io['env']): Command {
     block: values.block,
     state: values.state,
     strict: values.strict === true,
+    requires: values.requires,
+    doneWhen: values['done-when'],
+    lines: values.lines,
     help: values.help === true,
   };
+}
+
+function readLines(value: string | undefined): number | 'doc' {
+  if (value === 'doc') return value;
+  const lines = Number(value);
+  if (value === undefined || !Number.isInteger(lines) || lines <= 0) {
+    throw new RoadmapError('--lines is a positive whole number, or doc.');
+  }
+  return lines;
+}
+
+/** Adds a task with the id the tool picks; the plan is checked with it before anything is written. */
+function add(root: string, command: Command, out: Io['out']): void {
+  const [code, title] = command.operands;
+  if (code === undefined || title === undefined || title.trim() === '') {
+    throw new RoadmapError('Say the block and the title: add <BLOCK> <TITLE>.');
+  }
+  if (command.doneWhen === undefined || command.doneWhen.trim() === '') {
+    throw new RoadmapError('Say when it is done: --done-when TEXT, checkable by a command, a test or a screen.');
+  }
+  const lines = readLines(command.lines);
+  const requires = (command.requires ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const roadmap = readSoundRoadmap(root);
+  const onBranches = readOnBranches(root, `${ROADMAP_DIR}/${code}.yaml`, listBranches(root));
+  const id = readNextId(roadmap, code, onBranches);
+  addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
+  out(`Added ${id} · ${title.trim()} to ${ROADMAP_DIR}/${code}.yaml.\n`);
 }
 
 /** The plan's health; with `--strict`, a plan with any problem fails, for a check to gate on. */
@@ -244,6 +287,9 @@ export function run(args: string[], io: Io): number {
         return 0;
       case 'list':
         list(root(), command, io.out);
+        return 0;
+      case 'add':
+        add(root(), command, io.out);
         return 0;
       case 'health':
         return health(root(), command, io.out);

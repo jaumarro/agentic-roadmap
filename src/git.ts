@@ -45,6 +45,34 @@ export function readLastWorkCommit(root: string): string | null {
   return work?.[0] ?? null;
 }
 
+/**
+ * What `path` holds on each of `branches` that has it, asked of one git process: a sequence of `<oid> blob <size>`
+ * headers each followed by that many bytes, or `<name> missing` for a branch without the file.
+ */
+export function readOnBranches(root: string, path: string, branches: string[]): string[] {
+  if (branches.length === 0) return [];
+  let output: Buffer;
+  try {
+    const input = branches.map((branch) => `${branch}:${path}\n`).join('');
+    output = execFileSync('git', ['cat-file', '--batch'], { cwd: root, input, stdio: ['pipe', 'pipe', 'ignore'] });
+  } catch {
+    return [];
+  }
+  const contents: string[] = [];
+  let at = 0;
+  while (at < output.length) {
+    const end = output.indexOf(0x0a, at);
+    if (end === -1) break;
+    const header = output.subarray(at, end).toString('utf8');
+    at = end + 1;
+    const size = /^[0-9a-f]+ blob (\d+)$/.exec(header)?.[1];
+    if (size === undefined) continue;
+    contents.push(output.subarray(at, at + Number(size)).toString('utf8'));
+    at += Number(size) + 1;
+  }
+  return contents;
+}
+
 /** The local branches; none outside a repo. */
 export function listBranches(root: string): string[] {
   const refs = git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']) ?? '';
