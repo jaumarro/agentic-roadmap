@@ -13,6 +13,7 @@ import { listFree, listInProgress, renderFree, type InProgress } from './free.ts
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
 import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
+import { checkMarkdown, measureProgress, renderProgress, syncMarkdown, writeMarkdown } from './render.ts';
 import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
@@ -25,7 +26,10 @@ Commands:
   focus <CODE|ID>... | --clear
                              take these blocks and tasks first, in this order; --clear takes the plan as it reads
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
-  check                      find what makes the plan unsound
+  check                      find what makes the plan unsound, and a Markdown that no longer matches it
+  render                     write the plan as Markdown where roadmap.yaml says, docs/roadmap.md unless told;
+                             close, add and focus keep it current from then on
+  status [--json]            how much of each block is done
   show <ID> [--json]         a task: its block, done when, what it requires and unblocks, and where it stands
   why <ID> [--json]          what a task waits on, down to the tasks that can be taken now
   list [--block CODE] [--state done|started|ready|waiting] [--json]
@@ -68,6 +72,8 @@ const ARITY: Record<string, number> = {
   free: 1,
   focus: Number.POSITIVE_INFINITY,
   check: 0,
+  render: 0,
+  status: 0,
   close: 1,
   show: 1,
   why: 1,
@@ -159,6 +165,7 @@ function add(root: string, command: Command, out: Io['out']): void {
   const onBranches = readOnBranches(root, `${ROADMAP_DIR}/${code}.yaml`, listBranches(root));
   const id = readNextId(roadmap, code, onBranches);
   addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
+  syncMarkdown(root, readRoadmap(root));
   out(`Added ${id} · ${title.trim()} to ${ROADMAP_DIR}/${code}.yaml.\n`);
 }
 
@@ -276,6 +283,7 @@ function focus(root: string, command: Command, out: Io['out']): void {
     throw new RoadmapError('Say what to take first: focus <CODE|ID>..., or focus --clear.');
   }
   setFocus(root, readRoadmap(root), command.operands);
+  syncMarkdown(root, readRoadmap(root));
   const said = command.clear ? 'Cleared the focus' : `The focus is ${command.operands.join(', ')}`;
   out(`${said}. Commit ${ROADMAP_DIR}/roadmap.yaml as «docs: focus the plan».\n`);
 }
@@ -290,6 +298,7 @@ function close(root: string, command: Command, out: Io['out']): void {
   const sha = resolveCommit(root, revision);
   if (sha === null) throw new RoadmapError(`This repo has no commit ${revision}.`);
   const code = closeTask(root, readSoundRoadmap(root), id, sha);
+  syncMarkdown(root, readRoadmap(root));
   out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
 }
 
@@ -297,7 +306,11 @@ function check(root: string, out: Io['out']): number {
   const roadmap = readRoadmap(root);
   const cited = roadmap.blocks.flatMap((block) => block.tasks.flatMap((task) => (task.commit ? [task.commit] : [])));
   const known = readKnownCommits(root, cited);
-  const problems = [...checkRoadmap(roadmap), ...findMissingCommits(roadmap, (sha) => known.has(sha))];
+  const problems = [
+    ...checkRoadmap(roadmap),
+    ...findMissingCommits(roadmap, (sha) => known.has(sha)),
+    ...checkMarkdown(root, roadmap),
+  ];
   out(problems.length === 0 ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(problems)}`);
   return problems.length === 0 ? 0 : 1;
 }
@@ -330,6 +343,16 @@ export function run(args: string[], io: Io): number {
         return 0;
       case 'check':
         return check(root(), io.out);
+      case 'render': {
+        const at = root();
+        io.out(`Wrote ${writeMarkdown(at, readSoundRoadmap(at))}.\n`);
+        return 0;
+      }
+      case 'status': {
+        const progress = measureProgress(readSoundRoadmap(root()));
+        io.out(command.json ? `${JSON.stringify(progress, null, 2)}\n` : renderProgress(progress));
+        return 0;
+      }
       case 'show':
         show(root(), command, io.out);
         return 0;

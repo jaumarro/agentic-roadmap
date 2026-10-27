@@ -75,7 +75,7 @@ function readYaml<T>(read: ReadFile, file: string, schema: z.ZodType<T>): T {
 export function readRoadmapWith(read: ReadFile): Roadmap {
   const config = readYaml(read, CONFIG_FILE, configSchema);
   const blocks = config.blocks.map((code) => ({ code, ...readYaml(read, `${code}.yaml`, blockSchema) }));
-  return { blocks, focus: config.focus };
+  return { blocks, focus: config.focus, markdown: config.markdown };
 }
 
 /** The roadmap in the working tree under `root`. */

@@ -30,8 +30,10 @@ export const configSchema = z.strictObject({
   blocks: z.array(z.string().regex(/^[A-Z][A-Z0-9]*$/)).min(1),
   /** Blocks and tasks to take first, in this order, ahead of the rest of the plan. */
   focus: z.array(z.string()).default([]),
+  /** Where render writes the plan as Markdown, from the folder holding roadmap/. */
+  markdown: z.string().min(1).default('docs/roadmap.md'),
 });
 
 export type Task = z.infer<typeof taskSchema>;
 export type Block = z.infer<typeof blockSchema> & { code: string };
-export type Roadmap = { blocks: Block[]; focus?: string[] };
+export type Roadmap = { blocks: Block[]; focus?: string[]; markdown?: string };
