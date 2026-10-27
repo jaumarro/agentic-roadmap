@@ -1,0 +1,12 @@
+name: Ask the whole plan
+tasks:
+  - id: QRY.1
+    title: Show a task and why it is not ready
+    requires: [COR.3]
+    doneWhen: show ID gives its block, done when, requirements with their state, what it unblocks, and its commit or branch; why ID walks the requirements not done down to the ones ready to take; both with --json
+    lines: 120
+  - id: QRY.2
+    title: List the plan with filters
+    requires: [QRY.1]
+    doneWhen: list gives every task with its state, and --block, --state ready|done|started|waiting narrow it; --json gives the same rows
+    lines: 80
