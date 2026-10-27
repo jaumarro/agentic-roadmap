@@ -9,6 +9,7 @@ import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, res
 import type { Roadmap } from './model.ts';
 import { listReady, namesTask, readBranchName } from './next.ts';
 import { measureHealth } from './health.ts';
+import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
 import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
 import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
@@ -28,6 +29,7 @@ Commands:
                              --strict fails when there is any
   add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID]
                              add a task with the next free id, here and on every local branch
+  install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
 
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
@@ -61,6 +63,8 @@ const ARITY: Record<string, number> = {
   list: 0,
   health: 0,
   add: 2,
+  'install-merge-driver': 0,
+  'merge-block': 3,
   help: 0,
 };
 
@@ -288,6 +292,16 @@ export function run(args: string[], io: Io): number {
       case 'list':
         list(root(), command, io.out);
         return 0;
+      case 'install-merge-driver':
+        io.out(`git now merges roadmap/*.yaml task by task; the attribute is in ${installMergeDriver(root())}.\n`);
+        return 0;
+      case 'merge-block': {
+        // Git runs this itself, with the three versions' paths: see install-merge-driver.
+        const [base = '', ours = '', theirs = ''] = command.operands;
+        const result = runMergeDriver(base, ours, theirs);
+        if (!result.merged) io.out(`agentic-roadmap could not merge it: ${result.why}.\n`);
+        return result.merged ? 0 : 1;
+      }
       case 'add':
         add(root(), command, io.out);
         return 0;
