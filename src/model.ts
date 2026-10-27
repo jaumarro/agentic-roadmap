@@ -8,7 +8,9 @@ export const taskSchema = z.strictObject({
   requires: z.array(z.string().regex(TASK_ID)).default([]),
   doneWhen: z.string().min(1),
   /** How big it is: lines of logic, or `doc` for a document. */
-  lines: z.union([z.number().int().positive(), z.literal('doc')]),
+  lines: z.union([z.number().int().positive(), z.literal('doc')], {
+    error: 'lines is a positive whole number, or doc',
+  }),
   /** The commit that closed it; a task with one is done. */
   commit: z
     .string({ error: 'a commit is a quoted sha, as commit: "1234567"' })

@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { parse } from 'yaml';
+import { parse, YAMLError } from 'yaml';
 import type { z } from 'zod';
 import { blockSchema, configSchema, type Roadmap } from './model.ts';
 
@@ -25,14 +25,41 @@ export function findRoot(start: string, override?: string): string {
   throw new RoadmapError(`No ${ROADMAP_DIR}/${CONFIG_FILE} here or above; run \`agentic-roadmap init\` to start one.`);
 }
 
-function readYaml<T>(root: string, file: string, schema: z.ZodType<T>): T {
+function readCode(error: unknown): string {
+  return error instanceof Error && 'code' in error ? String(error.code) : String(error);
+}
+
+/** What `file` holds as YAML, with any failure to read or parse it as a one-line message naming the file. */
+function parseYaml(root: string, file: string): unknown {
   const path = join(root, ROADMAP_DIR, file);
-  if (!existsSync(path)) throw new RoadmapError(`${relative(root, path)} is missing.`);
-  const checked = schema.safeParse(parse(readFileSync(path, 'utf8')));
+  const name = relative(root, path);
+  if (!existsSync(path)) throw new RoadmapError(`${name} is missing.`);
+  let text: string;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch (error) {
+    throw new RoadmapError(`Could not read ${name}: ${readCode(error)}.`);
+  }
+  try {
+    return parse(text);
+  } catch (error) {
+    if (!(error instanceof YAMLError)) throw error;
+    const line = error.linePos?.[0].line;
+    // yaml ends its message with where it is, which the line number in front already says.
+    const message = error.message.split('\n')[0]?.replace(/ at line \d+, column \d+:?$/, '');
+    throw new RoadmapError(line === undefined ? `${name}: ${message}` : `${name}, line ${line}: ${message}`);
+  }
+}
+
+function readYaml<T>(root: string, file: string, schema: z.ZodType<T>): T {
+  const content = parseYaml(root, file);
+  const name = `${ROADMAP_DIR}/${file}`;
+  if (content === null || content === undefined) throw new RoadmapError(`${name} is empty.`);
+  const checked = schema.safeParse(content);
   if (checked.success) return checked.data;
   const [issue] = checked.error.issues;
   const where = issue?.path.join('.') || 'the file';
-  throw new RoadmapError(`${relative(root, path)}: ${where}: ${issue?.message ?? 'not valid'}`);
+  throw new RoadmapError(`${name}: ${where}: ${issue?.message ?? 'not valid'}`);
 }
 
 /** The roadmap under `root`, each block read from its own file in the order the config lists them. */
@@ -58,12 +85,31 @@ tasks:
     lines: doc
 `;
 
-/** Starts a roadmap in `dir` with an example block; refuses to touch one already there. */
+/** The nearest folder above `dir` with a roadmap, which already covers it; none at the top. */
+function findCovering(dir: string): string | null {
+  for (let above = dirname(dir); ; above = dirname(above)) {
+    if (existsSync(join(above, ROADMAP_DIR, CONFIG_FILE))) return above;
+    if (dirname(above) === above) return null;
+  }
+}
+
+/**
+ * Starts a roadmap in `dir` with an example block; refuses one already there or above. The block is written first and
+ * the config last, since the config is what makes it a roadmap: a write that fails leaves none half made.
+ */
 export function initRoadmap(dir: string): string {
   const folder = join(dir, ROADMAP_DIR);
   if (existsSync(join(folder, CONFIG_FILE))) throw new RoadmapError(`${ROADMAP_DIR}/${CONFIG_FILE} already exists.`);
-  mkdirSync(folder, { recursive: true });
-  writeFileSync(join(folder, CONFIG_FILE), STARTER_CONFIG);
-  writeFileSync(join(folder, 'GET.yaml'), STARTER_BLOCK);
-  return folder;
+  const covering = findCovering(dir);
+  if (covering !== null) throw new RoadmapError(`A roadmap already covers this folder, at ${covering}.`);
+  const block = join(folder, 'GET.yaml');
+  try {
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(block, STARTER_BLOCK, { flag: 'wx' });
+    writeFileSync(join(folder, CONFIG_FILE), STARTER_CONFIG, { flag: 'wx' });
+  } catch (error) {
+    if (existsSync(block) && !existsSync(join(folder, CONFIG_FILE))) rmSync(block);
+    throw new RoadmapError(`Could not write the roadmap in ${dir}: ${readCode(error)}.`);
+  }
+  return dir;
 }

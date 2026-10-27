@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { checkRoadmap, findMissingCommits } from './check.ts';
 import { closeTask } from './close.ts';
 import { hasCommit, listBranches, readKnownCommits, readLastWorkCommit } from './git.ts';
@@ -14,19 +16,46 @@ Commands:
   next                       the task to take now, and the others ready
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
   check                      find what makes the plan unsound
+
+The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
+
+const OPTIONS = {
+  root: { type: 'string' },
+  commit: { type: 'string' },
+  help: { type: 'boolean' },
+} as const;
+
+/** How many arguments each command takes after its name. */
+const ARITY: Record<string, number> = { init: 0, next: 0, check: 0, close: 1, help: 0 };
 
 /** What a command reads from and writes to: where it runs, its environment, and its output. */
 export type Io = { cwd: string; env: Record<string, string | undefined>; out: (text: string) => void };
 
-function readOption(args: string[], name: string): string | undefined {
-  const at = args.indexOf(name);
-  return at === -1 ? undefined : args[at + 1];
-}
+type Command = {
+  name: string | undefined;
+  operands: string[];
+  root: string | undefined;
+  commit: string | undefined;
+  help: boolean;
+};
 
-/** The value after `--root`, else the environment's `AGENTIC_ROADMAP_ROOT`. */
-function readRootOption(args: string[], env: Io['env']): string | undefined {
-  return readOption(args, '--root') ?? env.AGENTIC_ROADMAP_ROOT;
+function readCommand(args: string[], env: Io['env']): Command {
+  let parsed;
+  try {
+    parsed = parseArgs({ args, options: OPTIONS, allowPositionals: true, strict: true });
+  } catch (error) {
+    throw new RoadmapError(error instanceof Error ? error.message : String(error));
+  }
+  const { values, positionals } = parsed;
+  if (values.root === '') throw new RoadmapError('--root needs a folder.');
+  const [name, ...operands] = positionals;
+  const arity = name === undefined ? 0 : ARITY[name];
+  if (arity !== undefined && operands.length > arity && name !== undefined) {
+    throw new RoadmapError(arity === 0 ? `${name} takes no arguments.` : `${name} takes ${arity} argument.`);
+  }
+  const root = values.root ?? (env.AGENTIC_ROADMAP_ROOT || undefined);
+  return { name, operands, root, commit: values.commit, help: values.help === true };
 }
 
 function listProblems(problems: string[]): string {
@@ -41,10 +70,18 @@ function readSoundRoadmap(root: string): Roadmap {
   return roadmap;
 }
 
+function describeNothingReady(roadmap: Roadmap): string {
+  const tasks = roadmap.blocks.flatMap((block) => block.tasks);
+  if (tasks.length === 0) return 'The plan has no tasks yet.';
+  if (tasks.every((task) => task.commit !== undefined)) return 'Everything is done.';
+  return 'Nothing is ready: every task left waits on one that is not done.';
+}
+
 function next(root: string, out: Io['out']): void {
-  const [first, ...rest] = listReady(readSoundRoadmap(root));
+  const roadmap = readSoundRoadmap(root);
+  const [first, ...rest] = listReady(roadmap);
   if (first === undefined) {
-    out('Nothing is ready: every task is done or waits on one that is not.\n');
+    out(`${describeNothingReady(roadmap)}\n`);
     return;
   }
   out(`Next: ${first.id} · ${first.title}\n  Done when: ${first.doneWhen}\n`);
@@ -57,10 +94,10 @@ function next(root: string, out: Io['out']): void {
   if (rest.length > 0) out(`\nAlso ready:\n${rest.map((task) => `  ${task.id} · ${task.title}\n`).join('')}`);
 }
 
-function close(root: string, args: string[], out: Io['out']): void {
-  const id = args[1];
-  if (id === undefined || id.startsWith('--')) throw new RoadmapError('Say which task to close: close <ID>.');
-  const sha = readOption(args, '--commit') ?? readLastWorkCommit(root);
+function close(root: string, command: Command, out: Io['out']): void {
+  const [id] = command.operands;
+  if (id === undefined) throw new RoadmapError('Say which task to close: close <ID>.');
+  const sha = command.commit ?? readLastWorkCommit(root);
   if (sha === null) throw new RoadmapError('No commit to close it with: commit the work first, or pass --commit.');
   if (!hasCommit(root, sha)) throw new RoadmapError(`This repo has no commit ${sha}.`);
   const code = closeTask(root, readSoundRoadmap(root), id, sha);
@@ -78,18 +115,23 @@ function check(root: string, out: Io['out']): number {
 
 /** Runs one command with `args`; the exit code it ends with. */
 export function run(args: string[], io: Io): number {
-  const [command] = args;
   try {
-    const root = () => findRoot(io.cwd, readRootOption(args, io.env));
-    switch (command) {
+    const command = readCommand(args, io.env);
+    const given = command.root === undefined ? undefined : resolve(io.cwd, command.root);
+    const root = () => findRoot(io.cwd, given);
+    if (command.help) {
+      io.out(USAGE);
+      return 0;
+    }
+    switch (command.name) {
       case 'init':
-        io.out(`Started a roadmap in ${initRoadmap(readRootOption(args, io.env) ?? io.cwd)}\n`);
+        io.out(`Started a roadmap in ${initRoadmap(given ?? io.cwd)}.\n`);
         return 0;
       case 'next':
         next(root(), io.out);
         return 0;
       case 'close':
-        close(root(), args, io.out);
+        close(root(), command, io.out);
         return 0;
       case 'check':
         return check(root(), io.out);
@@ -98,7 +140,7 @@ export function run(args: string[], io: Io): number {
         io.out(USAGE);
         return 0;
       default:
-        io.out(`Unknown command: ${command}\n${USAGE}`);
+        io.out(`Unknown command: ${command.name}\n${USAGE}`);
         return 1;
     }
   } catch (error) {
