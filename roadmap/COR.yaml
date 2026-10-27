@@ -22,6 +22,7 @@ tasks:
     requires: [COR.3]
     doneWhen: two branches that each add a task to the same block get different ids, and check passes after merging both
     lines: 120
+    commit: '98eb237'
   - id: COR.5
     title: Clean errors, strict flags and no roadmap inside another
     requires: [COR.3]
