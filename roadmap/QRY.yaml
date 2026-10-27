@@ -17,6 +17,7 @@ tasks:
     requires: [QRY.1]
     doneWhen: health gives the critical path weighted by lines, the average parallelism, the widest set of tasks that can run at once, the tasks blocking most of the plan, the requires a longer path already implies, the share of requires across blocks and the tasks over the size cap; it ranks the 3 to 5 worst problems with the task or block to fix; --json gives the same; --strict fails past the thresholds
     lines: 150
+    commit: '3f266fc'
   - id: QRY.4
     title: Compare the plan's health with another branch
     requires: [QRY.3]
