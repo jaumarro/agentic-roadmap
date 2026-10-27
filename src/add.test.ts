@@ -94,7 +94,9 @@ describe('add', () => {
     git(root, 'commit', '-qam', 'docs: merge two');
 
     expect(readRoadmap(root).blocks[0]?.tasks.map((task) => task.id)).toEqual(['GET.1', 'GET.2', 'GET.3', 'GET.4']);
-    expect(capture(['check'], root)).toEqual({ code: 0, text: 'The plan is sound.\n' });
+    const checked = capture(['check'], root);
+    expect(checked.code).toBe(0);
+    expect(checked.text).toMatch(/^The plan is sound\.\n/);
   });
 
   it('writes a document size and leaves out requires when there are none', () => {

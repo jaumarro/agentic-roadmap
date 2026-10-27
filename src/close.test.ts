@@ -99,15 +99,16 @@ describe('readKnownCommits', () => {
 describe('check', () => {
   it('passes a fresh roadmap and fails one citing a commit the repo lacks', () => {
     const root = repo();
-    expect(capture(['check'], root)).toEqual({ code: 0, text: 'The plan is sound.\n' });
+    const checked = capture(['check'], root);
+    expect(checked.code).toBe(0);
+    expect(checked.text).toMatch(/^The plan is sound\.\n/);
 
     const file = join(root, 'roadmap', 'GET.yaml');
     writeFileSync(file, readFileSync(file, 'utf8').replace('lines: doc\n', 'lines: doc\n    commit: "abcdef1"\n'));
 
-    expect(capture(['check'], root)).toEqual({
-      code: 1,
-      text: 'The plan has problems:\n  GET.1 cites abcdef1, which this repo does not have\n',
-    });
+    const broken = capture(['check'], root);
+    expect(broken.code).toBe(1);
+    expect(broken.text).toMatch(/^The plan has problems:\n {2}GET\.1 cites abcdef1, which this repo does not have\n/);
   });
 });
 

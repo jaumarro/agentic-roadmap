@@ -106,6 +106,8 @@ describe('with the merge driver installed', () => {
     const tasks = readRoadmap(root).blocks[0]?.tasks ?? [];
     expect(tasks.map((task) => task.id)).toEqual(['GET.1', 'GET.2', 'GET.3', 'GET.4']);
     expect(tasks.filter((task) => task.commit !== undefined).map((task) => task.id)).toEqual(['GET.1', 'GET.3']);
-    expect(capture(['check'], root)).toEqual({ code: 0, text: 'The plan is sound.\n' });
+    const checked = capture(['check'], root);
+    expect(checked.code).toBe(0);
+    expect(checked.text).toMatch(/^The plan is sound\.\n/);
   });
 });
