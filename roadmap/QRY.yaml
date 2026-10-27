@@ -11,3 +11,4 @@ tasks:
     requires: [QRY.1]
     doneWhen: list gives every task with its state, and --block, --state ready|done|started|waiting narrow it; --json gives the same rows
     lines: 80
+    commit: '3b327ce'
