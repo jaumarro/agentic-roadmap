@@ -151,6 +151,11 @@ export function run(args: string[], io: Io): number {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // A reader that stops early, as `| head -1`, closes the pipe: what is left unread is not a failure.
+  process.stdout.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code !== 'EPIPE') throw error;
+    process.exit(process.exitCode ?? 0);
+  });
   const io: Io = { cwd: process.cwd(), env: process.env, out: (text) => process.stdout.write(text) };
   process.exitCode = run(process.argv.slice(2), io);
 }
