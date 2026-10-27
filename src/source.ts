@@ -5,7 +5,7 @@ import type { z } from 'zod';
 import { blockSchema, configSchema, type Roadmap } from './model.ts';
 
 export const ROADMAP_DIR = 'roadmap';
-const CONFIG_FILE = 'roadmap.yaml';
+export const CONFIG_FILE = 'roadmap.yaml';
 
 /** A roadmap that cannot be found or read, with a message meant for the person at the terminal. */
 export class RoadmapError extends Error {}
@@ -74,7 +74,8 @@ function readYaml<T>(read: ReadFile, file: string, schema: z.ZodType<T>): T {
 /** The roadmap `read` gives, each block read from its own file in the order the config lists them. */
 export function readRoadmapWith(read: ReadFile): Roadmap {
   const config = readYaml(read, CONFIG_FILE, configSchema);
-  return { blocks: config.blocks.map((code) => ({ code, ...readYaml(read, `${code}.yaml`, blockSchema) })) };
+  const blocks = config.blocks.map((code) => ({ code, ...readYaml(read, `${code}.yaml`, blockSchema) }));
+  return { blocks, focus: config.focus };
 }
 
 /** The roadmap in the working tree under `root`. */

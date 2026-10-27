@@ -26,8 +26,10 @@ export const blockSchema = z.strictObject({
 export const configSchema = z.strictObject({
   /** The blocks, by code, in the order the plan reads them; each lives in `roadmap/<CODE>.yaml`. */
   blocks: z.array(z.string().regex(/^[A-Z][A-Z0-9]*$/)).min(1),
+  /** Blocks and tasks to take first, in this order, ahead of the rest of the plan. */
+  focus: z.array(z.string()).default([]),
 });
 
 export type Task = z.infer<typeof taskSchema>;
 export type Block = z.infer<typeof blockSchema> & { code: string };
-export type Roadmap = { blocks: Block[] };
+export type Roadmap = { blocks: Block[]; focus?: string[] };

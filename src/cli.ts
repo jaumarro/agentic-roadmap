@@ -8,6 +8,7 @@ import { compareHealth, readRoadmapAt, renderComparison } from './compare.ts';
 import { closeTask } from './close.ts';
 import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
+import { setFocus } from './focus.ts';
 import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
@@ -21,6 +22,8 @@ Commands:
   init                       start a roadmap in this folder
   next [--json]              the task to take now, the others ready, and those in progress
   free [N] [--json]          the first N tasks free to take, three unless told: one per session
+  focus <CODE|ID>... | --clear
+                             take these blocks and tasks first, in this order; --clear takes the plan as it reads
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
   check                      find what makes the plan unsound
   show <ID> [--json]         a task: its block, done when, what it requires and unblocks, and where it stands
@@ -54,6 +57,7 @@ const OPTIONS = {
   'done-when': { type: 'string' },
   lines: { type: 'string' },
   against: { type: 'string' },
+  clear: { type: 'boolean' },
   help: { type: 'boolean' },
 } as const;
 
@@ -62,6 +66,7 @@ const ARITY: Record<string, number> = {
   init: 0,
   next: 0,
   free: 1,
+  focus: Number.POSITIVE_INFINITY,
   check: 0,
   close: 1,
   show: 1,
@@ -90,6 +95,7 @@ type Command = {
   doneWhen: string | undefined;
   lines: string | undefined;
   against: string | undefined;
+  clear: boolean;
   help: boolean;
 };
 
@@ -121,6 +127,7 @@ function readCommand(args: string[], env: Io['env']): Command {
     doneWhen: values['done-when'],
     lines: values.lines,
     against: values.against,
+    clear: values.clear === true,
     help: values.help === true,
   };
 }
@@ -262,6 +269,17 @@ function free(root: string, command: Command, out: Io['out']): void {
   out(command.json ? `${JSON.stringify(tasks.slice(0, count), null, 2)}\n` : renderFree(tasks, count));
 }
 
+/** Sets the focus, or clears it; read without the sound check, so a focus gone stale can still be replaced. */
+function focus(root: string, command: Command, out: Io['out']): void {
+  if (command.clear && command.operands.length > 0) throw new RoadmapError('focus takes blocks and tasks, or --clear.');
+  if (!command.clear && command.operands.length === 0) {
+    throw new RoadmapError('Say what to take first: focus <CODE|ID>..., or focus --clear.');
+  }
+  setFocus(root, readRoadmap(root), command.operands);
+  const said = command.clear ? 'Cleared the focus' : `The focus is ${command.operands.join(', ')}`;
+  out(`${said}. Commit ${ROADMAP_DIR}/roadmap.yaml as «docs: focus the plan».\n`);
+}
+
 function close(root: string, command: Command, out: Io['out']): void {
   const [id] = command.operands;
   if (id === undefined) throw new RoadmapError('Say which task to close: close <ID>.');
@@ -303,6 +321,9 @@ export function run(args: string[], io: Io): number {
         return 0;
       case 'free':
         free(root(), command, io.out);
+        return 0;
+      case 'focus':
+        focus(root(), command, io.out);
         return 0;
       case 'close':
         close(root(), command, io.out);

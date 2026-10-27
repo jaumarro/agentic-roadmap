@@ -46,8 +46,11 @@ export function checkRoadmap(roadmap: Roadmap): string[] {
   const unknown = tasks.flatMap((task) =>
     task.requires.filter((id) => !ids.has(id)).map((id) => `${task.id} requires ${id}, which no task has`),
   );
+  const codes = new Set(blocks.map((block) => block.code));
+  const unfocused = (roadmap.focus ?? []).filter((entry) => !codes.has(entry) && !ids.has(entry));
   return [
     ...repeatedBlocks.map(([code]) => `block ${code} is listed twice`),
+    ...unfocused.map((entry) => `the focus names ${entry}, which is no block or task`),
     ...outside.map(({ task, block }) => `${task.id} sits in block ${block.code}`),
     ...readRepeated(tasks.map((task) => task.id)).map(([id, count]) => `${id} is given to ${count} tasks`),
     ...unknown,

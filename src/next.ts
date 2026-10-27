@@ -1,11 +1,24 @@
 import type { Roadmap, Task } from './model.ts';
 
-/** The tasks not done whose requirements are all done, fewest requirements first, then in the plan's order. */
+/** Where `task` stands in the focus: the first entry naming it or its block, and past every entry when none does. */
+function readFocusRank(focus: string[], task: Task): number {
+  const code = task.id.split('.')[0];
+  const at = focus.findIndex((entry) => entry === task.id || entry === code);
+  return at === -1 ? focus.length : at;
+}
+
+/**
+ * The tasks not done whose requirements are all done: those the focus names first, in its order, then fewest
+ * requirements first, then in the plan's order.
+ */
 export function listReady(roadmap: Roadmap): Task[] {
+  const focus = roadmap.focus ?? [];
   const tasks = roadmap.blocks.flatMap((block) => block.tasks);
   const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
   const ready = tasks.filter((task) => task.commit === undefined && task.requires.every((id) => done.has(id)));
-  return ready.toSorted((a, b) => a.requires.length - b.requires.length);
+  return ready.toSorted(
+    (a, b) => readFocusRank(focus, a) - readFocusRank(focus, b) || a.requires.length - b.requires.length,
+  );
 }
 
 function readSlug(id: string): string {
