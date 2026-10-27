@@ -43,7 +43,7 @@
 | Id | Task | Requires | Done when | Lines |
 | - | - | - | - | - |
 | ✅ AGT.1 | A skill with today's workflow | QRY.3 | c281a02: skill/SKILL.md tells an agent how to take the next task, branch, close it, ask the plan with show, why and list, and plan with check and health; every command it names exists and runs as it says | doc |
-| AGT.2 | Install the skill in a repo, and prove an agent follows it | AGT.1, COR.4, PAR.1 | install-skill copies the skill into a repo's .claude/skills; the skill covers add and free; in a test repo with it installed, asking Claude for what is next and to do it makes it use next, name the branch after the task and close it, and asking it to plan a feature makes it add the tasks with add, run health and fix the worst problems | ~40 |
+| ✅ AGT.2 | Install the skill in a repo, and prove an agent follows it | AGT.1, COR.4, PAR.1 | 300997e: install-skill copies the skill into a repo's .claude/skills; the skill covers add and free; in a test repo with it installed, asking Claude for what is next and to do it makes it use next, name the branch after the task and close it, and asking it to plan a feature makes it add the tasks with add, run health and fix the worst problems | ~40 |
 
 ## REV · reviewer adopts it
 
