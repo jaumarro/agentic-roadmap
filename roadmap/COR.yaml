@@ -16,7 +16,7 @@ tasks:
     requires: [COR.2]
     doneWhen: close writes the sha of the last non-docs commit, quoted, and next moves on; check fails on an unknown requirement, a repeated id or block, a cycle, an id outside its block and a sha this repo does not have; next refuses a plan check rejects and says why; next says when a branch already started the task
     lines: 150
-    commit: "8532b83"
+    commit: '59f1e65'
   - id: COR.4
     title: Add a task with an id the tool picks
     requires: [COR.3]
