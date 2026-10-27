@@ -23,3 +23,4 @@ tasks:
     requires: [COR.3]
     doneWhen: roadmap.yaml can name chapters; check refuses a task requiring one from a later chapter, and warns on a block outside 5 to 25 tasks and a chain of more than 5 pending tasks
     lines: 60
+    commit: 'e1c1a4c'

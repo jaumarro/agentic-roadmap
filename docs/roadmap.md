@@ -30,7 +30,7 @@
 | ✅ PAR.1 | Hand out several free tasks at once, with --json | COR.3 | bb57c90: free 3 hands out three different ready tasks no branch started, in next's order; next --json and free --json give the same rows | ~70 |
 | ✅ PAR.2 | Put a block or a task first with focus | PAR.1 | 7259dec: focus XYZ ABC.4 writes the focus in roadmap.yaml, and next and free put XYZ's tasks and ABC.4 first, in the focus's order; focus --clear empties it; check refuses a focus naming no block or task | ~70 |
 | ✅ PAR.3 | Mark a task risky, and order the rest by size | PAR.1 | 771e1ad: a task can say risky true; next and free take, after focus and fewest requirements, the smaller task first and a risky one last; show and list mark it | ~50 |
-| PAR.4 | Chapters, and the plan-size warnings, in check | COR.3 | roadmap.yaml can name chapters; check refuses a task requiring one from a later chapter, and warns on a block outside 5 to 25 tasks and a chain of more than 5 pending tasks | ~60 |
+| ✅ PAR.4 | Chapters, and the plan-size warnings, in check | COR.3 | e1c1a4c: roadmap.yaml can name chapters; check refuses a task requiring one from a later chapter, and warns on a block outside 5 to 25 tasks and a chain of more than 5 pending tasks | ~60 |
 
 ## DOC · A plan readable on GitHub
 
