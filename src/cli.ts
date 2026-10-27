@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addTask, readNextId } from './add.ts';
 import { checkRoadmap, findMissingCommits } from './check.ts';
+import { compareHealth, readRoadmapAt, renderComparison } from './compare.ts';
 import { closeTask } from './close.ts';
 import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
@@ -25,8 +26,10 @@ Commands:
   why <ID> [--json]          what a task waits on, down to the tasks that can be taken now
   list [--block CODE] [--state done|started|ready|waiting] [--json]
                              every task with its state, by block
-  health [--json] [--strict] the plan's shape (critical path, parallelism, width) and its worst problems;
-                             --strict fails when there is any
+  health [--json] [--strict] [--against BRANCH]
+                             the plan's shape (critical path, parallelism, width) and its worst problems; with
+                             --against, each figure against that branch's plan and what got worse; --strict fails
+                             on any problem, or with --against on anything worse
   add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID]
                              add a task with the next free id, here and on every local branch
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
@@ -49,6 +52,7 @@ const OPTIONS = {
   requires: { type: 'string' },
   'done-when': { type: 'string' },
   lines: { type: 'string' },
+  against: { type: 'string' },
   help: { type: 'boolean' },
 } as const;
 
@@ -83,6 +87,7 @@ type Command = {
   requires: string | undefined;
   doneWhen: string | undefined;
   lines: string | undefined;
+  against: string | undefined;
   help: boolean;
 };
 
@@ -113,6 +118,7 @@ function readCommand(args: string[], env: Io['env']): Command {
     requires: values.requires,
     doneWhen: values['done-when'],
     lines: values.lines,
+    against: values.against,
     help: values.help === true,
   };
 }
@@ -150,6 +156,12 @@ function add(root: string, command: Command, out: Io['out']): void {
 /** The plan's health; with `--strict`, a plan with any problem fails, for a check to gate on. */
 function health(root: string, command: Command, out: Io['out']): number {
   const measured = measureHealth(readSoundRoadmap(root));
+  if (command.against !== undefined) {
+    const before = measureHealth(readRoadmapAt(root, command.against));
+    const comparison = compareHealth(command.against, before, measured);
+    out(command.json ? `${JSON.stringify(comparison, null, 2)}\n` : renderComparison(comparison));
+    return command.strict && comparison.worse.length > 0 ? 1 : 0;
+  }
   out(command.json ? `${JSON.stringify(measured, null, 2)}\n` : renderHealth(measured));
   return command.strict && measured.problems.length > 0 ? 1 : 0;
 }

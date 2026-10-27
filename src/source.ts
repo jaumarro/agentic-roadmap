@@ -29,17 +29,26 @@ function readCode(error: unknown): string {
   return error instanceof Error && 'code' in error ? String(error.code) : String(error);
 }
 
+/** A roadmap file's text by its name in `roadmap/`, from the working tree or from another branch. */
+export type ReadFile = (file: string) => string;
+
+function readFromDisk(root: string): ReadFile {
+  return (file) => {
+    const path = join(root, ROADMAP_DIR, file);
+    const name = relative(root, path);
+    if (!existsSync(path)) throw new RoadmapError(`${name} is missing.`);
+    try {
+      return readFileSync(path, 'utf8');
+    } catch (error) {
+      throw new RoadmapError(`Could not read ${name}: ${readCode(error)}.`);
+    }
+  };
+}
+
 /** What `file` holds as YAML, with any failure to read or parse it as a one-line message naming the file. */
-function parseYaml(root: string, file: string): unknown {
-  const path = join(root, ROADMAP_DIR, file);
-  const name = relative(root, path);
-  if (!existsSync(path)) throw new RoadmapError(`${name} is missing.`);
-  let text: string;
-  try {
-    text = readFileSync(path, 'utf8');
-  } catch (error) {
-    throw new RoadmapError(`Could not read ${name}: ${readCode(error)}.`);
-  }
+function parseYaml(read: ReadFile, file: string): unknown {
+  const name = `${ROADMAP_DIR}/${file}`;
+  const text = read(file);
   try {
     return parse(text);
   } catch (error) {
@@ -51,8 +60,8 @@ function parseYaml(root: string, file: string): unknown {
   }
 }
 
-function readYaml<T>(root: string, file: string, schema: z.ZodType<T>): T {
-  const content = parseYaml(root, file);
+function readYaml<T>(read: ReadFile, file: string, schema: z.ZodType<T>): T {
+  const content = parseYaml(read, file);
   const name = `${ROADMAP_DIR}/${file}`;
   if (content === null || content === undefined) throw new RoadmapError(`${name} is empty.`);
   const checked = schema.safeParse(content);
@@ -62,10 +71,15 @@ function readYaml<T>(root: string, file: string, schema: z.ZodType<T>): T {
   throw new RoadmapError(`${name}: ${where}: ${issue?.message ?? 'not valid'}`);
 }
 
-/** The roadmap under `root`, each block read from its own file in the order the config lists them. */
+/** The roadmap `read` gives, each block read from its own file in the order the config lists them. */
+export function readRoadmapWith(read: ReadFile): Roadmap {
+  const config = readYaml(read, CONFIG_FILE, configSchema);
+  return { blocks: config.blocks.map((code) => ({ code, ...readYaml(read, `${code}.yaml`, blockSchema) })) };
+}
+
+/** The roadmap in the working tree under `root`. */
 export function readRoadmap(root: string): Roadmap {
-  const config = readYaml(root, CONFIG_FILE, configSchema);
-  return { blocks: config.blocks.map((code) => ({ code, ...readYaml(root, `${code}.yaml`, blockSchema) })) };
+  return readRoadmapWith(readFromDisk(root));
 }
 
 const STARTER_CONFIG = `# The blocks of the plan, by code, in the order it reads them. Each lives in roadmap/<CODE>.yaml.
