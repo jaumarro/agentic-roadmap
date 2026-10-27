@@ -2,7 +2,7 @@ name: reviewer adopts it
 tasks:
   - id: REV.1
     title: Make the package installable, by npm or a git dependency, with the maintainer's yes
-    requires: [AGT.1]
+    requires: [AGT.2]
     doneWhen: reviewer can add agentic-roadmap as a dependency without a local path
     lines: doc
   - id: REV.2
