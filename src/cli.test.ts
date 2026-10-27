@@ -1,4 +1,6 @@
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -19,6 +21,18 @@ function capture(args: string[], cwd = tmpdir(), env: Record<string, string> = {
 function project(): string {
   return mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
 }
+
+describe('the binary', () => {
+  it('stops quietly when its reader closes the pipe early', () => {
+    const root = project();
+    capture(['init'], root);
+    const cli = fileURLToPath(new URL('cli.ts', import.meta.url));
+
+    const result = spawnSync('sh', ['-c', `node "${cli}" next | head -c 1`], { cwd: root, encoding: 'utf8' });
+
+    expect(result.stderr).toBe('');
+  });
+});
 
 describe('run', () => {
   it('prints the usage with no command', () => {
