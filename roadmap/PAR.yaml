@@ -1,10 +1,20 @@
 name: Several sessions at once
 tasks:
   - id: PAR.1
-    title: Started tasks, free tasks, focus and the full ordering, with --json
+    title: Hand out several free tasks at once, with --json
     requires: [COR.3]
-    doneWhen: a branch named abc-2/x makes next skip ABC.2; free 3 hands out three different tasks; focus XYZ puts XYZ first; ⚠︎ tasks go last
-    lines: 180
+    doneWhen: free 3 hands out three different ready tasks no branch started, in next's order; next --json and free --json give the same rows
+    lines: 70
+  - id: PAR.2
+    title: Put a block or a task first with focus
+    requires: [PAR.1]
+    doneWhen: focus XYZ ABC.4 writes the focus in roadmap.yaml, and next and free put XYZ's tasks and ABC.4 first, in the focus's order; focus --clear empties it; check refuses a focus naming no block or task
+    lines: 70
+  - id: PAR.3
+    title: Mark a task risky, and order the rest by size
+    requires: [PAR.1]
+    doneWhen: a task can say risky true; next and free take, after focus and fewest requirements, the smaller task first and a risky one last; show and list mark it
+    lines: 50
   - id: PAR.4
     title: Chapters, and the plan-size warnings, in check
     requires: [COR.3]
