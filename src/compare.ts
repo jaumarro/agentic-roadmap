@@ -37,6 +37,17 @@ export function compareHealth(against: string, before: Health, after: Health): C
   return { against, before, after, worse };
 }
 
+// A problem quotes its figures, as «parallelism 1.2»: the same problem with a new figure is not a new one. The digits of
+// an id, as GET.12, stay, or two tasks' problems would read as one.
+function readProblemKind(problem: string): string {
+  return problem.replace(/(?<![A-Z0-9.])\d+(\.\d+)?/g, '#');
+}
+
+function listNewProblems(comparison: Comparison): string[] {
+  const kinds = new Set(comparison.before.problems.map(readProblemKind));
+  return comparison.after.problems.filter((problem) => !kinds.has(readProblemKind(problem)));
+}
+
 function readRow(label: string, was: string, is: string, isWorse: boolean): string {
   const mark = isWorse ? '  (worse)' : '';
   return `  ${label.padEnd(15)} ${was} → ${is}${mark}\n`;
@@ -45,7 +56,7 @@ function readRow(label: string, was: string, is: string, isWorse: boolean): stri
 /** The comparison as a person reads it: each figure before and after, worse ones marked, then the new problems. */
 export function renderComparison(comparison: Comparison): string {
   const { before, after, worse } = comparison;
-  const added = after.problems.filter((problem) => !before.problems.includes(problem));
+  const added = listNewProblems(comparison);
   const newProblems =
     added.length === 0
       ? 'No new problems.\n'
