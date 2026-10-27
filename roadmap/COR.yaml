@@ -34,3 +34,4 @@ tasks:
     requires: [COR.4]
     doneWhen: with merge-driver installed, two branches that each add a task to one block, and two that close different tasks in it, merge with no conflict and check passes; the same id changed on both sides still stops the merge
     lines: 80
+    commit: '451f9b8'
