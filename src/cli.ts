@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addTask, readNextId } from './add.ts';
 import { checkRoadmap, findMissingCommits } from './check.ts';
-import { compareHealth, readRoadmapAt, renderComparison } from './compare.ts';
+import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
 import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
@@ -165,8 +165,10 @@ function add(root: string, command: Command, out: Io['out']): void {
   const onBranches = readOnBranches(root, `${ROADMAP_DIR}/${code}.yaml`, listBranches(root));
   const id = readNextId(roadmap, code, onBranches);
   addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
-  syncMarkdown(root, readRoadmap(root));
+  const added = readRoadmap(root);
+  syncMarkdown(root, added);
   out(`Added ${id} · ${title.trim()} to ${ROADMAP_DIR}/${code}.yaml.\n`);
+  out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(added))));
 }
 
 /** The plan's health; with `--strict`, a plan with any problem fails, for a check to gate on. */

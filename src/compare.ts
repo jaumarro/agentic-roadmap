@@ -37,6 +37,11 @@ export function compareHealth(against: string, before: Health, after: Health): C
   return { against, before, after, worse };
 }
 
+function readFigure(figure: Figure, health: Health): string {
+  const value = figure.read(health);
+  return figure.name === 'parallelism' ? value.toFixed(1) : `${value}`;
+}
+
 // A problem quotes its figures, as «parallelism 1.2»: the same problem with a new figure is not a new one. The digits of
 // an id, as GET.12, stay, or two tasks' problems would read as one.
 function readProblemKind(problem: string): string {
@@ -46,6 +51,22 @@ function readProblemKind(problem: string): string {
 function listNewProblems(comparison: Comparison): string[] {
   const kinds = new Set(comparison.before.problems.map(readProblemKind));
   return comparison.after.problems.filter((problem) => !kinds.has(readProblemKind(problem)));
+}
+
+/** One line of what a change did to the figures it moved, worse ones marked, then each problem it brought in. */
+export function renderDelta(comparison: Comparison): string {
+  const { before, after, worse } = comparison;
+  const moved = FIGURES.filter((figure) => readFigure(figure, before) !== readFigure(figure, after)).map((figure) => {
+    const mark = worse.includes(figure.name) ? ' (worse)' : '';
+    return `${figure.name} ${readFigure(figure, before)} → ${readFigure(figure, after)}${mark}`;
+  });
+  const line = moved.length === 0 ? 'Health: no figure moved.\n' : `Health: ${moved.join(' · ')}\n`;
+  return (
+    line +
+    listNewProblems(comparison)
+      .map((problem) => `  New problem: ${problem}\n`)
+      .join('')
+  );
 }
 
 function readRow(label: string, was: string, is: string, isWorse: boolean): string {
