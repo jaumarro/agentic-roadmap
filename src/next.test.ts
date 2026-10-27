@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Roadmap, Task } from './model.ts';
-import { listReady, readBranchName } from './next.ts';
+import { listReady, namesTask, readBranchName } from './next.ts';
 
 function task(id: string, requires: string[] = [], commit?: string): Task {
   return { id, title: `Do ${id}`, requires, doneWhen: 'it works', lines: 20, ...(commit ? { commit } : {}) };
@@ -25,6 +25,16 @@ describe('listReady', () => {
 
   it('gives nothing when every task is done', () => {
     expect(listReady(roadmap(task('ABC.1', [], 'abc1234')))).toEqual([]);
+  });
+});
+
+describe('namesTask', () => {
+  it.each(['abc-1', 'abc-1/close', 'feat/abc-1-close'])('reads %s as naming ABC.1', (branch) => {
+    expect(namesTask(branch, 'ABC.1')).toBe(true);
+  });
+
+  it.each(['abc-10/x', 'main', 'xabc-1/y'])('does not read %s as naming ABC.1', (branch) => {
+    expect(namesTask(branch, 'ABC.1')).toBe(false);
   });
 });
 
