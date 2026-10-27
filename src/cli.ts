@@ -8,7 +8,7 @@ import { compareHealth, readRoadmapAt, renderComparison } from './compare.ts';
 import { closeTask } from './close.ts';
 import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
 import type { Roadmap } from './model.ts';
-import { listReady, namesTask, readBranchName } from './next.ts';
+import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
 import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
@@ -19,7 +19,8 @@ const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
 
 Commands:
   init                       start a roadmap in this folder
-  next                       the task to take now, and the others ready
+  next [--json]              the task to take now, the others ready, and those in progress
+  free [N] [--json]          the first N tasks free to take, three unless told: one per session
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
   check                      find what makes the plan unsound
   show <ID> [--json]         a task: its block, done when, what it requires and unblocks, and where it stands
@@ -60,6 +61,7 @@ const OPTIONS = {
 const ARITY: Record<string, number> = {
   init: 0,
   next: 0,
+  free: 1,
   check: 0,
   close: 1,
   show: 1,
@@ -225,30 +227,39 @@ function describeNothingReady(roadmap: Roadmap): string {
   return 'Nothing is ready: every task left waits on one that is not done.';
 }
 
-function listInProgress(roadmap: Roadmap, branches: string[]): string {
-  const tasks = roadmap.blocks.flatMap((block) => block.tasks).filter((task) => task.commit === undefined);
-  const lines = tasks.flatMap((task) => {
-    const on = branches.filter((branch) => namesTask(branch, task.id));
-    return on.length === 0 ? [] : [`  ${task.id} · ${task.title} (on ${on.join(', ')})\n`];
-  });
-  return lines.length === 0 ? '' : `\nIn progress:\n${lines.join('')}`;
+function renderInProgress(inProgress: InProgress[]): string {
+  if (inProgress.length === 0) return '';
+  const lines = inProgress.map((task) => `  ${task.id} · ${task.title} (on ${task.branches.join(', ')})\n`);
+  return `\nIn progress:\n${lines.join('')}`;
 }
 
 /** The task to take, never one a branch already started, then the others ready and those in progress. */
-function next(root: string, out: Io['out']): void {
+function next(root: string, command: Command, out: Io['out']): void {
   const roadmap = readSoundRoadmap(root);
   const branches = listBranches(root);
-  const states = readStates(roadmap, branches);
-  const [first, ...rest] = listReady(roadmap).filter((task) => states.get(task.id) === 'ready');
+  const [first, ...rest] = listFree(roadmap, branches);
   const inProgress = listInProgress(roadmap, branches);
+  if (command.json) {
+    out(`${JSON.stringify({ next: first ?? null, ready: rest, inProgress }, null, 2)}\n`);
+    return;
+  }
   if (first === undefined) {
-    out(`${describeNothingReady(roadmap)}\n${inProgress}`);
+    out(`${describeNothingReady(roadmap)}\n${renderInProgress(inProgress)}`);
     return;
   }
   out(`Next: ${first.id} · ${first.title}\n  Done when: ${first.doneWhen}\n`);
-  out(`  Start it on a branch named ${readBranchName(first.id)}…\n`);
+  out(`  Start it on a branch named ${first.branch}…\n`);
   if (rest.length > 0) out(`\nAlso ready:\n${rest.map((task) => `  ${task.id} · ${task.title}\n`).join('')}`);
-  out(inProgress);
+  out(renderInProgress(inProgress));
+}
+
+/** The first N free tasks, one per session; three unless told. */
+function free(root: string, command: Command, out: Io['out']): void {
+  const [given] = command.operands;
+  const count = given === undefined ? 3 : Number(given);
+  if (!Number.isInteger(count) || count <= 0) throw new RoadmapError('free takes a positive whole number of tasks.');
+  const tasks = listFree(readSoundRoadmap(root), listBranches(root));
+  out(command.json ? `${JSON.stringify(tasks.slice(0, count), null, 2)}\n` : renderFree(tasks, count));
 }
 
 function close(root: string, command: Command, out: Io['out']): void {
@@ -288,7 +299,10 @@ export function run(args: string[], io: Io): number {
         io.out(`Started a roadmap in ${initRoadmap(given ?? io.cwd)}.\n${AFTER_INIT}`);
         return 0;
       case 'next':
-        next(root(), io.out);
+        next(root(), command, io.out);
+        return 0;
+      case 'free':
+        free(root(), command, io.out);
         return 0;
       case 'close':
         close(root(), command, io.out);
