@@ -11,8 +11,8 @@ export const taskSchema = z.strictObject({
   lines: z.union([z.number().int().positive(), z.literal('doc')]),
   /** The commit that closed it; a task with one is done. */
   commit: z
-    .string()
-    .regex(/^[0-9a-f]{7,40}$/)
+    .string({ error: 'a commit is a quoted sha, as commit: "1234567"' })
+    .regex(/^[0-9a-f]{7,40}$/, 'a commit is 7 to 40 hexadecimal digits')
     .optional(),
 });
 
