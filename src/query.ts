@@ -101,15 +101,22 @@ function shortenChain(ids: string[]): string {
   return [...ids.slice(0, 3), `… ${left} more …`, ...ids.slice(-3)].join(' → ');
 }
 
+function countTasks(count: number): string {
+  const noun = count === 1 ? 'task' : 'tasks';
+  return `${count} ${noun}`;
+}
+
 /** The plan's health as a person reads it: its shape in a few figures, then what to fix first. */
 export function renderHealth(health: Health): string {
   if (health.tasksLeft === 0) return 'Everything is done: there is no plan left to measure.\n';
   const { criticalPath } = health;
   const chain = shortenChain(criticalPath.tasks);
   const crossing = Math.round(health.crossBlockShare * 100);
+  const left = countTasks(health.tasksLeft);
+  const onPath = countTasks(criticalPath.tasks.length);
   return [
-    `Plan health: ${health.tasksLeft} tasks left, ~${health.workLeft} lines\n`,
-    `  Critical path   ~${criticalPath.lines} lines over ${criticalPath.tasks.length} tasks: ${chain}\n`,
+    `Plan health: ${left} left, ~${health.workLeft} lines\n`,
+    `  Critical path   ~${criticalPath.lines} lines over ${onPath}: ${chain}\n`,
     `  Parallelism     ${health.parallelism.toFixed(1)} sessions busy on average (work left ÷ critical path)\n`,
     `  Width           ${health.width} tasks at most at once · ${health.readyNow} ready now\n`,
     `  Across blocks   ${crossing} % of requirements\n`,
