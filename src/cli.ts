@@ -231,11 +231,11 @@ function readLines(value: string | undefined): number | 'doc' {
   return lines;
 }
 
-/** Adds a task with the id the tool picks; the plan is checked with it before anything is written. */
-/** Block `code`'s file as every local branch has it committed and every other worktree has it, committed or not. */
+/** Block `code`'s file as every branch has it committed and every other worktree has it, committed or not. */
 function readElsewhere(root: string, code: string, branches: string[]): string[] {
   const path = `${ROADMAP_DIR}/${code}.yaml`;
-  return [...readOnBranches(root, path, branches), ...readInWorktrees(root, path)];
+  // `./` reads a branch's file from the roadmap's folder, not the repo's top, as when roadmap/ sits in a subfolder.
+  return [...readOnBranches(root, `./${path}`, branches), ...readInWorktrees(root, path)];
 }
 
 /** Adds a plan's table of tasks in one go; `-` reads the plan from stdin. */
@@ -256,6 +256,7 @@ function addFrom(root: string, from: string, out: Io['out']): void {
   out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
 }
 
+/** Adds a task with the id the tool picks; the plan is checked with it before anything is written. */
 function add(root: string, command: Command, out: Io['out']): void {
   if (command.from !== undefined) {
     if (command.operands.length > 0) throw new RoadmapError('add takes a block and a title, or --from, not both.');
