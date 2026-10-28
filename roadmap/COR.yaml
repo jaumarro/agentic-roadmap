@@ -76,6 +76,7 @@ tasks:
     requires: [COR.4]
     doneWhen: add refuses a requirement on a later chapter, as check does
     lines: 5
+    commit: '1b11314'
   - id: COR.14
     title: close names no commit the branch did not make
     requires: [COR.9]
