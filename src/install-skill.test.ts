@@ -7,7 +7,8 @@ import { initRoadmap } from './source.ts';
 
 function capture(args: string[], cwd: string) {
   let text = '';
-  const code = run(args, { cwd, env: {}, out: (written) => (text += written) });
+  const write = (written: string) => (text += written);
+  const code = run(args, { cwd, env: {}, out: write, err: write });
   return { code, text };
 }
 

@@ -8,14 +8,18 @@ import { run } from './cli.ts';
 
 function capture(args: string[], cwd = tmpdir(), env: Record<string, string> = {}) {
   let text = '';
+  let errors = '';
   const code = run(args, {
     cwd,
     env,
     out: (written) => {
       text += written;
     },
+    err: (written) => {
+      errors += written;
+    },
   });
-  return { code, text };
+  return { code, text: text + errors, out: text, err: errors };
 }
 
 function project(): string {
@@ -32,6 +36,16 @@ describe('the binary', () => {
 
     expect(result.stderr).toBe('');
   });
+
+  it('writes an error to stderr only, so a JSON reader on stdout sees nothing', () => {
+    const cli = fileURLToPath(new URL('cli.ts', import.meta.url));
+
+    const result = spawnSync('node', [cli, 'next', '--json'], { cwd: project(), encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('agentic-roadmap init');
+  });
 });
 
 describe('run', () => {
@@ -42,8 +56,12 @@ describe('run', () => {
     expect(text).toContain('Usage: agentic-roadmap');
   });
 
-  it('fails on a command it does not know', () => {
-    expect(capture(['launch']).code).toBe(1);
+  it('fails on a command it does not know, on the error stream', () => {
+    const result = capture(['launch']);
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe('');
+    expect(result.err).toContain('Unknown command: launch');
   });
 
   it('names the first ready task of a fresh roadmap and its branch', () => {
