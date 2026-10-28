@@ -127,6 +127,22 @@ describe('close', () => {
     expect(capture(['close', 'GET.2'], root).text).toContain('No commit to close it with');
   });
 
+  it('warns, not fails, on cited commits a shallow clone cannot see', () => {
+    const root = repo();
+    commit(root, 'feat: write the first block');
+    capture(['close', 'GET.1'], root);
+    commit(root, 'docs: close GET.1');
+    commit(root, 'docs: later');
+    const shallow = join(mkdtempSync(join(tmpdir(), 'agentic-roadmap-')), 'shallow');
+    git(root, 'clone', '-q', '--depth', '1', `file://${root}`, shallow);
+
+    const checked = capture(['check'], shallow);
+
+    expect(checked.code).toBe(0);
+    expect(checked.text).toMatch(/^The plan is sound\.\n/);
+    expect(checked.text).toContain('this clone is shallow');
+  });
+
   it('names an unknown task before it looks for a commit', () => {
     const root = repo();
     git(root, 'switch', '-q', '-c', 'get-1/fresh');
