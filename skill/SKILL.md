@@ -20,7 +20,7 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 
 ## Several sessions at once
 
-`agentic-roadmap free N` hands out the first N tasks free to take, one per session, each with the branch to start it on. Each session takes one and branches at once, so the next `next` or `free` leaves it out. The order is the same as `next`'s: what `focus` names, then fewest requirements, then the smallest, a risky one last. `agentic-roadmap focus <CODE|ID>...` puts blocks and tasks first, and `focus --clear` takes the plan as it reads again; commit it as `docs:`.
+`agentic-roadmap free N` hands out the first N tasks free to take, one per session, each with the branch to start it on. Each session takes one and branches at once, so the next `next` or `free` leaves it out. The order is the same as `next`'s: what `focus` names, then the task the most work waits on, a risky one last. `agentic-roadmap focus <CODE|ID>...` puts blocks and tasks first, and `focus --clear` takes the plan as it reads again; commit it as `docs:`.
 
 ## Asking the plan
 
