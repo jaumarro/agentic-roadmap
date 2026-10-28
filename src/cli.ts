@@ -291,8 +291,13 @@ function free(root: string, command: Command, out: Io['out']): void {
   const [given] = command.operands;
   const count = given === undefined ? 3 : Number(given);
   if (!Number.isInteger(count) || count <= 0) throw new RoadmapError('free takes a positive whole number of tasks.');
-  const tasks = listFree(readSoundRoadmap(root), listBranches(root));
-  out(command.json ? `${JSON.stringify(tasks.slice(0, count), null, 2)}\n` : renderFree(tasks, count));
+  const roadmap = readSoundRoadmap(root);
+  const tasks = listFree(roadmap, listBranches(root));
+  if (command.json) {
+    out(`${JSON.stringify(tasks.slice(0, count), null, 2)}\n`);
+    return;
+  }
+  out(renderFree(tasks, count, measureHealth(roadmap).width));
 }
 
 /** Sets the focus, or clears it; read without the sound check, so a focus gone stale can still be replaced. */
