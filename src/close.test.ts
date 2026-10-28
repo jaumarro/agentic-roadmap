@@ -71,6 +71,43 @@ describe('close', () => {
     expect(closed.text).toContain('No commit to close it with');
   });
 
+  it('still closes with the task’s own work when a backup branch sits at its tip', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/work');
+    const work = commit(root, 'feat: write the first block');
+    git(root, 'branch', 'backup');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(work);
+  });
+
+  it('takes only the commits a stacked branch added over the task below it', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/below');
+    commit(root, 'feat: the task below');
+    capture(['close', 'GET.1'], root);
+    commit(root, 'docs: close GET.1');
+    git(root, 'switch', '-q', '-c', 'get-2/above');
+    const above = commit(root, 'feat: the task above');
+
+    capture(['close', 'GET.2'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[1]?.commit).toBe(above);
+  });
+
+  it('bounds the commits by the base roadmap.yaml names', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'trunk');
+    writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), 'blocks: [GET]\nbase: trunk\n');
+    commit(root, 'feat: an earlier task');
+    git(root, 'switch', '-q', '-c', 'get-1/fresh');
+
+    expect(capture(['close', 'GET.1'], root).text).toContain('No commit to close it with');
+  });
+
   it('closes a docs-only task with the newest docs commit of its branch', () => {
     const root = repo();
     git(root, 'branch', '-M', 'main');
