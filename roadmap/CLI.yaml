@@ -11,6 +11,7 @@ tasks:
     requires: [COR.5]
     doneWhen: --version prints the package's version; <command> --help prints that command's usage and options, not the whole list
     lines: 40
+    commit: 'f2106c4'
   - id: CLI.3
     title: Run on the Node versions still supported, not only the newest
     requires: [REV.1]
