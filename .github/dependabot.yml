@@ -12,6 +12,12 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    # A library keeps its ranges wide, so a project that has yaml already shares it; only the lockfile moves.
+    versioning-strategy: increase-if-necessary
+    ignore:
+      # The types follow the oldest Node in engines, not the newest.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       dev:
         dependency-type: development
