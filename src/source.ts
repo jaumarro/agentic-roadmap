@@ -80,6 +80,7 @@ export function readRoadmapWith(read: ReadFile): Roadmap {
     blocks,
     focus: config.focus,
     markdown: config.markdown,
+    ...(config.base === undefined ? {} : { base: config.base }),
     ...(config.chapters === undefined ? {} : { chapters: config.chapters }),
     ...(config.warnings === undefined ? {} : { warnings: config.warnings }),
   };

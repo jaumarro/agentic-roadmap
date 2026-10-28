@@ -45,6 +45,8 @@ export const configSchema = z.strictObject({
       blocksWaitedOn: z.number().int().nonnegative().optional(),
     })
     .optional(),
+  /** The branch tasks start from and merge back into; the remote's default branch, else main or master, unless set. */
+  base: z.string().min(1).optional(),
   /** Where to keep the plan as Markdown, from the folder holding roadmap/; set, add, close and focus keep it current. */
   markdown: z.string().min(1).optional(),
 });
@@ -58,6 +60,7 @@ export type Roadmap = {
   blocks: Block[];
   focus?: string[];
   markdown?: string;
+  base?: string;
   chapters?: Chapter[];
   warnings?: Warnings;
 };

@@ -430,7 +430,7 @@ function close(root: string, command: Command, out: Io['out']): void {
   const [id] = command.operands;
   if (id === undefined) throw new RoadmapError('Say which task to close: close <ID>.');
   if (command.commit === '') throw new RoadmapError('--commit needs a commit.');
-  const revision = command.commit ?? readLastWorkCommit(root);
+  const revision = command.commit ?? readLastWorkCommit(root, readRoadmap(root).base);
   if (revision === null) throw new RoadmapError('No commit to close it with: commit the work first, or pass --commit.');
   // A branch, a tag or HEAD is written as the commit it names today, which a later move cannot change.
   const sha = resolveCommit(root, revision);

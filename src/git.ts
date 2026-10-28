@@ -35,21 +35,50 @@ export function readKnownCommits(root: string, shas: string[]): Set<string> {
 const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
 const CHANGE_COMMIT = /^(feat|fix|refactor|perf|build)(\([^)]*\))?!?:/;
 
+// A branch named after a task: one of its parts is an id's slug, as abc-1 or abc-1-close.
+const TASK_BRANCH = /(^|\/)[a-z][a-z0-9]*-\d+(-[^/]*)?(\/|$)/;
+
+/** The branch tasks start from: `configured`, else the remote's default branch, else main or master; null for none. */
+function readBase(root: string, configured: string | undefined): string | null {
+  if (configured !== undefined) return configured;
+  const remote = git(root, ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']);
+  const candidates = [remote?.replace(/^origin\//, ''), 'main', 'master', remote];
+  return candidates.find((name) => name !== undefined && name !== null && resolveCommit(root, name) !== null) ?? null;
+}
+
+function isAncestor(root: string, older: string, newer: string): boolean {
+  return git(root, ['merge-base', '--is-ancestor', older, newer]) !== null;
+}
+
 /**
- * The commits only HEAD's branch has, newest first: what the task's own branch added since it left the others. All of
- * HEAD's when every commit is on another branch too, as on the base branch itself.
+ * The commits the task's branch made since it left its base, newest first, leaving out a task branch it was stacked on.
+ * A copy of the branch, as a backup or a branch made from it, takes nothing away. On the base itself, or with no base
+ * to tell, every commit of HEAD's.
  */
-function readOwnCommits(root: string): { commits: string[][]; ownBranch: boolean } {
+function readOwnCommits(root: string, configuredBase: string | undefined): { commits: string[][]; ownBranch: boolean } {
   const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  const others = listBranches(root).filter((branch) => branch !== current);
-  // With no other branch, as a repo worked on its base alone, there is nothing to leave out.
-  const range = others.length === 0 ? ['HEAD'] : ['HEAD', '--not', ...others];
+  const base = readBase(root, configuredBase);
+  const ownBranch = base !== null && current !== base;
+  const head = git(root, ['rev-parse', 'HEAD']);
+  // A task branch whose tip HEAD already holds, and is not HEAD's own tip, is the task this one was stacked on.
+  const below = listAllBranches(root).filter(
+    (branch) =>
+      branch !== current &&
+      TASK_BRANCH.test(branch) &&
+      git(root, ['rev-parse', branch]) !== head &&
+      isAncestor(root, branch, 'HEAD'),
+  );
+  const remoteBase = base === null ? null : `origin/${base}`;
+  const bases = [base, remoteBase].filter(
+    (name): name is string => name !== null && resolveCommit(root, name) !== null,
+  );
+  const range = ownBranch ? ['HEAD', '--not', ...bases, ...below] : ['HEAD'];
   const log = git(root, ['log', '-n', '200', '--format=%h%x09%s', ...range, '--']) ?? '';
   const commits = log
     .split('\n')
     .filter(Boolean)
     .map((line) => line.split('\t'));
-  return { commits, ownBranch: others.length > 0 };
+  return { commits, ownBranch };
 }
 
 /**
@@ -57,8 +86,8 @@ function readOwnCommits(root: string): { commits: string[][]; ownBranch: boolean
  * `fix`, `refactor`, `perf`, `build`), else the newest that is not a `docs:` one, else, for a task that only writes
  * documents, the newest of all. Null when the branch made none, so an earlier task's work is never taken for it.
  */
-export function readLastWorkCommit(root: string): string | null {
-  const { commits, ownBranch } = readOwnCommits(root);
+export function readLastWorkCommit(root: string, base?: string): string | null {
+  const { commits, ownBranch } = readOwnCommits(root, base);
   const change = commits.find(([, subject = '']) => CHANGE_COMMIT.test(subject));
   const work = change ?? commits.find(([, subject = '']) => !PLAN_COMMIT.test(subject));
   // On a lone base branch the newest docs commit is likely another task's close, so only a task branch falls back to it.
@@ -119,12 +148,6 @@ export function readInWorktrees(root: string, path: string): string[] {
         return [];
       }
     });
-}
-
-/** The local branches; none outside a repo. */
-export function listBranches(root: string): string[] {
-  const refs = git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']) ?? '';
-  return refs.split('\n').filter(Boolean);
 }
 
 /**
