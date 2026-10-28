@@ -39,3 +39,4 @@ tasks:
     title: Check the staged plan before each commit, with a pre-commit hook to install
     doneWhen: check --staged reads roadmap/ and the Markdown from the index; install-hook adds a pre-commit that runs it when they are staged, keeping any hook already there; a commit with a broken requires is refused
     lines: 60
+    commit: '876ae55'
