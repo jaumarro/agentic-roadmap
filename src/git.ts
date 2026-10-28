@@ -31,15 +31,27 @@ export function readKnownCommits(root: string, shas: string[]): Set<string> {
 
 // A `docs:` commit records the plan, and tests usually follow the change they cover: the work is the change itself.
 const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
-const CHANGE_COMMIT = /^(feat|fix|refactor|perf)(\([^)]*\))?!?:/;
+const CHANGE_COMMIT = /^(feat|fix|refactor|perf|build)(\([^)]*\))?!?:/;
 
 /**
- * The short sha that closes a task: the newest conventional change (`feat`, `fix`, `refactor`, `perf`) on HEAD, else
- * the newest commit that is not a `docs:` one; null when there is none.
+ * The commits only HEAD's branch has, newest first: what the task's own branch added since it left the others. All of
+ * HEAD's when every commit is on another branch too, as on the base branch itself.
+ */
+function readOwnCommits(root: string): string {
+  const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
+  const others = listBranches(root).filter((branch) => branch !== current);
+  const own = git(root, ['log', '-n', '200', '--format=%h%x09%s', 'HEAD', '--not', ...others, '--']) ?? '';
+  return own === '' ? (git(root, ['log', '-n', '200', '--format=%h%x09%s']) ?? '') : own;
+}
+
+/**
+ * The short sha that closes a task: the newest conventional change (`feat`, `fix`, `refactor`, `perf`, `build`) on
+ * the task's own branch, else its newest commit that is not a `docs:` one; null when there is none.
  */
 export function readLastWorkCommit(root: string): string | null {
-  const log = git(root, ['log', '-n', '200', '--format=%h%x09%s']) ?? '';
-  const commits = log.split('\n').map((line) => line.split('\t'));
+  const commits = readOwnCommits(root)
+    .split('\n')
+    .map((line) => line.split('\t'));
   const change = commits.find(([sha, subject = '']) => sha && CHANGE_COMMIT.test(subject));
   const work = change ?? commits.find(([sha, subject = '']) => sha && !PLAN_COMMIT.test(subject));
   return work?.[0] ?? null;
