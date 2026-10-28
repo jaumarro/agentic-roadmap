@@ -127,6 +127,18 @@ export function listBranches(root: string): string[] {
   return refs.split('\n').filter(Boolean);
 }
 
+/**
+ * The local branches and the remote ones fetched, as `origin/abc-1/x`: how this clone sees other clones' ids and
+ * started tasks. A remote's `HEAD` only points at one of its branches, so it is left out.
+ */
+export function listAllBranches(root: string): string[] {
+  const refs = git(root, ['for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/remotes']) ?? '';
+  return refs
+    .split('\n')
+    .filter((ref) => ref !== '' && !ref.endsWith('/HEAD'))
+    .map((ref) => ref.replace(/^refs\/(heads|remotes)\//, ''));
+}
+
 /** What `path`, from `root`, holds in the index: what the next commit records; null when the index has no such file. */
 export function readStaged(root: string, path: string): string | null {
   return git(root, ['show', `:./${path}`]);

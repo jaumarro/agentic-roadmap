@@ -9,7 +9,7 @@ import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
 import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
 import {
-  listBranches,
+  listAllBranches,
   readKnownCommits,
   readLastWorkCommit,
   readCommonDir,
@@ -248,7 +248,7 @@ function addFrom(root: string, from: string, out: Io['out']): void {
   }
   const rows = readPlanTable(text);
   const roadmap = readSoundRoadmap(root);
-  const branches = listBranches(root);
+  const branches = listAllBranches(root);
   const added = addRows(root, roadmap, rows, (code) => readElsewhere(root, code, branches));
   const after = readRoadmap(root);
   syncMarkdown(root, after);
@@ -276,7 +276,7 @@ function add(root: string, command: Command, out: Io['out']): void {
     .map((id) => id.trim())
     .filter(Boolean);
   const roadmap = readSoundRoadmap(root);
-  const id = readNextId(roadmap, code, readElsewhere(root, code, listBranches(root)));
+  const id = readNextId(roadmap, code, readElsewhere(root, code, listAllBranches(root)));
   addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
   const added = readRoadmap(root);
   syncMarkdown(root, added);
@@ -311,7 +311,7 @@ function list(root: string, command: Command, out: Io['out']): void {
   if (command.by !== undefined && command.by !== 'block' && command.by !== 'wave') {
     throw new RoadmapError('--by is block or wave.');
   }
-  const all = listRows(roadmap, listBranches(root), { block, state });
+  const all = listRows(roadmap, listAllBranches(root), { block, state });
   const byWave = command.by === 'wave';
   const rows = byWave ? sortByWave(all, roadmap.focus ?? []) : all;
   if (command.json) {
@@ -325,7 +325,7 @@ function list(root: string, command: Command, out: Io['out']): void {
 function graph(root: string, command: Command, out: Io['out']): number {
   if (command.mermaid && command.json) throw new RoadmapError('graph takes --mermaid or --json, not both.');
   const roadmap = readSoundRoadmap(root);
-  const shown = readGraph(roadmap, listBranches(root), command.all);
+  const shown = readGraph(roadmap, listAllBranches(root), command.all);
   out(command.json ? `${JSON.stringify(shown, null, 2)}\n` : renderMermaid(roadmap, shown));
   return 0;
 }
@@ -338,7 +338,7 @@ function readTaskId(command: Command): string {
 
 function show(root: string, command: Command, out: Io['out']): void {
   const id = readTaskId(command);
-  const shown = describeTask(readSoundRoadmap(root), listBranches(root), id);
+  const shown = describeTask(readSoundRoadmap(root), listAllBranches(root), id);
   if (shown === null) throw new RoadmapError(`No task ${id} in this roadmap.`);
   out(command.json ? `${JSON.stringify(shown, null, 2)}\n` : renderShown(shown));
 }
@@ -346,7 +346,7 @@ function show(root: string, command: Command, out: Io['out']): void {
 function why(root: string, command: Command, out: Io['out']): void {
   const id = readTaskId(command);
   const roadmap = readSoundRoadmap(root);
-  const branches = listBranches(root);
+  const branches = listAllBranches(root);
   const state = readStates(roadmap, branches).get(id);
   if (state === undefined) throw new RoadmapError(`No task ${id} in this roadmap.`);
   const waitsOn = explainWait(roadmap, branches, id);
@@ -383,7 +383,7 @@ function renderInProgress(inProgress: InProgress[]): string {
 /** The task to take, never one a branch already started, then the others ready and those in progress. */
 function next(root: string, command: Command, out: Io['out']): void {
   const roadmap = readSoundRoadmap(root);
-  const branches = listBranches(root);
+  const branches = listAllBranches(root);
   const [first, ...rest] = listFree(roadmap, branches);
   const inProgress = listInProgress(roadmap, branches);
   if (command.json) {
@@ -406,7 +406,7 @@ function free(root: string, command: Command, out: Io['out']): void {
   const count = given === undefined ? 3 : Number(given);
   if (!Number.isInteger(count) || count <= 0) throw new RoadmapError('free takes a positive whole number of tasks.');
   const roadmap = readSoundRoadmap(root);
-  const tasks = listFree(roadmap, listBranches(root));
+  const tasks = listFree(roadmap, listAllBranches(root));
   if (command.json) {
     out(`${JSON.stringify(tasks.slice(0, count), null, 2)}\n`);
     return;
