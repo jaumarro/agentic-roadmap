@@ -20,3 +20,13 @@ tasks:
     requires: [QRY.3]
     doneWhen: health says how far estimates fall from the lines the closing commits changed, by block, and health --json gives the figures
     lines: 40
+  - id: ANL.5
+    title: Show what a task waits on as a tree
+    requires: [QRY.1]
+    doneWhen: why <ID> --tree prints its requirements as an indented tree, a task seen before as (see above), and a done subtree folded as ✅ ID (+N done)
+    lines: 30
+  - id: ANL.6
+    title: Give the dependency graph as Mermaid or JSON
+    requires: [ANL.1]
+    doneWhen: graph --mermaid prints a flowchart with each task's state and critical ones marked, a parallel track as its own subgraph; graph --json gives nodes and edges with state, wave and critical
+    lines: 50
