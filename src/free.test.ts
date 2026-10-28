@@ -55,9 +55,16 @@ describe('free', () => {
     const root = repo();
     execFileSync('git', ['branch', 'get-1/one'], { cwd: root });
 
-    expect(capture(['free', '5'], root).text).toBe(
-      '1. GET.2 · Two\n   Branch: get-2/…\n2. GET.3 · Three\n   Branch: get-3/…\nOnly 2 free, of the 5 asked.\n',
+    expect(capture(['free', '5'], root).text).toMatch(
+      /^1\. GET\.2 · Two\n {3}Branch: get-2\/…\n2\. GET\.3 · Three\n {3}Branch: get-3\/…\nOnly 2 free, of the 5 asked\.\n/,
     );
+  });
+
+  it('says how many sessions the plan keeps busy when asked for more, and nothing up to that', () => {
+    const root = repo();
+
+    expect(capture(['free', '4'], root).text).toContain('The plan keeps at most 3 sessions busy at once.\n');
+    expect(capture(['free', '3'], root).text).not.toContain('keeps at most');
   });
 
   it('gives the same rows as next, as JSON', () => {
