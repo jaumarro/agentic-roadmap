@@ -63,6 +63,7 @@ tasks:
     doneWhen: with roadmap/GET.yaml already there and no roadmap.yaml, init fails and leaves GET.yaml as it was
     lines: 10
     risky: true
+    commit: '76d6b96'
   - id: COR.12
     title: Never hand out an id another worktree holds uncommitted
     requires: [COR.4]
