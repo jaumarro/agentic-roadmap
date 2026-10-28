@@ -52,3 +52,12 @@
 | - | - | - | - | - |
 | ✅ REV.1 | Make the package installable, by npm or a git dependency, with the maintainer's yes | AGT.2 | 258b0b9: reviewer can add agentic-roadmap as a dependency without a local path | doc |
 | REV.2 | Move reviewer's plan to the package and drop its plan scripts | REV.1 | reviewer's pnpm scripts call the CLI, scripts/plan-* are gone and /api/roadmap answers the same JSON as before | ~150 |
+
+## ANL · Read the plan's shape
+
+| Id | Task | Requires | Done when | Lines |
+| - | - | - | - | - |
+| ANL.1 | Order next and free by focus, then by how much work each task unblocks | QRY.3, PAR.3 | one analysis gives each task its wave, bottom level and float; health prints the same figures; a small task off the critical path no longer goes ahead of one on it | ~80 |
+| ANL.2 | List the pending tasks by wave, critical ones marked | ANL.1, QRY.2 | list --by wave groups the tasks not done by wave, focused first within each, critical marked, parallel tracks apart, with --state and --json as for list | ~30 |
+| ANL.3 | Warn when free hands out more tasks than the plan keeps busy | PAR.1, QRY.3 | free N with N over the plan's width says how many sessions it keeps busy | ~10 |
+| ANL.4 | Compare each closed task's estimate with the lines its commit changed | QRY.3 | health says how far estimates fall from the lines the closing commits changed, by block, and health --json gives the figures | ~40 |

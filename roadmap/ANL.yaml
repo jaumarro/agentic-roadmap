@@ -1,0 +1,22 @@
+name: Read the plan's shape
+tasks:
+  - id: ANL.1
+    title: Order next and free by focus, then by how much work each task unblocks
+    requires: [QRY.3, PAR.3]
+    doneWhen: one analysis gives each task its wave, bottom level and float; health prints the same figures; a small task off the critical path no longer goes ahead of one on it
+    lines: 80
+  - id: ANL.2
+    title: List the pending tasks by wave, critical ones marked
+    requires: [ANL.1, QRY.2]
+    doneWhen: list --by wave groups the tasks not done by wave, focused first within each, critical marked, parallel tracks apart, with --state and --json as for list
+    lines: 30
+  - id: ANL.3
+    title: Warn when free hands out more tasks than the plan keeps busy
+    requires: [PAR.1, QRY.3]
+    doneWhen: free N with N over the plan's width says how many sessions it keeps busy
+    lines: 10
+  - id: ANL.4
+    title: Compare each closed task's estimate with the lines its commit changed
+    requires: [QRY.3]
+    doneWhen: health says how far estimates fall from the lines the closing commits changed, by block, and health --json gives the figures
+    lines: 40
