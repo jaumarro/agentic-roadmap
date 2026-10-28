@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -24,6 +24,15 @@ describe('initRoadmap', () => {
     initRoadmap(root);
 
     expect(() => initRoadmap(root)).toThrow(RoadmapError);
+  });
+
+  it('fails without touching a block file that was there before', () => {
+    const root = project();
+    mkdirSync(join(root, 'roadmap'));
+    writeFileSync(join(root, 'roadmap', 'GET.yaml'), 'mine\n');
+
+    expect(() => initRoadmap(root)).toThrow(RoadmapError);
+    expect(readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8')).toBe('mine\n');
   });
 });
 
