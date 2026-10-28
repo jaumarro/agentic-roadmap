@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -37,6 +38,7 @@ import { findRoot, initRoadmap, readRoadmap, readStagedRoadmap, ROADMAP_DIR, Roa
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
 const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
+       agentic-roadmap <command> --help, or help <command>: that command alone; --version: this one's
 
 Commands:
   init                       start a roadmap in this folder
@@ -71,6 +73,30 @@ Commands:
 The roadmap is the nearest roadmap/roadmap.yaml from here upwards, unless --root or AGENTIC_ROADMAP_ROOT names one.
 `;
 
+const FOOTER = USAGE.slice(USAGE.lastIndexOf('\n\n') + 2);
+// A command's entry in USAGE: its line, and the lines under it indented past the names.
+const CONTINUED = ' '.repeat(29);
+
+/** One command's usage, cut from the full one so the two never disagree; the full one for none or an unknown one. */
+function readHelp(name: string | undefined): string {
+  const lines = USAGE.split('\n');
+  const at = lines.findIndex((line) => line.startsWith(`  ${name} `) || line === `  ${name}`);
+  if (name === undefined || at === -1) return USAGE;
+  const more = lines.slice(at + 1).findIndex((line) => !line.startsWith(CONTINUED));
+  const [first = '', ...rest] = lines.slice(at, at + 1 + (more === -1 ? 0 : more));
+  // A short synopsis shares its line with the start of the description, which begins where CONTINUED ends.
+  const shared = first.length > CONTINUED.length && first.slice(0, CONTINUED.length).endsWith('  ');
+  const synopsis = shared ? first.slice(0, CONTINUED.length).trim() : first.trim();
+  const description = [...(shared ? [first.slice(CONTINUED.length)] : []), ...rest.map((line) => line.trim())];
+  return `Usage: agentic-roadmap ${synopsis}\n\n${description.map((line) => `  ${line}\n`).join('')}\n${FOOTER}`;
+}
+
+function readVersion(): string {
+  const manifest: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const version = manifest !== null && typeof manifest === 'object' && 'version' in manifest ? manifest.version : '';
+  return String(version);
+}
+
 // The plan has to be on the base branch before a task's branch can mark anything started.
 const AFTER_INIT = `Write your blocks, run check, then commit roadmap/ on your base branch, as «docs: start the roadmap».
 Each task then gets its own branch from there, named after it, as abc-1/short-slug.
@@ -93,6 +119,7 @@ const OPTIONS = {
   all: { type: 'boolean' },
   staged: { type: 'boolean' },
   help: { type: 'boolean' },
+  version: { type: 'boolean' },
 } as const;
 
 /** How many arguments each command takes after its name. */
@@ -115,7 +142,7 @@ const ARITY: Record<string, number> = {
   'install-merge-driver': 0,
   'install-skill': 0,
   'merge-block': 3,
-  help: 0,
+  help: 1,
 };
 
 /** What a command reads from and writes to: where it runs, its environment, its answer, and its errors. */
@@ -145,6 +172,7 @@ type Command = {
   all: boolean;
   staged: boolean;
   help: boolean;
+  version: boolean;
 };
 
 function readCommand(args: string[], env: Io['env']): Command {
@@ -181,6 +209,7 @@ function readCommand(args: string[], env: Io['env']): Command {
     all: values.all === true,
     staged: values.staged === true,
     help: values.help === true,
+    version: values.version === true,
   };
 }
 
@@ -395,8 +424,12 @@ export function run(args: string[], io: Io): number {
     const command = readCommand(args, io.env);
     const given = command.root === undefined ? undefined : resolve(io.cwd, command.root);
     const root = () => findRoot(io.cwd, given);
+    if (command.version) {
+      io.out(`${readVersion()}\n`);
+      return 0;
+    }
     if (command.help) {
-      io.out(USAGE);
+      io.out(readHelp(command.name));
       return 0;
     }
     switch (command.name) {
@@ -460,8 +493,10 @@ export function run(args: string[], io: Io): number {
       case 'health':
         return health(root(), command, io.out);
       case undefined:
-      case 'help':
         io.out(USAGE);
+        return 0;
+      case 'help':
+        io.out(readHelp(command.operands[0]));
         return 0;
       default:
         io.err(`Unknown command: ${command.name}\n${USAGE}`);
