@@ -3,16 +3,22 @@
   "version": "0.0.0",
   "description": "A roadmap in YAML that people and coding agents follow from the command line: what to do next, who started what, and closing a task with its commit.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaumarro/agentic-roadmap.git"
+  },
   "bin": {
-    "agentic-roadmap": "./src/cli.ts",
-    "roadmap": "./src/cli.ts"
+    "agentic-roadmap": "./dist/cli.js",
+    "roadmap": "./dist/cli.js"
   },
   "files": [
-    "src",
+    "dist",
     "skill"
   ],
   "type": "module",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm build",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint --type-aware --deny-warnings",
     "test": "vitest run",
