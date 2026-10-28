@@ -127,6 +127,13 @@ describe('close', () => {
     expect(capture(['close', 'GET.2'], root).text).toContain('No commit to close it with');
   });
 
+  it('names an unknown task before it looks for a commit', () => {
+    const root = repo();
+    git(root, 'switch', '-q', '-c', 'get-1/fresh');
+
+    expect(capture(['close', 'NOPE.1'], root)).toEqual({ code: 1, text: 'No task NOPE.1 in this roadmap.\n' });
+  });
+
   it('asks for base: when it can tell no base, rather than take older history', () => {
     const root = repo();
     git(root, 'branch', '-M', 'develop');
