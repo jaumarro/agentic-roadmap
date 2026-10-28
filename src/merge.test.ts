@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -78,7 +78,9 @@ describe('with the merge driver installed', () => {
     capture(['install-merge-driver'], root);
     git(root, 'add', '-A');
     git(root, 'commit', '-qm', 'docs: start the roadmap');
-    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe('roadmap/*.yaml merge=agentic-roadmap\n');
+    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe(
+      'roadmap/*.yaml merge=agentic-roadmap\nroadmap/roadmap.yaml merge=text\n',
+    );
 
     git(root, 'switch', '-q', '-c', 'one');
     capture(['add', 'GET', 'From one', ...ADD], root);
@@ -110,5 +112,28 @@ describe('with the merge driver installed', () => {
     const checked = capture(['check'], root);
     expect(checked.code).toBe(0);
     expect(checked.text).toMatch(/^The plan is sound\.\n/);
+  });
+
+  it('leaves both sides marked when the two branches changed one task differently', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+    git(root, 'init', '-q', '-b', 'main');
+    initRoadmap(root);
+    capture(['install-merge-driver'], root);
+    git(root, 'add', '-A');
+    git(root, 'commit', '-qm', 'docs: start the roadmap');
+    const block = join(root, 'roadmap', 'GET.yaml');
+    const start = readFileSync(block, 'utf8');
+    git(root, 'switch', '-q', '-c', 'a');
+    writeFileSync(block, start.replace('Write the first real block of this roadmap', 'Title A'));
+    git(root, 'commit', '-qam', 'docs: title A');
+    git(root, 'switch', '-q', 'main');
+    writeFileSync(block, start.replace('Write the first real block of this roadmap', 'Title B'));
+    git(root, 'commit', '-qam', 'docs: title B');
+
+    expect(() => git(root, 'merge', '-q', 'a')).toThrow(/Command failed/);
+    const merged = readFileSync(block, 'utf8');
+    expect(merged).toContain('<<<<<<<');
+    expect(merged).toContain('Title A');
+    expect(merged).toContain('Title B');
   });
 });
