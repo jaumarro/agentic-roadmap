@@ -11,6 +11,7 @@ tasks:
     requires: [ANL.1, QRY.2]
     doneWhen: list --by wave groups the tasks not done by wave, focused first within each, critical marked, parallel tracks apart, with --state and --json as for list
     lines: 30
+    commit: 'd089a9b'
   - id: ANL.3
     title: Warn when free hands out more tasks than the plan keeps busy
     requires: [PAR.1, QRY.3]
