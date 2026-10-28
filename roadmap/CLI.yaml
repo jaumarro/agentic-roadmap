@@ -17,3 +17,4 @@ tasks:
     requires: [REV.1]
     doneWhen: engines asks for Node 20 or later, and the built CLI passes its tests and runs next and graph on Node 20
     lines: 5
+    commit: '2b06ca2'
