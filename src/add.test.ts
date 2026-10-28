@@ -72,6 +72,16 @@ describe('add', () => {
     expect(capture(['check'], root).code).toBe(0);
   });
 
+  it('gives two worktrees adding to one block before either commits different ids', () => {
+    const root = repo();
+    const other = join(mkdtempSync(join(tmpdir(), 'agentic-roadmap-')), 'other');
+    git(root, 'worktree', 'add', '-q', '-b', 'two', other);
+
+    expect(capture(['add', 'GET', 'From here', ...ADD], root).text).toMatch(/^Added GET\.3 /);
+    expect(capture(['add', 'GET', 'From there', ...ADD], other).text).toMatch(/^Added GET\.4 /);
+    expect(capture(['add', 'GET', 'Here again', ...ADD], root).text).toMatch(/^Added GET\.5 /);
+  });
+
   it('gives two branches adding to the same block different ids, and the plan stays sound once both merge', () => {
     const root = repo();
 
