@@ -14,6 +14,7 @@ import {
   readStaged,
   resolveCommit,
 } from './git.ts';
+import { readGraph, renderMermaid } from './graph.ts';
 import { installHook } from './hook.ts';
 import type { Roadmap } from './model.ts';
 import { setFocus } from './focus.ts';
@@ -54,6 +55,9 @@ Commands:
   list [--block CODE] [--state done|started|ready|waiting] [--by block|wave] [--json]
                              every task with its state, by block; --by wave gives the tasks left in waves, each
                              wave able to run at once after the ones before, critical ones marked
+  graph [--mermaid|--json] [--all]
+                             the tasks left and what each requires, as a Mermaid flowchart unless --json; --all
+                             shows the done ones too
   health [--json] [--strict] [--against BRANCH]
                              the plan's shape (critical path, parallelism, width) and its worst problems; with
                              --against, each figure against that branch's plan and what got worse; --strict fails
@@ -85,6 +89,8 @@ const OPTIONS = {
   lines: { type: 'string' },
   against: { type: 'string' },
   clear: { type: 'boolean' },
+  mermaid: { type: 'boolean' },
+  all: { type: 'boolean' },
   staged: { type: 'boolean' },
   help: { type: 'boolean' },
 } as const;
@@ -101,6 +107,7 @@ const ARITY: Record<string, number> = {
   close: 1,
   show: 1,
   why: 1,
+  graph: 0,
   list: 0,
   health: 0,
   add: 2,
@@ -129,6 +136,8 @@ type Command = {
   lines: string | undefined;
   against: string | undefined;
   clear: boolean;
+  mermaid: boolean;
+  all: boolean;
   staged: boolean;
   help: boolean;
 };
@@ -163,6 +172,8 @@ function readCommand(args: string[], env: Io['env']): Command {
     lines: values.lines,
     against: values.against,
     clear: values.clear === true,
+    mermaid: values.mermaid === true,
+    all: values.all === true,
     staged: values.staged === true,
     help: values.help === true,
   };
@@ -236,6 +247,15 @@ function list(root: string, command: Command, out: Io['out']): void {
     return;
   }
   out(byWave ? renderWaves(rows) : renderList(roadmap, rows));
+}
+
+/** The dependency graph, as Mermaid for a person or a renderer and as JSON for an agent. */
+function graph(root: string, command: Command, out: Io['out']): number {
+  if (command.mermaid && command.json) throw new RoadmapError('graph takes --mermaid or --json, not both.');
+  const roadmap = readSoundRoadmap(root);
+  const shown = readGraph(roadmap, listBranches(root), command.all);
+  out(command.json ? `${JSON.stringify(shown, null, 2)}\n` : renderMermaid(roadmap, shown));
+  return 0;
 }
 
 function readTaskId(command: Command): string {
@@ -411,6 +431,8 @@ export function run(args: string[], io: Io): number {
       case 'list':
         list(root(), command, io.out);
         return 0;
+      case 'graph':
+        return graph(root(), command, io.out);
       case 'install-hook':
         io.out(`Commits that touch the plan now run check --staged first; the hook is ${installHook(root())}.\n`);
         return 0;
