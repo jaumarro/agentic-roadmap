@@ -1,5 +1,5 @@
 # The blocks of the plan, by code, in the order it reads them. Each lives in roadmap/<CODE>.yaml.
-blocks: [COR, QRY, PAR, DOC, AGT, REV, ANL]
+blocks: [COR, QRY, PAR, DOC, AGT, REV, ANL, CLI]
 # A small package: a block of one or two slices is enough here.
 warnings:
   blockSize: [1, 25]

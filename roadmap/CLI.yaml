@@ -1,0 +1,17 @@
+name: A CLI like any other
+tasks:
+  - id: CLI.1
+    title: Write errors to stderr, so output stays parseable
+    requires: [COR.5]
+    doneWhen: every error goes to stderr with a non-zero exit, stdout carries only the answer, and next --json piped into a JSON reader never sees an error line
+    lines: 15
+  - id: CLI.2
+    title: Print the version, and each command's own help
+    requires: [COR.5]
+    doneWhen: --version prints the package's version; <command> --help prints that command's usage and options, not the whole list
+    lines: 40
+  - id: CLI.3
+    title: Run on the Node versions still supported, not only the newest
+    requires: [REV.1]
+    doneWhen: engines asks for Node 20 or later, and the built CLI passes its tests and runs next and graph on Node 20
+    lines: 5
