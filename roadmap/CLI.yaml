@@ -46,3 +46,4 @@ tasks:
     requires: [COR.5]
     doneWhen: the schemas are checked by hand with the same messages, zod is gone from dependencies, and the error tests pass unchanged
     lines: 100
+    commit: '7483f78'
