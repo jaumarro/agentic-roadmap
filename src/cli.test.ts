@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -54,6 +54,26 @@ describe('run', () => {
 
     expect(code).toBe(0);
     expect(text).toContain('Usage: agentic-roadmap');
+  });
+
+  it('prints the version from package.json', () => {
+    const manifest: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+    expect(manifest).toMatchObject({ version: capture(['--version']).out.trim() });
+  });
+
+  it('prints one command alone with --help or help, and everything for one it does not know', () => {
+    const alone = capture(['list', '--help']).out;
+
+    expect(alone).toMatch(
+      /^Usage: agentic-roadmap list \[--block CODE\].*\n\n {2}every task with its state, by block;/,
+    );
+    expect(alone).not.toContain('install-hook');
+    expect(capture(['help', 'list']).out).toBe(alone);
+    expect(capture(['init', '--help']).out).toMatch(
+      /^Usage: agentic-roadmap init\n\n {2}start a roadmap in this folder\n/,
+    );
+    expect(capture(['help', 'launch']).out).toContain('Commands:');
   });
 
   it('fails on a command it does not know, on the error stream', () => {
