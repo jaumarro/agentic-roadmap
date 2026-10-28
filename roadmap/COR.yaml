@@ -45,3 +45,8 @@ tasks:
     requires: [COR.4]
     doneWhen: add looks at remote branches too, and past the highest number ever used in the block's git history; a task deleted from the tip keeps its id from coming back
     lines: 20
+  - id: COR.9
+    title: Close a task with the newest work commit on its own branch
+    requires: [COR.3]
+    doneWhen: "with no --commit, close takes the newest commit since the branch left its base that is not docs:, build: included, and never one from an earlier task already merged"
+    lines: 20
