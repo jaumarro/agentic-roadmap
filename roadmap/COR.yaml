@@ -90,3 +90,21 @@ tasks:
     doneWhen: check on a plan with a cycle in one block prints the cycle and exits 1, with no stack overflow; the pipe test passes on Node 24.1
     lines: 10
     commit: '8fd2611'
+  - id: COR.16
+    title: add reads other branches' blocks from the roadmap's own folder
+    requires: [COR.12]
+    doneWhen: with the plan in app/roadmap/, a GET.3 committed on another branch keeps add from giving GET.3 again
+    lines: 10
+    risky: true
+  - id: COR.17
+    title: close bounds the task's commits by its base, not by every other branch
+    requires: [COR.14]
+    doneWhen: a backup branch at the task's tip leaves close taking the task's feat; a fresh branch from the base is still refused; a stacked branch takes only its own commits
+    lines: 30
+    risky: true
+  - id: COR.18
+    title: Fetched remote branches count for ids and for started tasks
+    requires: [COR.16]
+    doneWhen: after fetching another clone's branch with GET.3, add gives GET.4, and a remote branch named after a task marks it started
+    lines: 15
+    risky: true
