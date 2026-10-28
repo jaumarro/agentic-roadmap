@@ -46,6 +46,19 @@ describe('close', () => {
     expect(capture(['next'], root).text).toContain('Next: GET.2');
   });
 
+  it("takes the task branch's own build commit, not a feature an earlier task merged", () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    commit(root, 'feat: an earlier task');
+    git(root, 'switch', '-q', '-c', 'get-1/node');
+    const build = commit(root, 'build: run on older Node');
+    commit(root, 'docs: say so');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(build);
+  });
+
   it('takes the feature commit over the tests that follow it', () => {
     const root = repo();
     const feature = commit(root, 'feat: write the first block');
