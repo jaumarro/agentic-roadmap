@@ -127,6 +127,18 @@ describe('close', () => {
     expect(capture(['close', 'GET.2'], root).text).toContain('No commit to close it with');
   });
 
+  it('asks for base: when it can tell no base, rather than take older history', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'develop');
+    commit(root, 'feat: old unrelated work');
+    git(root, 'switch', '-q', '-c', 'get-1/x');
+
+    expect(capture(['close', 'GET.1'], root)).toEqual({
+      code: 1,
+      text: 'close cannot tell which branch tasks start from: set base: in roadmap.yaml, or pass --commit.\n',
+    });
+  });
+
   it('fails on a base roadmap.yaml names that is no branch', () => {
     const root = repo();
     writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), 'blocks: [GET]\nbase: typo-does-not-exist\n');
