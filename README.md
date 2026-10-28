@@ -4,8 +4,10 @@ Your project's plan, kept as YAML files in the repo. People and coding agents as
 task with the commit that did it.
 
 - **No database, no server.** The plan is plain files in `roadmap/`, reviewed like any other code.
-- **Safe in parallel.** The tool picks ids and commits, so two sessions never take the same id. A task counts as
-  started as soon as a branch is named after it.
+- **Safe in parallel.** The tool picks ids and commits. Sessions in one clone, on its branches and worktrees, never take
+  the same id, committed or not: `add` takes a lock the worktrees share and reads all of them. Clones on other machines
+  see each other only through pushed branches; an id both took is caught when they merge. A task counts as started as
+  soon as a branch is named after it.
 - **Readable anywhere.** `roadmap render` writes the plan as Markdown tables whenever you want to share it.
 
 ## Why this one
