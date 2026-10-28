@@ -111,3 +111,8 @@ tasks:
     lines: 15
     risky: true
     commit: 'b0fde5e'
+  - id: COR.19
+    title: close takes a task's commits since the last close of another task
+    requires: [COR.17]
+    doneWhen: "close bounds the task's commits by its base and by the newest docs: close of another task: a pushed copy of the branch never hides its feat, a fresh stacked branch is refused, and a base: that names no branch fails with that said"
+    lines: 30
