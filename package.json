@@ -35,7 +35,8 @@
   "files": [
     "dist",
     "skill",
-    "docs/cli.md"
+    "docs/cli.md",
+    "CHANGELOG.md"
   ],
   "type": "module",
   "scripts": {
