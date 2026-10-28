@@ -35,6 +35,7 @@ tasks:
     requires: [REV.1]
     doneWhen: prepare runs tsc directly, so npm can install it from git without pnpm
     lines: 2
+    commit: '38ec2e5'
   - id: CLI.7
     title: Work on git older than 2.31
     requires: [COR.12]
