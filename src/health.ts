@@ -1,7 +1,6 @@
+import { analyze, readCriticalPath, weigh } from './analyze.ts';
 import type { Roadmap, Task } from './model.ts';
 
-// What a task marked `doc` weighs against tasks sized in lines of logic.
-const DOC_WEIGHT = 20;
 const SIZE_CAP = 150;
 // Below this, sessions run in parallel mostly wait on each other.
 const QUEUE_PARALLELISM = 1.5;
@@ -32,10 +31,6 @@ export type Health = {
   problems: string[];
 };
 
-function weigh(task: Task): number {
-  return task.lines === 'doc' ? DOC_WEIGHT : task.lines;
-}
-
 /** What each task needs, directly or through others. */
 function readAncestors(byId: Map<string, Task>): Map<string, Set<string>> {
   const ancestors = new Map<string, Set<string>>();
@@ -53,25 +48,6 @@ function readAncestors(byId: Map<string, Task>): Map<string, Set<string>> {
   };
   for (const id of byId.keys()) visit(id);
   return ancestors;
-}
-
-function findCriticalPath(pending: Task[], byId: Map<string, Task>): Health['criticalPath'] {
-  const best = new Map<string, { lines: number; tasks: string[] }>();
-  const longest = (task: Task): { lines: number; tasks: string[] } => {
-    const known = best.get(task.id);
-    if (known !== undefined) return known;
-    const before = task.requires
-      .map((id) => byId.get(id))
-      .filter((each): each is Task => each !== undefined && each.commit === undefined)
-      .map(longest)
-      .reduce((heaviest, path) => (path.lines > heaviest.lines ? path : heaviest), { lines: 0, tasks: [] as string[] });
-    const path = { lines: before.lines + weigh(task), tasks: [...before.tasks, task.id] };
-    best.set(task.id, path);
-    return path;
-  };
-  return pending
-    .map(longest)
-    .reduce((heaviest, path) => (path.lines > heaviest.lines ? path : heaviest), { lines: 0, tasks: [] });
 }
 
 /**
@@ -151,8 +127,9 @@ export function measureHealth(roadmap: Roadmap): Health {
   const pendingById = new Map(pending.map((task) => [task.id, task]));
   const ancestors = readAncestors(byId);
   const pendingAncestors = readAncestors(pendingById);
-  const workLeft = pending.reduce((sum, task) => sum + weigh(task), 0);
-  const criticalPath = findCriticalPath(pending, byId);
+  const shape = analyze(roadmap);
+  const workLeft = shape.work;
+  const criticalPath = { lines: shape.span, tasks: readCriticalPath(shape) };
   const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
   const bottlenecks = pending
     .map((task) => {

@@ -1,3 +1,4 @@
+import { analyze } from './analyze.ts';
 import { isOnTrack, readChapterOf } from './chapters.ts';
 import type { Roadmap, Task } from './model.ts';
 
@@ -8,15 +9,11 @@ function readFocusRank(focus: string[], task: Task): number {
   return at === -1 ? focus.length : at;
 }
 
-// A document writes no code, so it weighs nothing here.
-function readSize(task: Task): number {
-  return task.lines === 'doc' ? 0 : task.lines;
-}
-
 /**
- * The tasks not done whose requirements are all done: those the focus names first, in its order, then fewest
- * requirements, then fewest lines, a risky one last; a tie keeps the plan's order. A parallel track's task is another
- * session's work, so it is here only when focused.
+ * The tasks not done whose requirements are all done: those the focus names first, in its order, then the one holding
+ * up the heaviest chain of work, a risky one last; a tie keeps the plan's order. Taking the task the most work waits on
+ * first (highest level first) keeps the most sessions busy later. A parallel track's task is another session's work,
+ * so it is here only when focused.
  */
 export function listReady(roadmap: Roadmap): Task[] {
   const focus = roadmap.focus ?? [];
@@ -29,11 +26,12 @@ export function listReady(roadmap: Roadmap): Task[] {
       task.requires.every((id) => done.has(id)) &&
       (!isOnTrack(chapterOf, task) || readFocusRank(focus, task) < focus.length),
   );
+  const shape = analyze(roadmap).tasks;
+  const bottomLevel = (task: Task) => shape.get(task.id)?.bottomLevel ?? 0;
   return ready.toSorted(
     (a, b) =>
       readFocusRank(focus, a) - readFocusRank(focus, b) ||
-      a.requires.length - b.requires.length ||
-      readSize(a) - readSize(b) ||
+      bottomLevel(b) - bottomLevel(a) ||
       Number(a.risky === true) - Number(b.risky === true),
   );
 }
