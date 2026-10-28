@@ -52,7 +52,8 @@ Commands:
   free [N] [--json]          the first N tasks free to take, three unless told: one per session
   focus <CODE|ID>... | --clear
                              take these blocks and tasks first, in this order; --clear takes the plan as it reads
-  close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
+  close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given;
+                             given, it also records a done task's commit again, as after a rebase
   check [--staged]           find what makes the plan unsound, and a Markdown that no longer matches it; --staged
                              checks the plan the next commit records
   render                     write the plan as Markdown where roadmap.yaml's markdown: says, docs/roadmap.md unless
@@ -483,9 +484,13 @@ function close(root: string, command: Command, out: Io['out']): void {
   // A branch, a tag or HEAD is written as the commit it names today, which a later move cannot change.
   const sha = resolveCommit(root, revision);
   if (sha === null) throw new RoadmapError(`This repo has no commit ${revision}.`);
-  const code = closeTask(root, roadmap, id, sha);
+  const code = closeTask(root, roadmap, id, sha, command.commit !== undefined);
   syncMarkdown(root, readRoadmap(root));
-  out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
+  if (task?.commit === undefined) {
+    out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
+  } else {
+    out(`${id} was done with ${task.commit}; it is now done with ${sha} in roadmap/${code}.yaml.\n`);
+  }
 }
 
 function check(root: string, command: Command, out: Io['out']): number {

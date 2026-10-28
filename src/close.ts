@@ -10,13 +10,16 @@ function readCode(error: unknown): string {
 
 /**
  * Marks task `id` done with `sha` in its block's file, keeping the file's comments and layout; the block's code. A task
- * whose requirements are not all done is refused: the plan would then say done for work that could not be.
+ * whose requirements are not all done is refused: the plan would then say done for work that could not be. A done task
+ * is refused unless `again`, as when a rebase rewrote its commit and the sha is given.
  */
-export function closeTask(root: string, roadmap: Roadmap, id: string, sha: string): string {
+export function closeTask(root: string, roadmap: Roadmap, id: string, sha: string, again = false): string {
   const block = roadmap.blocks.find((each) => each.tasks.some((task) => task.id === id));
   const task = block?.tasks.find((each) => each.id === id);
   if (block === undefined || task === undefined) throw new RoadmapError(`No task ${id} in this roadmap.`);
-  if (task.commit !== undefined) throw new RoadmapError(`${id} is already done, with ${task.commit}.`);
+  if (task.commit !== undefined && !again) {
+    throw new RoadmapError(`${id} is already done, with ${task.commit}: pass --commit to record another.`);
+  }
   const done = new Set(
     roadmap.blocks.flatMap((each) => each.tasks.filter((t) => t.commit !== undefined).map((t) => t.id)),
   );

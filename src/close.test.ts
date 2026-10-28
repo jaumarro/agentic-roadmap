@@ -265,6 +265,19 @@ describe('close', () => {
     capture(['close', 'GET.1'], root);
     expect(capture(['close', 'GET.1'], root).text).toContain('GET.1 is already done');
   });
+
+  it('records a done task again with the commit given, as after a rebase rewrote it', () => {
+    const root = repo();
+    commit(root, 'feat: work');
+    capture(['close', 'GET.1'], root);
+    const rewritten = commit(root, 'feat: work, rewritten');
+
+    expect(capture(['close', 'GET.1'], root).text).toContain('pass --commit to record another');
+    const { code, text } = capture(['close', 'GET.1', '--commit', rewritten], root);
+    expect(code).toBe(0);
+    expect(text).toContain(`GET.1 was done with`);
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(rewritten);
+  });
 });
 
 describe('readKnownCommits', () => {
