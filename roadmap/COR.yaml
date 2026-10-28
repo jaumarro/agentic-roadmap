@@ -51,3 +51,8 @@ tasks:
     doneWhen: 'with no --commit, close takes the newest commit since the branch left its base that is not docs:, build: included, and never one from an earlier task already merged'
     lines: 20
     commit: 'f1aba94'
+  - id: COR.10
+    title: Add every task of a plan's roadmap table at once
+    requires: [COR.4]
+    doneWhen: add --from FILE reads the table under <!-- roadmap --> in a Markdown plan, gives each row an id the way add does, resolves keys in Requires to those ids, and writes all of them or, when check fails, none
+    lines: 60
