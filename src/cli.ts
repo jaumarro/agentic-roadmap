@@ -185,14 +185,43 @@ type Command = {
   version: boolean;
 };
 
+/** Whether `token` names an option that takes a value, as `--done-when` does. */
+function takesValue(token: string | undefined): boolean {
+  const options: Record<string, { type: string } | undefined> = OPTIONS;
+  const option = token?.startsWith('--') === true ? token.slice(2) : '';
+  return Object.hasOwn(options, option) && options[option]?.type === 'string';
+}
+
+/**
+ * The arguments with each dash-led text set apart, as a title like "--where compares", which parseArgs would read as an
+ * option. An option's name has no space, so a token with one is text: the value of the option before it, or else a
+ * positional, held as a placeholder no shell can pass, NUL and its index, until parsing is over.
+ */
+function readTexts(args: string[]): { args: string[]; texts: string[] } {
+  const texts: string[] = [];
+  const read: string[] = [];
+  for (const token of args) {
+    const isText = token.startsWith('-') && /\s/.test(token);
+    const previous = read.at(-1);
+    if (!isText) read.push(token);
+    else if (takesValue(previous)) read[read.length - 1] = `${previous}=${token}`;
+    else read.push(`\0${texts.push(token) - 1}`);
+  }
+  return { args: read, texts };
+}
+
 function readCommand(args: string[], env: Io['env']): Command {
+  const held = readTexts(args);
   let parsed;
   try {
-    parsed = parseArgs({ args, options: OPTIONS, allowPositionals: true, strict: true });
+    parsed = parseArgs({ args: held.args, options: OPTIONS, allowPositionals: true, strict: true });
   } catch (error) {
     throw new RoadmapError(error instanceof Error ? error.message : String(error));
   }
-  const { values, positionals } = parsed;
+  const { values } = parsed;
+  const positionals = parsed.positionals.map((each) =>
+    each.startsWith('\0') ? (held.texts[Number(each.slice(1))] ?? each) : each,
+  );
   if (values.root === '') throw new RoadmapError('--root needs a folder.');
   const [name, ...operands] = positionals;
   const arity = name === undefined ? 0 : ARITY[name];

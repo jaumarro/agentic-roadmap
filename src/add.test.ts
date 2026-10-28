@@ -156,6 +156,21 @@ describe('add', () => {
     expect(checked.text).toMatch(/^The plan is sound\.\n/);
   });
 
+  it('reads a title and a done-when that start with a dash as text, not as options', () => {
+    const root = repo();
+
+    const { code, text } = capture(
+      ['add', 'GET', '--where compares with = != >', '--done-when', '- it compares', '--lines', '30'],
+      root,
+    );
+    expect(code).toBe(0);
+    expect(text).toMatch(/^Added GET\.3 · --where compares with = != > to roadmap\/GET\.yaml\.\n/);
+    expect(readRoadmap(root).blocks[0]?.tasks[2]).toMatchObject({
+      title: '--where compares with = != >',
+      doneWhen: '- it compares',
+    });
+  });
+
   it('writes a document size and leaves out requires when there are none', () => {
     const root = repo();
     capture(['add', 'GET', 'Write it down', '--done-when', 'the README says so', '--lines', 'doc'], root);
