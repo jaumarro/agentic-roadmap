@@ -72,6 +72,23 @@ describe('add', () => {
     expect(capture(['check'], root).code).toBe(0);
   });
 
+  it('refuses a requirement on a later chapter, as check does', () => {
+    const root = repo();
+    writeFileSync(
+      join(root, 'roadmap', 'roadmap.yaml'),
+      'blocks: [GET, LAT]\nchapters: [{ name: First, blocks: [GET] }, { name: Later, blocks: [LAT] }]\n',
+    );
+    writeFileSync(
+      join(root, 'roadmap', 'LAT.yaml'),
+      'name: Later\ntasks:\n  - id: LAT.1\n    title: Later\n    doneWhen: x\n    lines: 5\n',
+    );
+
+    expect(capture(['add', 'GET', 'Too soon', '--requires', 'LAT.1', ...ADD], root).text).toContain(
+      'GET.3 requires LAT.1, from a later chapter',
+    );
+    expect(capture(['check'], root).code).toBe(0);
+  });
+
   it('gives two worktrees adding to one block before either commits different ids', () => {
     const root = repo();
     const other = join(mkdtempSync(join(tmpdir(), 'agentic-roadmap-')), 'other');
