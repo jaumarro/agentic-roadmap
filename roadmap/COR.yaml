@@ -40,3 +40,8 @@ tasks:
     doneWhen: check --staged reads roadmap/ and the Markdown from the index; install-hook adds a pre-commit that runs it when they are staged, keeping any hook already there; a commit with a broken requires is refused
     lines: 60
     commit: '876ae55'
+  - id: COR.8
+    title: Never hand out an id another clone has or the block once had
+    requires: [COR.4]
+    doneWhen: add looks at remote branches too, and past the highest number ever used in the block's git history; a task deleted from the tip keeps its id from coming back
+    lines: 20
