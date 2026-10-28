@@ -123,10 +123,11 @@ tasks:
     doneWhen: a task both branches changed leaves conflict markers with both versions, and roadmap.yaml merges as text, never through the block driver
     lines: 20
     risky: true
+    commit: 'eae65fe'
   - id: COR.21
     title: close refuses when it can tell no base
     requires: [COR.19]
-    doneWhen: "with no base: set and none found, close without --commit refuses and asks for base: instead of taking older history"
+    doneWhen: 'with no base: set and none found, close without --commit refuses and asks for base: instead of taking older history'
     lines: 10
     risky: true
   - id: COR.22
