@@ -130,6 +130,7 @@ tasks:
     doneWhen: 'with no base: set and none found, close without --commit refuses and asks for base: instead of taking older history'
     lines: 10
     risky: true
+    commit: '3311f88'
   - id: COR.22
     title: check tells a commit lost to a squash or a shallow clone from a wrong one
     requires: [COR.3]
