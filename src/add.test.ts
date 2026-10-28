@@ -89,6 +89,19 @@ describe('add', () => {
     expect(capture(['check'], root).code).toBe(0);
   });
 
+  it("sees ids and started tasks on another clone's branches once fetched", () => {
+    const origin = repo();
+    git(origin, 'switch', '-q', '-c', 'get-1/elsewhere');
+    capture(['add', 'GET', 'From the other clone', ...ADD], origin);
+    git(origin, 'commit', '-qam', 'docs: plan it');
+    git(origin, 'switch', '-q', 'main');
+    const clone = join(mkdtempSync(join(tmpdir(), 'agentic-roadmap-')), 'clone');
+    git(origin, 'clone', '-q', origin, clone);
+
+    expect(capture(['add', 'GET', 'From here', ...ADD], clone).text).toMatch(/^Added GET\.4 /);
+    expect(capture(['list', '--state', 'started'], clone).text).toContain('GET.1  started');
+  });
+
   it('sees an id another branch committed when the roadmap sits in a subfolder', () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
     git(repoRoot, 'init', '-q', '-b', 'main');
