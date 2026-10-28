@@ -39,24 +39,31 @@ const CHANGE_COMMIT = /^(feat|fix|refactor|perf|build)(\([^)]*\))?!?:/;
  * The commits only HEAD's branch has, newest first: what the task's own branch added since it left the others. All of
  * HEAD's when every commit is on another branch too, as on the base branch itself.
  */
-function readOwnCommits(root: string): string {
+function readOwnCommits(root: string): { commits: string[][]; ownBranch: boolean } {
   const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
   const others = listBranches(root).filter((branch) => branch !== current);
-  const own = git(root, ['log', '-n', '200', '--format=%h%x09%s', 'HEAD', '--not', ...others, '--']) ?? '';
-  return own === '' ? (git(root, ['log', '-n', '200', '--format=%h%x09%s']) ?? '') : own;
+  // With no other branch, as a repo worked on its base alone, there is nothing to leave out.
+  const range = others.length === 0 ? ['HEAD'] : ['HEAD', '--not', ...others];
+  const log = git(root, ['log', '-n', '200', '--format=%h%x09%s', ...range, '--']) ?? '';
+  const commits = log
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => line.split('\t'));
+  return { commits, ownBranch: others.length > 0 };
 }
 
 /**
- * The short sha that closes a task: the newest conventional change (`feat`, `fix`, `refactor`, `perf`, `build`) on
- * the task's own branch, else its newest commit that is not a `docs:` one; null when there is none.
+ * The short sha that closes a task, from the commits its own branch made: the newest conventional change (`feat`,
+ * `fix`, `refactor`, `perf`, `build`), else the newest that is not a `docs:` one, else, for a task that only writes
+ * documents, the newest of all. Null when the branch made none, so an earlier task's work is never taken for it.
  */
 export function readLastWorkCommit(root: string): string | null {
-  const commits = readOwnCommits(root)
-    .split('\n')
-    .map((line) => line.split('\t'));
-  const change = commits.find(([sha, subject = '']) => sha && CHANGE_COMMIT.test(subject));
-  const work = change ?? commits.find(([sha, subject = '']) => sha && !PLAN_COMMIT.test(subject));
-  return work?.[0] ?? null;
+  const { commits, ownBranch } = readOwnCommits(root);
+  const change = commits.find(([, subject = '']) => CHANGE_COMMIT.test(subject));
+  const work = change ?? commits.find(([, subject = '']) => !PLAN_COMMIT.test(subject));
+  // On a lone base branch the newest docs commit is likely another task's close, so only a task branch falls back to it.
+  const document = ownBranch ? commits[0] : undefined;
+  return (work ?? document)?.[0] ?? null;
 }
 
 /**
