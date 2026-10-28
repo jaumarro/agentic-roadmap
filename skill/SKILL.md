@@ -15,8 +15,10 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 2. Read the task before you start: `agentic-roadmap show <ID>` gives its block, its «Done when», what it requires and what it unblocks. «Done when» is what you must make true, and how it is checked.
 3. Branch from the base branch, named after the task: its id in lower case with a hyphen, then a short slug, as `abc-3/close-command`. That branch is what marks the task started for everyone else. A task marked ⚠︎ (`risky: true`) touches code execution, credentials, persistence, pushes or outside text: it gets a full review before it is closed.
 4. Do the work with conventional commits: the change as `feat:`, `fix:`, `refactor:` or `perf:`, its tests after it as `test:`.
-5. Close it: `agentic-roadmap close <ID>`. It writes the newest `feat`, `fix`, `refactor` or `perf` commit as the task's commit. A task that is only a document has no such commit: pass the one that did it, as `close <ID> --commit <sha>`. It refuses a task whose requirements are not all done.
+5. Close it: `agentic-roadmap close <ID>`. From the commits only this branch has, it writes the newest `feat`, `fix`, `refactor`, `perf` or `build` one as the task's commit, else the newest that is not `docs:`, else, for a task that is only a document, the newest `docs:` one. A branch with no commit of its own is refused rather than given another task's: commit the work first, or pass `--commit <sha>`. It refuses a task whose requirements are not all done.
 6. Commit what `close` wrote as its own commit, `docs: close <ID>`, on the same branch. Then merge the branch into the base branch the way the repo does (a pull request, or a fast-forward merge where there is none) and delete it, so it no longer marks the task started.
+
+Stacking task branches, each on the one before, as a prototype that merges nothing yet does, works on one condition: close each task on its branch (step 6 included) before you branch the next from it. The next branch then sees it done and can close its own task, and `close` takes only the commits that branch added. On the base branch, the stack shows as its first task in progress until the stack merges.
 
 ## Several sessions at once
 
