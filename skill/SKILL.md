@@ -26,6 +26,7 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 
 - `agentic-roadmap why <ID>`: what a task waits on, down to the tasks that can be taken now. Use it before choosing something that is not Next.
 - `agentic-roadmap list --state ready` (or `done`, `started`, `waiting`), and `--block <CODE>`: the plan, or a slice of it.
+- `agentic-roadmap list --by wave`: the tasks left in waves; a wave can run at once, in as many sessions as it has tasks, after the waves before it. «(critical)» marks the tasks the plan's length depends on. Use it to answer what can run in parallel and what comes after.
 - `agentic-roadmap status`: how much of each block is done.
 - `next`, `free`, `show`, `why`, `list`, `status` and `health` take `--json`: read that instead of parsing the text.
 
