@@ -5,7 +5,7 @@ description: Work from a repo's agentic-roadmap plan, the roadmap/ folder of YAM
 
 # Working from the roadmap
 
-The plan lives in `roadmap/`: `roadmap.yaml` lists the blocks in order, and each block is `roadmap/<CODE>.yaml` with its tasks. The `agentic-roadmap` command reads and writes it; before it is installed, run it as `node <path to agentic-roadmap>/src/cli.ts`. It finds `roadmap/` from any folder below it. `agentic-roadmap help` lists every command.
+The plan lives in `roadmap/`: `roadmap.yaml` lists the blocks in order, and each block is `roadmap/<CODE>.yaml` with its tasks. The `agentic-roadmap` command reads and writes it; when it is a dev dependency of the repo, run it as `pnpm exec agentic-roadmap` (or `npx agentic-roadmap`). It finds `roadmap/` from any folder below it. `agentic-roadmap help` lists every command.
 
 Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into the YAML: `add` picks the next free id, looking at every local branch too, and `close` writes the commit, quoted, after checking it exists.
 
@@ -45,3 +45,10 @@ To bring in a plan kept elsewhere (a Markdown file, a checklist, issues, notes),
 When the repo keeps the plan as Markdown (the file `markdown:` names in `roadmap.yaml`), never edit it: `close`, `add` and `focus` rewrite it, `agentic-roadmap render` does after a hand edit to the YAML, and `check` fails when it no longer matches. Commit it with the YAML.
 
 A new roadmap starts with `agentic-roadmap init`. Commit `roadmap/` on the base branch before any task: a task's branch can only mark it started once the plan is there.
+
+Two installs make parallel work safe, each once per clone. Both change the repo's git setup, so ask the user before running them:
+
+- `agentic-roadmap install-merge-driver`: git merges `roadmap/*.yaml` task by task, so two branches that add or close tasks in one block merge without a conflict. It writes `.gitattributes`, which is committed, and the driver in `.git/config`, which every clone sets again.
+- `agentic-roadmap install-hook`: a pre-commit hook runs `check --staged` when a commit touches the plan, so a broken plan never lands. When the repo already has a pre-commit hook (husky, lefthook), it leaves it alone and prints the line to add to it.
+
+Check whether they are there with `git config merge.agentic-roadmap.driver` and a look at `.git/hooks/pre-commit`.
