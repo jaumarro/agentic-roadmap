@@ -35,8 +35,8 @@ export function readKnownCommits(root: string, shas: string[]): Set<string> {
 const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
 const CHANGE_COMMIT = /^(feat|fix|refactor|perf|build)(\([^)]*\))?!?:/;
 
-// A branch named after a task: one of its parts is an id's slug, as abc-1 or abc-1-close.
-const TASK_BRANCH = /(^|\/)[a-z][a-z0-9]*-\d+(-[^/]*)?(\/|$)/;
+// What close asks to commit once it wrote a task's commit: where that task's work ends and the next one's starts.
+const CLOSE_COMMIT = /^docs(\([^)]*\))?!?: close ([A-Z][A-Z0-9]*\.[0-9]+)\b/;
 
 /** The branch tasks start from: `configured`, else the remote's default branch, else main or master; null for none. */
 function readBase(root: string, configured: string | undefined): string | null {
@@ -46,51 +46,40 @@ function readBase(root: string, configured: string | undefined): string | null {
   return candidates.find((name) => name !== undefined && name !== null && resolveCommit(root, name) !== null) ?? null;
 }
 
-function isAncestor(root: string, older: string, newer: string): boolean {
-  return git(root, ['merge-base', '--is-ancestor', older, newer]) !== null;
-}
-
 /**
- * The commits the task's branch made since it left its base, newest first, leaving out a task branch it was stacked on.
- * A copy of the branch, as a backup or a branch made from it, takes nothing away. On the base itself, or with no base
- * to tell, every commit of HEAD's.
+ * Task `id`'s commits, newest first: those since HEAD left its base, cut at the newest close of another task, which
+ * ends that task's work, as below a stacked branch. Branch names play no part, so a pushed copy or a backup of the
+ * branch takes nothing away. On the base itself, or with no base to tell, every commit since that close.
  */
-function readOwnCommits(root: string, configuredBase: string | undefined): { commits: string[][]; ownBranch: boolean } {
+function readOwnCommits(root: string, id: string, configuredBase: string | undefined): string[][] {
   const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
   const base = readBase(root, configuredBase);
-  const ownBranch = base !== null && current !== base;
-  const head = git(root, ['rev-parse', 'HEAD']);
-  // A task branch whose tip HEAD already holds, and is not HEAD's own tip, is the task this one was stacked on.
-  const below = listAllBranches(root).filter(
-    (branch) =>
-      branch !== current &&
-      TASK_BRANCH.test(branch) &&
-      git(root, ['rev-parse', branch]) !== head &&
-      isAncestor(root, branch, 'HEAD'),
-  );
-  const remoteBase = base === null ? null : `origin/${base}`;
-  const bases = [base, remoteBase].filter(
-    (name): name is string => name !== null && resolveCommit(root, name) !== null,
-  );
-  const range = ownBranch ? ['HEAD', '--not', ...bases, ...below] : ['HEAD'];
+  const bases = base === null || current === base ? [] : [base, `origin/${base}`];
+  const range = ['HEAD', '--not', ...bases.filter((name) => resolveCommit(root, name) !== null)];
   const log = git(root, ['log', '-n', '200', '--format=%h%x09%s', ...range, '--']) ?? '';
   const commits = log
     .split('\n')
     .filter(Boolean)
     .map((line) => line.split('\t'));
-  return { commits, ownBranch };
+  const end = commits.findIndex(([, subject = '']) => {
+    const closed = CLOSE_COMMIT.exec(subject)?.[2];
+    return closed !== undefined && closed !== id;
+  });
+  return end === -1 ? commits : commits.slice(0, end);
 }
 
 /**
- * The short sha that closes a task, from the commits its own branch made: the newest conventional change (`feat`,
- * `fix`, `refactor`, `perf`, `build`), else the newest that is not a `docs:` one, else, for a task that only writes
- * documents, the newest of all. Null when the branch made none, so an earlier task's work is never taken for it.
+ * The short sha that closes task `id`, from the commits it made: the newest conventional change (`feat`, `fix`,
+ * `refactor`, `perf`, `build`), else the newest that is not a `docs:` one, else, on a task's own branch, the newest
+ * `docs:` one, for a task that only writes documents. Null when it made none, so another task's work is never taken.
  */
-export function readLastWorkCommit(root: string, base?: string): string | null {
-  const { commits, ownBranch } = readOwnCommits(root, base);
+export function readLastWorkCommit(root: string, id: string, base?: string): string | null {
+  const commits = readOwnCommits(root, id, base);
+  const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
+  // On the base itself the newest docs commit is likely the plan's, so only a task's branch falls back to one.
+  const ownBranch = current !== readBase(root, base);
   const change = commits.find(([, subject = '']) => CHANGE_COMMIT.test(subject));
   const work = change ?? commits.find(([, subject = '']) => !PLAN_COMMIT.test(subject));
-  // On a lone base branch the newest docs commit is likely another task's close, so only a task branch falls back to it.
   const document = ownBranch ? commits[0] : undefined;
   return (work ?? document)?.[0] ?? null;
 }
