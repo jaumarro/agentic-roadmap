@@ -65,6 +65,11 @@ Don't write ids or commits by hand: `add` and `close` do it.
 
 Keep your formatter off the Markdown copy (`docs/roadmap.md`), or it rewrites the tables on every close.
 
+## Coming from another plan
+
+Ask your agent to move it in. With the skill installed, it reads your plan, whatever its shape, and builds `roadmap/`
+with `add`.
+
 ## License
 
 MIT
