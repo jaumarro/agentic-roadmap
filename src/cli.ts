@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -542,7 +542,13 @@ export function run(args: string[], io: Io): number {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+/** Whether this file is the one node was started with: through a symlink too, as package managers install binaries. */
+function isEntryPoint(): boolean {
+  const started = process.argv[1];
+  return started !== undefined && realpathSync(started) === realpathSync(fileURLToPath(import.meta.url));
+}
+
+if (isEntryPoint()) {
   // A reader that stops early, as `| head -1`, closes the pipe: what is left unread is not a failure.
   process.stdout.on('error', (error: NodeJS.ErrnoException) => {
     if (error.code !== 'EPIPE') throw error;
