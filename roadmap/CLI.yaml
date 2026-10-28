@@ -39,3 +39,8 @@ tasks:
     requires: [COR.12]
     doneWhen: without --path-format, add still takes the lock and install-hook finds the repo
     lines: 10
+  - id: CLI.8
+    title: Validate the plan without zod
+    requires: [COR.5]
+    doneWhen: the schemas are checked by hand with the same messages, zod is gone from dependencies, and the error tests pass unchanged
+    lines: 100
