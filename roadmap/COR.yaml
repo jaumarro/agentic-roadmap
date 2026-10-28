@@ -116,3 +116,4 @@ tasks:
     requires: [COR.17]
     doneWhen: "close bounds the task's commits by its base and by the newest docs: close of another task: a pushed copy of the branch never hides its feat, a fresh stacked branch is refused, and a base: that names no branch fails with that said"
     lines: 30
+    commit: '53dc618'
