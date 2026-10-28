@@ -46,6 +46,13 @@ function plan(): string {
   return root;
 }
 
+/** The plan, kept as Markdown at the default path. */
+function kept(): string {
+  const root = plan();
+  writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), 'blocks: [GET]\nmarkdown: docs/roadmap.md\n');
+  return root;
+}
+
 function capture(args: string[], cwd: string) {
   let text = '';
   const code = run(args, { cwd, env: {}, out: (written) => (text += written) });
@@ -73,20 +80,28 @@ describe('render', () => {
     expect(existsSync(join(root, 'docs'))).toBe(false);
   });
 
-  it('keeps an existing Markdown current when a task is added or the focus changes, and makes none otherwise', () => {
+  it('writes no Markdown on its own, nor keeps one rendered on demand, unless roadmap.yaml names it', () => {
     const root = plan();
     capture(['add', 'GET', 'Fourth', '--done-when', 'x', '--lines', '5'], root);
     expect(existsSync(join(root, 'docs', 'roadmap.md'))).toBe(false);
 
     capture(['render'], root);
+    writeFileSync(join(root, 'docs', 'roadmap.md'), 'stale\n');
     capture(['add', 'GET', 'Fifth', '--done-when', 'x', '--lines', '5'], root);
-    capture(['focus', 'GET.5'], root);
-    expect(readRendered(root)).toContain('| GET.5 | Fifth | — | x | ~5 |\n');
-    expect(readRendered(root)).toContain('Focus: GET.5');
+    expect(readRendered(root)).toBe('stale\n');
+    expect(capture(['check'], root).text).not.toContain('docs/roadmap.md');
+  });
+
+  it('keeps the Markdown roadmap.yaml names current when a task is added or the focus changes', () => {
+    const root = kept();
+    capture(['add', 'GET', 'Fourth', '--done-when', 'x', '--lines', '5'], root);
+    expect(readRendered(root)).toContain('| GET.4 | Fourth | — | x | ~5 |\n');
+    capture(['focus', 'GET.4'], root);
+    expect(readRendered(root)).toContain('Focus: GET.4');
   });
 
   it('keeps it current when a task is closed', () => {
-    const root = plan();
+    const root = kept();
     execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: root });
     execFileSync(
       'git',
@@ -104,7 +119,7 @@ describe('render', () => {
 
 describe('check on the Markdown', () => {
   it('fails when the Markdown was edited by hand', () => {
-    const root = plan();
+    const root = kept();
     capture(['render'], root);
     writeFileSync(join(root, 'docs', 'roadmap.md'), RENDERED.replace('three works', 'three works, roughly'));
 
@@ -114,7 +129,7 @@ describe('check on the Markdown', () => {
   });
 
   it('accepts a table a formatter padded, and a plan with no Markdown at all', () => {
-    const root = plan();
+    const root = kept();
     expect(capture(['check'], root).text).not.toContain('docs/roadmap.md');
 
     const padded = RENDERED.replace('| - | - | - | - | - |', '| ----- | ---- | -------- | --------- | ----- |').replace(
