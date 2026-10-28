@@ -30,34 +30,37 @@ plan you want to read, review and keep sound while several sessions build it.
 
 ## Install
 
-Needs Node 20 or later.
+Needs Node 20 or later. Add it to the repo as a dev dependency, so every clone and session runs the same version:
 
 ```bash
-pnpm add -D github:jaumarro/agentic-roadmap
+pnpm add -D agentic-roadmap   # or: npm install -D agentic-roadmap
 ```
 
-pnpm builds the package on install, and asks you to allow it first. Add it to `pnpm-workspace.yaml` (create the file if
-the repo has none), then install again:
-
-- pnpm 11 prints the `allowBuilds:` entry to copy, pinned to the commit; copy it as printed.
-- pnpm 10 fails with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`; add the package by name:
-
-  ```yaml
-  onlyBuiltDependencies:
-    - agentic-roadmap
-  ```
-
-After an upgrade, run `roadmap install-skill` again so agents read the new workflow.
-
-This gives you two commands, `agentic-roadmap` and its short name `roadmap`.
+It gives two commands, `agentic-roadmap` and its short name `roadmap`; run them with `pnpm exec` or `npx`. To try it
+first without installing: `npx agentic-roadmap init`.
 
 ## Start
 
 ```bash
-roadmap init           # creates roadmap/ with an example block
-roadmap install-skill  # teaches coding agents the workflow
-roadmap install-hook   # refuses commits that break the plan
+npx roadmap init                  # creates roadmap/ with an example block
+npx roadmap install-skill         # teaches Claude Code the workflow
+npx roadmap install-hook          # refuses commits that break the plan
+npx roadmap install-merge-driver  # merges parallel edits to the plan task by task
 ```
+
+After an upgrade, run `install-skill` again so agents read the new workflow.
+
+## For coding agents
+
+The workflow agents follow is in [`skill/SKILL.md`](skill/SKILL.md): take the next task, branch, close it with its
+commit, and plan work that ends with a table `add --from` turns into tasks.
+
+- Claude Code: `roadmap install-skill` copies it to `.claude/skills/roadmap-workflow/`, and it loads whenever the repo
+  has `roadmap/`, or when you plan work in it.
+- Other agents that read `AGENTS.md` (Codex, Cursor and others): add a line pointing at it, as
+  `Plan and track work with agentic-roadmap: read node_modules/agentic-roadmap/skill/SKILL.md and follow it.`
+
+Every command that answers a question takes `--json`, and errors go to stderr, so an agent can parse the answer.
 
 ## The plan
 

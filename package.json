@@ -2,7 +2,28 @@
   "name": "agentic-roadmap",
   "version": "0.1.0",
   "description": "A roadmap in YAML that people and coding agents follow from the command line: what to do next, who started what, and closing a task with its commit.",
+  "keywords": [
+    "agent-skill",
+    "ai-agents",
+    "claude-code",
+    "cli",
+    "coding-agents",
+    "critical-path",
+    "dependencies",
+    "git",
+    "parallel",
+    "plan",
+    "planning",
+    "roadmap",
+    "task-tracker",
+    "tasks",
+    "worktrees",
+    "yaml"
+  ],
+  "homepage": "https://github.com/jaumarro/agentic-roadmap#readme",
+  "bugs": "https://github.com/jaumarro/agentic-roadmap/issues",
   "license": "MIT",
+  "author": "Jaume Nicolau Prohens",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jaumarro/agentic-roadmap.git"
