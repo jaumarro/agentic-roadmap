@@ -136,6 +136,7 @@ tasks:
     requires: [COR.3]
     doneWhen: in a shallow clone check warns instead of failing on cited commits it cannot see; the skill and reference say closes need a merge or fast-forward, and how to close after a squash
     lines: 20
+    commit: '0eeec3b'
   - id: COR.23
     title: The hook and the merge driver survive an upgrade
     requires: [COR.7, COR.6]
