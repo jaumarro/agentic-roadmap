@@ -134,12 +134,14 @@ export function initRoadmap(dir: string): string {
   const covering = findCovering(dir);
   if (covering !== null) throw new RoadmapError(`A roadmap already covers this folder, at ${covering}.`);
   const block = join(folder, 'GET.yaml');
+  let wroteBlock = false;
   try {
     mkdirSync(folder, { recursive: true });
     writeFileSync(block, STARTER_BLOCK, { flag: 'wx' });
+    wroteBlock = true;
     writeFileSync(join(folder, CONFIG_FILE), STARTER_CONFIG, { flag: 'wx' });
   } catch (error) {
-    if (existsSync(block) && !existsSync(join(folder, CONFIG_FILE))) rmSync(block);
+    if (wroteBlock) rmSync(block);
     throw new RoadmapError(`Could not write the roadmap in ${dir}: ${readCode(error)}.`);
   }
   return dir;
