@@ -16,6 +16,9 @@ Needs Node 24 or later.
 pnpm add -D github:jaumarro/agentic-roadmap
 ```
 
+pnpm builds the package on install, and asks you first: it prints an `allowBuilds:` line for your
+`pnpm-workspace.yaml`. Add it and install again.
+
 This gives you two commands, `agentic-roadmap` and its short name `roadmap`.
 
 ## Start
