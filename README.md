@@ -8,6 +8,24 @@ task with the commit that did it.
   started as soon as a branch is named after it.
 - **Readable anywhere.** `roadmap render` writes the plan as Markdown tables whenever you want to share it.
 
+## Why this one
+
+Most tools for agents' tasks are issue trackers: a backlog that agents claim work from, kept in a database. This one is
+a plan: ordered, its dependencies checked, and its shape measured.
+
+|                      | agentic-roadmap                                                                          | Trackers such as Beads or taskops         |
+| -------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Where the plan lives | YAML files in `roadmap/`, read and reviewed in PRs                                       | a database (Dolt, SQLite) or a JSONL log  |
+| What runs it         | Node and two libraries                                                                   | a database engine, often a daemon or sync |
+| Who has started what | read from branch names: nothing to keep in sync                                          | claims written to the store               |
+| A plan that is wrong | `check` refuses cycles, unknown requirements, repeated ids and commits that do not exist | mostly left to whoever writes it          |
+| A plan that is weak  | `health`: critical path, parallelism, bottlenecks, oversized tasks                       | not measured                              |
+| What to take next    | the task the most work waits on, after your focus                                        | priority or order you set                 |
+| From a plan to tasks | the plan ends with a table; `add --from` adds it all, or nothing                         | one task at a time                        |
+
+Pick a tracker when you want a queue of issues many agents pull from across machines. Pick this when the work is a
+plan you want to read, review and keep sound while several sessions build it.
+
 ## Install
 
 Needs Node 24 or later.
