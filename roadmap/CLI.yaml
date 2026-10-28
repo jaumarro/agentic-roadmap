@@ -29,6 +29,7 @@ tasks:
     requires: [COR.5]
     doneWhen: close NOPE.1 says there is no task NOPE.1
     lines: 5
+    commit: '3959521'
   - id: CLI.6
     title: Build on a git install whatever the package manager
     requires: [REV.1]
