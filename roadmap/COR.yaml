@@ -48,5 +48,6 @@ tasks:
   - id: COR.9
     title: Close a task with the newest work commit on its own branch
     requires: [COR.3]
-    doneWhen: "with no --commit, close takes the newest commit since the branch left its base that is not docs:, build: included, and never one from an earlier task already merged"
+    doneWhen: 'with no --commit, close takes the newest commit since the branch left its base that is not docs:, build: included, and never one from an earlier task already merged'
     lines: 20
+    commit: 'f1aba94'
