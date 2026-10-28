@@ -18,3 +18,8 @@ tasks:
     doneWhen: engines asks for Node 20 or later, and the built CLI passes its tests and runs next and graph on Node 20
     lines: 5
     commit: '2b06ca2'
+  - id: CLI.4
+    title: Run when started through a symlink
+    requires: [CLI.2]
+    doneWhen: roadmap --help through a symlink to the built CLI prints the usage
+    lines: 10
