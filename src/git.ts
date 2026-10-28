@@ -17,12 +17,22 @@ export function resolveCommit(root: string, revision: string): string | null {
 }
 
 /** The ones of `shas` this repo has as commits, asked of one git process: one per sha takes seconds on a big plan. */
+/** Whether `root`'s clone holds only part of its history, as `git clone --depth` makes. */
+export function isShallow(root: string): boolean {
+  return git(root, ['rev-parse', '--is-shallow-repository']) === 'true';
+}
+
 export function readKnownCommits(root: string, shas: string[]): Set<string> {
   const unique = [...new Set(shas)];
   if (unique.length === 0) return new Set();
   try {
     const input = unique.map((sha) => `${sha}^{commit}\n`).join('');
-    const output = execFileSync('git', ['cat-file', '--batch-check'], { cwd: root, encoding: 'utf8', input });
+    const output = execFileSync('git', ['cat-file', '--batch-check'], {
+      cwd: root,
+      encoding: 'utf8',
+      input,
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
     // One answer per line, in order: `<oid> commit <size>` when found, else `… missing` or `… ambiguous`.
     const answers = output.split('\n');
     return new Set(unique.filter((_, at) => /^[0-9a-f]+ commit /.test(answers[at] ?? '')));

@@ -10,6 +10,7 @@ import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './c
 import { closeTask } from './close.ts';
 import {
   listAllBranches,
+  isShallow,
   readKnownCommits,
   readBase,
   readLastWorkCommit,
@@ -462,13 +463,17 @@ function check(root: string, command: Command, out: Io['out']): number {
   const readMarkdown = command.staged ? readStaged : undefined;
   const cited = roadmap.blocks.flatMap((block) => block.tasks.flatMap((task) => (task.commit ? [task.commit] : [])));
   const known = readKnownCommits(root, cited);
+  const missing = findMissingCommits(roadmap, (sha) => known.has(sha));
+  // A shallow clone, as CI checks out, lacks old history: a commit it cannot see may well exist.
+  const shallow = missing.length > 0 && isShallow(root);
+  const unseen = shallow ? [`this clone is shallow, so ${missing.length} cited commits went unchecked`] : [];
   const problems = [
     ...checkRoadmap(roadmap),
-    ...findMissingCommits(roadmap, (sha) => known.has(sha)),
+    ...(shallow ? [] : missing),
     ...checkMarkdown(root, roadmap, readMarkdown),
   ];
   out(problems.length === 0 ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(problems)}`);
-  const warnings = warnRoadmap(roadmap);
+  const warnings = [...unseen, ...warnRoadmap(roadmap)];
   if (warnings.length > 0) out(`Warnings, which do not fail it:\n${listProblems(warnings)}`);
   return problems.length === 0 ? 0 : 1;
 }
