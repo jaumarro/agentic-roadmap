@@ -49,6 +49,9 @@ describe('close', () => {
   it("takes the task branch's own build commit, not a feature an earlier task merged", () => {
     const root = repo();
     git(root, 'branch', '-M', 'main');
+    // GET.1 as a task that changes code, as a build-only one does, rather than the document the example block has.
+    const block = join(root, 'roadmap', 'GET.yaml');
+    writeFileSync(block, readFileSync(block, 'utf8').replace('lines: doc', 'lines: 5'));
     commit(root, 'feat: an earlier task');
     git(root, 'switch', '-q', '-c', 'get-1/node');
     const build = commit(root, 'build: run on older Node');
@@ -141,6 +144,30 @@ describe('close', () => {
     expect(checked.code).toBe(0);
     expect(checked.text).toMatch(/^The plan is sound\.\n/);
     expect(checked.text).toContain('this clone is shallow');
+  });
+
+  it('takes the feature over a newer tooling build commit', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/work');
+    const feature = commit(root, 'feat: write the first block');
+    commit(root, 'build: update the tooling');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(feature);
+  });
+
+  it('closes a doc-only task with its docs commit, not a tooling build one', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/write');
+    const written = commit(root, 'docs: write the first block');
+    commit(root, 'build: update the tooling');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(written);
   });
 
   it('names an unknown task before it looks for a commit', () => {
