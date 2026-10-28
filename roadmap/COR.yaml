@@ -96,6 +96,7 @@ tasks:
     doneWhen: with the plan in app/roadmap/, a GET.3 committed on another branch keeps add from giving GET.3 again
     lines: 10
     risky: true
+    commit: '8e0ddad'
   - id: COR.17
     title: close bounds the task's commits by its base, not by every other branch
     requires: [COR.14]
