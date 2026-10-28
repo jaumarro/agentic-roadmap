@@ -47,6 +47,7 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
   if (block === undefined) throw new RoadmapError(`No block ${code} in this roadmap.`);
   const added: Task = { id, ...task };
   const after = {
+    ...roadmap,
     blocks: roadmap.blocks.map((each) => (each.code === code ? { ...each, tasks: [...each.tasks, added] } : each)),
   };
   const problems = checkRoadmap(after).filter((problem) => problem.includes(id));
