@@ -32,7 +32,9 @@ describe('the binary', () => {
     capture(['init'], root);
     const cli = fileURLToPath(new URL('cli.ts', import.meta.url));
 
-    const result = spawnSync('sh', ['-c', `node "${cli}" next | head -c 1`], { cwd: root, encoding: 'utf8' });
+    // Older Node 24 warns that it strips the types of the source this runs; the built CLI it ships is plain JS.
+    const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+    const result = spawnSync('sh', ['-c', `node "${cli}" next | head -c 1`], { cwd: root, encoding: 'utf8', env });
 
     expect(result.stderr).toBe('');
   });

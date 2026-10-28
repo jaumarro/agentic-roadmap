@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkRoadmap, findMissingCommits } from './check.ts';
+import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
 import type { Block, Task } from './model.ts';
 
 function task(id: string, requires: string[] = [], commit?: string): Task {
@@ -39,6 +39,14 @@ describe('checkRoadmap', () => {
     };
 
     expect(checkRoadmap(plan)).toEqual(['a cycle: ABC.1 → ABC.2 → ABC.1', 'a cycle: ABC.3 → ABC.3']);
+  });
+});
+
+describe('warnRoadmap', () => {
+  it('still answers on a plan with a cycle inside a block, which check reports apart', () => {
+    const plan = { blocks: [block('ABC', task('ABC.1', ['ABC.2']), task('ABC.2', ['ABC.1']))] };
+
+    expect(() => warnRoadmap(plan)).not.toThrow();
   });
 });
 
