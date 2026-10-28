@@ -21,7 +21,16 @@ import { listFree, listInProgress, renderFree, type InProgress } from './free.ts
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
 import { installSkill } from './install-skill.ts';
-import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
+import {
+  listRows,
+  renderHealth,
+  renderList,
+  renderShown,
+  renderWaves,
+  renderWhy,
+  sortByWave,
+  STATES,
+} from './query.ts';
 import { checkMarkdown, measureProgress, renderProgress, syncMarkdown, writeMarkdown } from './render.ts';
 import { findRoot, initRoadmap, readRoadmap, readStagedRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
@@ -42,8 +51,9 @@ Commands:
   status [--json]            how much of each block is done
   show <ID> [--json]         a task: its block, done when, what it requires and unblocks, and where it stands
   why <ID> [--json]          what a task waits on, down to the tasks that can be taken now
-  list [--block CODE] [--state done|started|ready|waiting] [--json]
-                             every task with its state, by block
+  list [--block CODE] [--state done|started|ready|waiting] [--by block|wave] [--json]
+                             every task with its state, by block; --by wave gives the tasks left in waves, each
+                             wave able to run at once after the ones before, critical ones marked
   health [--json] [--strict] [--against BRANCH]
                              the plan's shape (critical path, parallelism, width) and its worst problems; with
                              --against, each figure against that branch's plan and what got worse; --strict fails
@@ -68,6 +78,7 @@ const OPTIONS = {
   json: { type: 'boolean' },
   block: { type: 'string' },
   state: { type: 'string' },
+  by: { type: 'string' },
   strict: { type: 'boolean' },
   requires: { type: 'string' },
   'done-when': { type: 'string' },
@@ -111,6 +122,7 @@ type Command = {
   json: boolean;
   block: string | undefined;
   state: string | undefined;
+  by: string | undefined;
   strict: boolean;
   requires: string | undefined;
   doneWhen: string | undefined;
@@ -144,6 +156,7 @@ function readCommand(args: string[], env: Io['env']): Command {
     json: values.json === true,
     block: values.block,
     state: values.state,
+    by: values.by,
     strict: values.strict === true,
     requires: values.requires,
     doneWhen: values['done-when'],
@@ -212,8 +225,17 @@ function list(root: string, command: Command, out: Io['out']): void {
   if (block !== undefined && !roadmap.blocks.some((each) => each.code === block)) {
     throw new RoadmapError(`No block ${block} in this roadmap.`);
   }
-  const rows = listRows(roadmap, listBranches(root), { block, state });
-  out(command.json ? `${JSON.stringify(rows, null, 2)}\n` : renderList(roadmap, rows));
+  if (command.by !== undefined && command.by !== 'block' && command.by !== 'wave') {
+    throw new RoadmapError('--by is block or wave.');
+  }
+  const all = listRows(roadmap, listBranches(root), { block, state });
+  const byWave = command.by === 'wave';
+  const rows = byWave ? sortByWave(all, roadmap.focus ?? []) : all;
+  if (command.json) {
+    out(`${JSON.stringify(rows, null, 2)}\n`);
+    return;
+  }
+  out(byWave ? renderWaves(rows) : renderList(roadmap, rows));
 }
 
 function readTaskId(command: Command): string {

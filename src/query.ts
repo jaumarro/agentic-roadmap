@@ -1,16 +1,33 @@
 import type { Health } from './health.ts';
+import { analyze } from './analyze.ts';
+import { isOnTrack, readChapterOf } from './chapters.ts';
 import type { Roadmap } from './model.ts';
 import { readStates, type ShownTask, type TaskState, type Wait } from './state.ts';
 
 export const STATES: TaskState[] = ['done', 'started', 'ready', 'waiting'];
 
-export type Row = { id: string; block: string; state: TaskState; title: string; risky: boolean };
+export type Row = {
+  id: string;
+  block: string;
+  state: TaskState;
+  title: string;
+  risky: boolean;
+  /** Its wave among the tasks not done; null once done. */
+  wave: number | null;
+  /** On the heaviest chain of work left: a delay to it delays the plan. */
+  critical: boolean;
+  /** On a parallel track, which next and free leave to its own sessions. */
+  track: boolean;
+};
 
 const RISKY_MARK = ' ⚠︎';
+const CRITICAL_MARK = ' (critical)';
 
 /** Every task as a row, in the plan's order, narrowed to `block` and `state` when given. */
 export function listRows(roadmap: Roadmap, branches: string[], filter: { block?: string; state?: TaskState }): Row[] {
   const states = readStates(roadmap, branches);
+  const shape = analyze(roadmap).tasks;
+  const chapterOf = readChapterOf(roadmap);
   return roadmap.blocks
     .filter((block) => filter.block === undefined || block.code === filter.block)
     .flatMap((block) =>
@@ -20,9 +37,59 @@ export function listRows(roadmap: Roadmap, branches: string[], filter: { block?:
         state: states.get(task.id) ?? 'waiting',
         title: task.title,
         risky: task.risky === true,
+        wave: shape.get(task.id)?.wave ?? null,
+        critical: shape.get(task.id)?.float === 0,
+        track: isOnTrack(chapterOf, task),
       })),
     )
     .filter((row) => filter.state === undefined || row.state === filter.state);
+}
+
+/** The rows not done in waves, focused ones first within each, with the parallel tracks' after, apart. */
+export function sortByWave(rows: Row[], focus: string[]): Row[] {
+  const rank = (row: Row) => {
+    const at = focus.findIndex((entry) => entry === row.id || entry === row.block);
+    return at === -1 ? focus.length : at;
+  };
+  return rows
+    .filter((row) => row.wave !== null)
+    .toSorted((a, b) => Number(a.track) - Number(b.track) || (a.wave ?? 0) - (b.wave ?? 0) || rank(a) - rank(b));
+}
+
+function renderRow(row: Row, idWidth: number, stateWidth: number): string {
+  const marks = `${row.critical ? CRITICAL_MARK : ''}${row.risky ? RISKY_MARK : ''}`;
+  return `  ${row.id.padEnd(idWidth)}  ${row.state.padEnd(stateWidth)}  ${row.title}${marks}\n`;
+}
+
+function renderWave(wave: number, rows: Row[], idWidth: number, stateWidth: number): string {
+  const count = rows.length === 1 ? '1 task' : `${rows.length} tasks`;
+  return `Wave ${wave} · ${count}\n${rows.map((row) => renderRow(row, idWidth, stateWidth)).join('')}`;
+}
+
+/**
+ * Rows sorted by `sortByWave` under a heading per wave: everything in a wave can run at once, and each waits only on
+ * earlier waves. Parallel tracks get their own waves, under their own heading.
+ */
+export function renderWaves(rows: Row[]): string {
+  if (rows.length === 0) return 'No task left matches.\n';
+  const idWidth = Math.max(...rows.map((row) => row.id.length));
+  const stateWidth = Math.max(...STATES.map((state) => state.length));
+  const renderGroup = (group: Row[]) => {
+    const waves = [...new Set(group.map((row) => row.wave ?? 0))];
+    return waves
+      .map((wave) =>
+        renderWave(
+          wave,
+          group.filter((row) => row.wave === wave),
+          idWidth,
+          stateWidth,
+        ),
+      )
+      .join('');
+  };
+  const tracks = rows.filter((row) => row.track);
+  const trackSection = tracks.length === 0 ? '' : `\nParallel tracks\n${renderGroup(tracks)}`;
+  return `${renderGroup(rows.filter((row) => !row.track))}${trackSection}`;
 }
 
 /** The rows under their block's heading, each heading with how much of the whole block is done. */
