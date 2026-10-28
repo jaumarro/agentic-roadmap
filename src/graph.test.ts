@@ -45,7 +45,7 @@ describe('renderMermaid', () => {
     const text = renderMermaid(PLAN, readGraph(PLAN, [], true));
 
     expect(text).toMatch(/^flowchart LR\n/);
-    expect(text).toContain('  subgraph GET["GET · Get"]\n    GET_1["GET.1 · Do #quot;GET.1#quot;"]:::done\n');
+    expect(text).toContain('  subgraph GET["GET · Get"]\n    GET_1["GET.1<br/>Do #quot;GET.1#quot;"]:::done\n');
     expect(text).toContain('  subgraph SID["SID · Side (parallel track)"]\n');
     expect(text).toContain('  GET_1 --> SID_1\n');
     expect(text).toContain('  class GET_2,GET_3 critical\n');
