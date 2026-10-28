@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /** git's output in `root`, trimmed; null when git fails, as outside a repo. */
 function git(root: string, args: string[]): string | null {
@@ -83,6 +85,33 @@ export function readOnBranches(root: string, path: string, branches: string[]): 
     at += Number(size) + 1;
   }
   return contents;
+}
+
+/** The folder every worktree of `root`'s repo shares; null outside a repo. */
+export function readCommonDir(root: string): string | null {
+  return git(root, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
+}
+
+/**
+ * What `path`, from `root`, holds in the working tree of each other worktree of the repo: work another session has not
+ * committed yet.
+ */
+export function readInWorktrees(root: string, path: string): string[] {
+  const here = git(root, ['rev-parse', '--show-toplevel']);
+  const prefix = git(root, ['rev-parse', '--show-prefix']) ?? '';
+  const list = git(root, ['worktree', 'list', '--porcelain']) ?? '';
+  const trees = list
+    .split('\n')
+    .flatMap((line) => (line.startsWith('worktree ') ? [line.slice('worktree '.length)] : []));
+  return trees
+    .filter((tree) => tree !== here)
+    .flatMap((tree) => {
+      try {
+        return [readFileSync(join(tree, prefix, path), 'utf8')];
+      } catch {
+        return [];
+      }
+    });
 }
 
 /** The local branches; none outside a repo. */

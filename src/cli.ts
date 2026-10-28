@@ -12,12 +12,15 @@ import {
   listBranches,
   readKnownCommits,
   readLastWorkCommit,
+  readCommonDir,
+  readInWorktrees,
   readOnBranches,
   readStaged,
   resolveCommit,
 } from './git.ts';
 import { readGraph, renderMermaid } from './graph.ts';
 import { installHook } from './hook.ts';
+import { withLock } from './lock.ts';
 import type { Roadmap } from './model.ts';
 import { setFocus } from './focus.ts';
 import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
@@ -229,6 +232,12 @@ function readLines(value: string | undefined): number | 'doc' {
 }
 
 /** Adds a task with the id the tool picks; the plan is checked with it before anything is written. */
+/** Block `code`'s file as every local branch has it committed and every other worktree has it, committed or not. */
+function readElsewhere(root: string, code: string, branches: string[]): string[] {
+  const path = `${ROADMAP_DIR}/${code}.yaml`;
+  return [...readOnBranches(root, path, branches), ...readInWorktrees(root, path)];
+}
+
 /** Adds a plan's table of tasks in one go; `-` reads the plan from stdin. */
 function addFrom(root: string, from: string, out: Io['out']): void {
   let text: string;
@@ -237,11 +246,10 @@ function addFrom(root: string, from: string, out: Io['out']): void {
   } catch {
     throw new RoadmapError(`Could not read ${from}.`);
   }
+  const rows = readPlanTable(text);
   const roadmap = readSoundRoadmap(root);
   const branches = listBranches(root);
-  const added = addRows(root, roadmap, readPlanTable(text), (code) =>
-    readOnBranches(root, `${ROADMAP_DIR}/${code}.yaml`, branches),
-  );
+  const added = addRows(root, roadmap, rows, (code) => readElsewhere(root, code, branches));
   const after = readRoadmap(root);
   syncMarkdown(root, after);
   out(`Added ${added.length} tasks:\n${added.map((each) => `  ${each.id} · ${each.title}\n`).join('')}`);
@@ -267,8 +275,7 @@ function add(root: string, command: Command, out: Io['out']): void {
     .map((id) => id.trim())
     .filter(Boolean);
   const roadmap = readSoundRoadmap(root);
-  const onBranches = readOnBranches(root, `${ROADMAP_DIR}/${code}.yaml`, listBranches(root));
-  const id = readNextId(roadmap, code, onBranches);
+  const id = readNextId(roadmap, code, readElsewhere(root, code, listBranches(root)));
   addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
   const added = readRoadmap(root);
   syncMarkdown(root, added);
@@ -520,7 +527,11 @@ export function run(args: string[], io: Io): number {
       case 'add': {
         // A plan's path is from where the command runs, as the shell completed it, not from the roadmap.
         const from = command.from === undefined || command.from === '-' ? command.from : resolve(io.cwd, command.from);
-        add(root(), { ...command, from }, io.out);
+        const at = root();
+        const gitDir = readCommonDir(at);
+        // Picking an id and writing it is one step for every session sharing the repo: outside one, nothing is shared.
+        if (gitDir === null) add(at, { ...command, from }, io.out);
+        else withLock(gitDir, () => add(at, { ...command, from }, io.out));
         return 0;
       }
       case 'health':
