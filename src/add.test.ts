@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -87,6 +87,22 @@ describe('add', () => {
       'GET.3 requires LAT.1, from a later chapter',
     );
     expect(capture(['check'], root).code).toBe(0);
+  });
+
+  it('sees an id another branch committed when the roadmap sits in a subfolder', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+    git(repoRoot, 'init', '-q', '-b', 'main');
+    const root = join(repoRoot, 'app');
+    mkdirSync(root);
+    initRoadmap(root);
+    git(repoRoot, 'add', '-A');
+    git(repoRoot, 'commit', '-qm', 'docs: start the roadmap');
+    git(repoRoot, 'switch', '-q', '-c', 'one');
+    capture(['add', 'GET', 'From one', ...ADD], root);
+    git(repoRoot, 'commit', '-qam', 'docs: plan one');
+    git(repoRoot, 'switch', '-q', '-c', 'two', 'main');
+
+    expect(capture(['add', 'GET', 'From two', ...ADD], root).text).toMatch(/^Added GET\.4 /);
   });
 
   it('gives two worktrees adding to one block before either commits different ids', () => {
