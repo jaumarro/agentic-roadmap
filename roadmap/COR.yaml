@@ -70,6 +70,7 @@ tasks:
     doneWhen: two worktrees that add to one block before committing get different ids; ids are taken under a lock in the shared git folder
     lines: 50
     risky: true
+    commit: '9889b12'
   - id: COR.13
     title: add checks the plan with its chapters
     requires: [COR.4]
