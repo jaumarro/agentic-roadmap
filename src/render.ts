@@ -62,9 +62,12 @@ export function writeMarkdown(root: string, roadmap: Roadmap): string {
   return name;
 }
 
-/** Writes the Markdown again when there is one, so a writer never leaves it behind the YAML. */
+/**
+ * Writes the Markdown again when the repo keeps one, so a writer never leaves it behind the YAML. One kept by default
+ * would conflict on every pair of branches closing tasks in a block, as the merge driver only merges the YAML.
+ */
 export function syncMarkdown(root: string, roadmap: Roadmap): void {
-  if (existsSync(join(root, readMarkdownPath(roadmap)))) writeMarkdown(root, roadmap);
+  if (roadmap.markdown !== undefined) writeMarkdown(root, roadmap);
 }
 
 // A formatter pads table cells and lengthens the dash rows; neither changes what the table says.
@@ -85,9 +88,10 @@ function readFromDisk(root: string, name: string): string | null {
   return existsSync(path) ? readFileSync(path, 'utf8') : null;
 }
 
-/** The problem with the Markdown when one exists and says something the YAML does not; none without one. */
+/** The problem with the Markdown the repo keeps when it says something the YAML does not. */
 export function checkMarkdown(root: string, roadmap: Roadmap, read = readFromDisk): string[] {
-  const name = readMarkdownPath(roadmap);
+  if (roadmap.markdown === undefined) return [];
+  const name = roadmap.markdown;
   const text = read(root, name);
   if (text === null) return [];
   if (normalize(text) === normalize(renderMarkdown(roadmap))) return [];

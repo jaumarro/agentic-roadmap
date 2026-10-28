@@ -45,8 +45,8 @@ export const configSchema = z.strictObject({
       blocksWaitedOn: z.number().int().nonnegative().optional(),
     })
     .optional(),
-  /** Where render writes the plan as Markdown, from the folder holding roadmap/. */
-  markdown: z.string().min(1).default('docs/roadmap.md'),
+  /** Where to keep the plan as Markdown, from the folder holding roadmap/; set, add, close and focus keep it current. */
+  markdown: z.string().min(1).optional(),
 });
 
 export type Task = z.infer<typeof taskSchema>;
