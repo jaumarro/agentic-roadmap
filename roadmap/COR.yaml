@@ -117,3 +117,36 @@ tasks:
     doneWhen: "close bounds the task's commits by its base and by the newest docs: close of another task: a pushed copy of the branch never hides its feat, a fresh stacked branch is refused, and a base: that names no branch fails with that said"
     lines: 30
     commit: '53dc618'
+  - id: COR.20
+    title: A merge the driver cannot settle leaves both sides marked
+    requires: [COR.6]
+    doneWhen: a task both branches changed leaves conflict markers with both versions, and roadmap.yaml merges as text, never through the block driver
+    lines: 20
+    risky: true
+  - id: COR.21
+    title: close refuses when it can tell no base
+    requires: [COR.19]
+    doneWhen: "with no base: set and none found, close without --commit refuses and asks for base: instead of taking older history"
+    lines: 10
+    risky: true
+  - id: COR.22
+    title: check tells a commit lost to a squash or a shallow clone from a wrong one
+    requires: [COR.3]
+    doneWhen: in a shallow clone check warns instead of failing on cited commits it cannot see; the skill and reference say closes need a merge or fast-forward, and how to close after a squash
+    lines: 20
+  - id: COR.23
+    title: The hook and the merge driver survive an upgrade
+    requires: [COR.7, COR.6]
+    doneWhen: both call the installed bin by a path that stays across upgrades, and running an installer again rewrites a stale line
+    lines: 30
+    risky: true
+  - id: COR.24
+    title: install-merge-driver keeps a .gitattributes with no final newline intact
+    requires: [COR.6]
+    doneWhen: a .gitattributes ending without a newline keeps its last rule and gains the driver's on its own line
+    lines: 5
+  - id: COR.25
+    title: Writing a block keeps its line endings and folded text
+    requires: [COR.4]
+    doneWhen: close and add on a CRLF block keep CRLF, and a folded >- scalar stays folded
+    lines: 20

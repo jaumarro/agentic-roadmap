@@ -24,3 +24,18 @@ tasks:
     doneWhen: roadmap --help through a symlink to the built CLI prints the usage
     lines: 10
     commit: 'b6d0623'
+  - id: CLI.5
+    title: close names an unknown task before it looks for a commit
+    requires: [COR.5]
+    doneWhen: close NOPE.1 says there is no task NOPE.1
+    lines: 5
+  - id: CLI.6
+    title: Build on a git install whatever the package manager
+    requires: [REV.1]
+    doneWhen: prepare runs tsc directly, so npm can install it from git without pnpm
+    lines: 2
+  - id: CLI.7
+    title: Work on git older than 2.31
+    requires: [COR.12]
+    doneWhen: without --path-format, add still takes the lock and install-hook finds the repo
+    lines: 10
