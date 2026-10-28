@@ -157,8 +157,9 @@ export function readStaged(root: string, path: string): string | null {
 }
 
 /** Where `root` sits from the top of its repo, and the folder git runs hooks from; null outside a repo. */
-export function readRepoPaths(root: string): { prefix: string; hooks: string } | null {
+export function readRepoPaths(root: string): { prefix: string; hooks: string; top: string } | null {
   const prefix = git(root, ['rev-parse', '--show-prefix']);
   const hooks = git(root, ['rev-parse', '--path-format=absolute', '--git-path', 'hooks']);
-  return prefix === null || hooks === null ? null : { prefix, hooks };
+  const top = git(root, ['rev-parse', '--show-toplevel']);
+  return prefix === null || hooks === null || top === null ? null : { prefix, hooks, top };
 }
