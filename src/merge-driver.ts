@@ -6,15 +6,30 @@ import { mergeBlock } from './merge.ts';
 import { ROADMAP_DIR, RoadmapError } from './source.ts';
 
 const DRIVER = 'agentic-roadmap';
-const ATTRIBUTE = `${ROADMAP_DIR}/*.yaml merge=${DRIVER}`;
+// The config is no block, so it merges as text; a later line wins over the earlier one for the same file.
+const ATTRIBUTES = [`${ROADMAP_DIR}/*.yaml merge=${DRIVER}`, `${ROADMAP_DIR}/roadmap.yaml merge=text`];
+
+/** Writes git's own line merge over `ours`, conflict markers and both sides included, for a person to settle. */
+function markConflict(base: string, ours: string, theirs: string): void {
+  try {
+    execFileSync('git', ['merge-file', '-L', 'ours', '-L', 'base', '-L', 'theirs', ours, base, theirs], {
+      stdio: 'ignore',
+    });
+  } catch {
+    // merge-file exits with the number of conflicts it marked: that is the expected outcome here.
+  }
+}
 
 /**
  * Git's merge driver: merges `base`, `ours` and `theirs` of a block file, writing the result over `ours` as git expects.
- * True when it merged; on a conflict `ours` is left as it was, for git to mark the file conflicted.
+ * True when it merged; on a conflict `ours` gets both sides between conflict markers, and git marks the file conflicted.
  */
 export function runMergeDriver(base: string, ours: string, theirs: string): { merged: boolean; why: string } {
   const merged = mergeBlock(readFileSync(base, 'utf8'), readFileSync(ours, 'utf8'), readFileSync(theirs, 'utf8'));
-  if ('conflict' in merged) return { merged: false, why: merged.conflict };
+  if ('conflict' in merged) {
+    markConflict(base, ours, theirs);
+    return { merged: false, why: merged.conflict };
+  }
   writeFileSync(ours, merged.text);
   return { merged: true, why: '' };
 }
@@ -34,7 +49,8 @@ export function installMergeDriver(root: string): string {
     throw new RoadmapError('Could not set the merge driver in the git config: is this a git repo?');
   }
   const attributes = join(root, '.gitattributes');
-  const present = existsSync(attributes) && readFileSync(attributes, 'utf8').split('\n').includes(ATTRIBUTE);
-  if (!present) appendFileSync(attributes, `${ATTRIBUTE}\n`);
+  const lines = existsSync(attributes) ? readFileSync(attributes, 'utf8').split('\n') : [];
+  const missing = ATTRIBUTES.filter((attribute) => !lines.includes(attribute));
+  if (missing.length > 0) appendFileSync(attributes, missing.map((attribute) => `${attribute}\n`).join(''));
   return attributes;
 }
