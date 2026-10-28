@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, symlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -35,6 +35,16 @@ describe('the binary', () => {
     const result = spawnSync('sh', ['-c', `node "${cli}" next | head -c 1`], { cwd: root, encoding: 'utf8' });
 
     expect(result.stderr).toBe('');
+  });
+
+  it('runs when started through a symlink, as package managers install a binary', () => {
+    const cli = fileURLToPath(new URL('cli.ts', import.meta.url));
+    const link = join(project(), 'roadmap.ts');
+    symlinkSync(cli, link);
+
+    const result = spawnSync('node', [link, '--version'], { encoding: 'utf8' });
+
+    expect(result.stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
   });
 
   it('writes an error to stderr only, so a JSON reader on stdout sees nothing', () => {
