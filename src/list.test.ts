@@ -64,7 +64,18 @@ describe('list', () => {
   it('gives the rows as JSON', () => {
     const rows: unknown = JSON.parse(capture(['list', '--state', 'waiting', '--json'], plan()).text);
 
-    expect(rows).toEqual([{ id: 'MOR.1', block: 'MOR', state: 'waiting', title: 'Later', risky: false }]);
+    expect(rows).toEqual([
+      {
+        id: 'MOR.1',
+        block: 'MOR',
+        state: 'waiting',
+        title: 'Later',
+        risky: false,
+        wave: 2,
+        critical: true,
+        track: false,
+      },
+    ]);
   });
 
   it('refuses a state or block it does not know, and says when nothing matches', () => {
@@ -76,5 +87,68 @@ describe('list', () => {
     });
     expect(capture(['list', '--block', 'XYZ'], root)).toEqual({ code: 1, text: 'No block XYZ in this roadmap.\n' });
     expect(capture(['list', '--block', 'MOR', '--state', 'done'], root).text).toBe('No task matches.\n');
+  });
+});
+
+function task(id: string, lines: number, requires = '', commit = ''): string {
+  return `  - id: ${id}\n    title: Do ${id}\n${requires}    doneWhen: x\n    lines: ${lines}\n${commit}`;
+}
+
+function waves(focus = ''): string {
+  const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  initRoadmap(root);
+  writeFileSync(
+    join(root, 'roadmap', 'roadmap.yaml'),
+    `blocks: [GET, SID]\nchapters: [{ name: Main, blocks: [GET] }]\n${focus}`,
+  );
+  writeFileSync(
+    join(root, 'roadmap', 'GET.yaml'),
+    `name: G\ntasks:\n${[
+      task('GET.1', 10, '', "    commit: 'abc1234'\n"),
+      task('GET.2', 30, '    requires: [GET.1]\n'),
+      task('GET.3', 10),
+      task('GET.4', 50, '    requires: [GET.2]\n'),
+    ].join('')}`,
+  );
+  writeFileSync(join(root, 'roadmap', 'SID.yaml'), `name: S\ntasks:\n${task('SID.1', 10)}`);
+  return root;
+}
+
+describe('list --by wave', () => {
+  it('gives the tasks left in waves, critical ones marked, and the parallel tracks apart', () => {
+    expect(capture(['list', '--by', 'wave'], waves()).text).toBe(
+      [
+        'Wave 1 · 2 tasks',
+        '  GET.2  ready    Do GET.2 (critical)',
+        '  GET.3  ready    Do GET.3',
+        'Wave 2 · 1 task',
+        '  GET.4  waiting  Do GET.4 (critical)',
+        '',
+        'Parallel tracks',
+        'Wave 1 · 1 task',
+        '  SID.1  ready    Do SID.1',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('puts focused tasks first within their wave, without moving them to another', () => {
+    const text = capture(['list', '--by', 'wave'], waves('focus: [GET.3, GET.4]\n')).text;
+
+    expect(text).toMatch(/^Wave 1 · 2 tasks\n {2}GET\.3 .*\n {2}GET\.2 .*\nWave 2 · 1 task\n {2}GET\.4 /);
+  });
+
+  it('gives each row its wave as JSON, and refuses a grouping it does not know', () => {
+    const root = waves();
+    const rows: unknown = JSON.parse(capture(['list', '--by', 'wave', '--json'], root).text);
+
+    expect(rows).toMatchObject([
+      { id: 'GET.2', wave: 1 },
+      { id: 'GET.3', wave: 1 },
+      { id: 'GET.4', wave: 2 },
+      { id: 'SID.1' },
+    ]);
+    expect(capture(['list', '--by', 'size'], root)).toEqual({ code: 1, text: '--by is block or wave.\n' });
   });
 });
