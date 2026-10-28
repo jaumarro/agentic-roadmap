@@ -46,8 +46,8 @@ Commands:
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
   check [--staged]           find what makes the plan unsound, and a Markdown that no longer matches it; --staged
                              checks the plan the next commit records
-  render                     write the plan as Markdown where roadmap.yaml says, docs/roadmap.md unless told;
-                             close, add and focus keep it current from then on
+  render                     write the plan as Markdown where roadmap.yaml's markdown: says, docs/roadmap.md unless
+                             told; with markdown: set, close, add and focus keep it current
   status [--json]            how much of each block is done
   show <ID> [--json]         a task: its block, done when, what it requires and unblocks, and where it stands
   why <ID> [--json]          what a task waits on, down to the tasks that can be taken now

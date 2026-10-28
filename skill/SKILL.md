@@ -41,6 +41,6 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 
 To bring in a plan kept elsewhere (a Markdown file, a checklist, issues, notes), read it and build it with the steps above: blocks first, then each task with `add`, in the order they are built. Work already done goes in with `add`, then `close <ID> --commit <SHA>` when you can find the commit that did it; leave it out when you cannot.
 
-When the repo has the plan as Markdown (`docs/roadmap.md` unless `roadmap.yaml` says `markdown:`), never edit it: `close`, `add` and `focus` rewrite it, `agentic-roadmap render` does after a hand edit to the YAML, and `check` fails when it no longer matches. Commit it with the YAML.
+When the repo keeps the plan as Markdown (the file `markdown:` names in `roadmap.yaml`), never edit it: `close`, `add` and `focus` rewrite it, `agentic-roadmap render` does after a hand edit to the YAML, and `check` fails when it no longer matches. Commit it with the YAML.
 
 A new roadmap starts with `agentic-roadmap init`. Commit `roadmap/` on the base branch before any task: a task's branch can only mark it started once the plan is there.

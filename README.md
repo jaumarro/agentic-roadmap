@@ -6,7 +6,7 @@ task with the commit that did it.
 - **No database, no server.** The plan is plain files in `roadmap/`, reviewed like any other code.
 - **Safe in parallel.** The tool picks ids and commits, so two sessions never take the same id. A task counts as
   started as soon as a branch is named after it.
-- **Readable on GitHub.** A Markdown copy of the plan is kept up to date for you.
+- **Readable anywhere.** `roadmap render` writes the plan as Markdown tables whenever you want to share it.
 
 ## Install
 
@@ -63,7 +63,9 @@ Don't write ids or commits by hand: `add` and `close` do it.
 
 `roadmap help` lists every command.
 
-Keep your formatter off the Markdown copy (`docs/roadmap.md`), or it rewrites the tables on every close.
+To keep a Markdown copy in the repo, name it in `roadmap/roadmap.yaml` (`markdown: docs/roadmap.md`): `add`, `close`
+and `focus` then keep it current, and `check` fails when someone edits it by hand. Keep your formatter off it. Two
+branches closing tasks in one block will conflict on it, which is why there is none by default.
 
 ## Coming from another plan
 
