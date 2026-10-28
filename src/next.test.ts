@@ -17,35 +17,46 @@ describe('listReady', () => {
     expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.2']);
   });
 
-  it('puts the task with fewer requirements first, keeping the plan order otherwise', () => {
-    const plan = roadmap(task('ABC.1', [], 'abc1234'), task('ABC.2', ['ABC.1']), task('ABC.3'), task('ABC.4'));
-
-    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.4', 'ABC.2']);
-  });
-
-  it('takes the smaller task first among equal requirements, a document as nothing, and a risky one last', () => {
+  it('takes first the task the heaviest chain of work waits on, keeping the plan order otherwise', () => {
     const plan = roadmap(
-      { ...task('ABC.1'), risky: true, lines: 5 },
-      { ...task('ABC.2'), lines: 80 },
-      { ...task('ABC.3'), lines: 'doc' },
-      { ...task('ABC.4'), lines: 5 },
+      { ...task('ABC.1'), lines: 5 },
+      { ...task('ABC.2'), lines: 30 },
+      { ...task('ABC.3', ['ABC.1']), lines: 100 },
+      { ...task('ABC.4'), lines: 30 },
     );
 
-    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.4', 'ABC.1', 'ABC.2']);
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.1', 'ABC.2', 'ABC.4']);
   });
 
-  it('keeps the focus and the requirements ahead of size', () => {
+  it('puts a small task off the critical path after one on it', () => {
+    const plan = roadmap(
+      { ...task('ABC.1'), lines: 5 },
+      { ...task('ABC.2'), lines: 60 },
+      { ...task('ABC.3', ['ABC.2']), lines: 60 },
+    );
+
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.2', 'ABC.1']);
+  });
+
+  it('weighs a document as the health of the plan does, not as nothing', () => {
+    const plan = roadmap({ ...task('ABC.1'), lines: 10 }, { ...task('ABC.2'), lines: 'doc' });
+
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.2', 'ABC.1']);
+  });
+
+  it('breaks a tie of the work held up with risky last', () => {
+    const plan = roadmap({ ...task('ABC.1'), risky: true }, task('ABC.2'));
+
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.2', 'ABC.1']);
+  });
+
+  it('keeps the focus ahead of the work held up', () => {
     const plan = {
-      ...roadmap(
-        task('ABC.1', [], 'abc1234'),
-        task('ABC.2', ['ABC.1']),
-        { ...task('ABC.3'), lines: 90 },
-        task('ABC.4'),
-      ),
+      ...roadmap(task('ABC.1', [], 'abc1234'), task('ABC.2', ['ABC.1']), task('ABC.3'), task('ABC.4', ['ABC.2'])),
       focus: ['ABC.3'],
     };
 
-    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.4', 'ABC.2']);
+    expect(listReady(plan).map((each) => each.id)).toEqual(['ABC.3', 'ABC.2']);
   });
 
   it('gives nothing when every task is done', () => {
