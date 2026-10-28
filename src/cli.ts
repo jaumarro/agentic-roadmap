@@ -118,8 +118,13 @@ const ARITY: Record<string, number> = {
   help: 0,
 };
 
-/** What a command reads from and writes to: where it runs, its environment, and its output. */
-export type Io = { cwd: string; env: Record<string, string | undefined>; out: (text: string) => void };
+/** What a command reads from and writes to: where it runs, its environment, its answer, and its errors. */
+export type Io = {
+  cwd: string;
+  env: Record<string, string | undefined>;
+  out: (text: string) => void;
+  err: (text: string) => void;
+};
 
 type Command = {
   name: string | undefined;
@@ -446,7 +451,7 @@ export function run(args: string[], io: Io): number {
         // Git runs this itself, with the three versions' paths: see install-merge-driver.
         const [base = '', ours = '', theirs = ''] = command.operands;
         const result = runMergeDriver(base, ours, theirs);
-        if (!result.merged) io.out(`agentic-roadmap could not merge it: ${result.why}.\n`);
+        if (!result.merged) io.err(`agentic-roadmap could not merge it: ${result.why}.\n`);
         return result.merged ? 0 : 1;
       }
       case 'add':
@@ -459,12 +464,12 @@ export function run(args: string[], io: Io): number {
         io.out(USAGE);
         return 0;
       default:
-        io.out(`Unknown command: ${command.name}\n${USAGE}`);
+        io.err(`Unknown command: ${command.name}\n${USAGE}`);
         return 1;
     }
   } catch (error) {
     if (!(error instanceof RoadmapError)) throw error;
-    io.out(`${error.message}\n`);
+    io.err(`${error.message}\n`);
     return 1;
   }
 }
@@ -475,6 +480,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (error.code !== 'EPIPE') throw error;
     process.exit(process.exitCode ?? 0);
   });
-  const io: Io = { cwd: process.cwd(), env: process.env, out: (text) => process.stdout.write(text) };
+  const io: Io = {
+    cwd: process.cwd(),
+    env: process.env,
+    out: (text) => process.stdout.write(text),
+    err: (text) => process.stderr.write(text),
+  };
   process.exitCode = run(process.argv.slice(2), io);
 }
