@@ -98,6 +98,47 @@ describe('close', () => {
     expect(readRoadmap(root).blocks[0]?.tasks[1]?.commit).toBe(above);
   });
 
+  it('keeps the feature when the branch was pushed before its tests', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    const remote = join(mkdtempSync(join(tmpdir(), 'agentic-roadmap-')), 'remote.git');
+    git(root, 'init', '-q', '--bare', remote);
+    git(root, 'remote', 'add', 'origin', remote);
+    git(root, 'push', '-q', 'origin', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/work');
+    const feature = commit(root, 'feat: write the first block');
+    git(root, 'push', '-q', 'origin', 'get-1/work');
+    commit(root, 'test: cover the first block');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(feature);
+  });
+
+  it('refuses a stacked branch fresh from the close of the task below', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/below');
+    commit(root, 'feat: the task below');
+    capture(['close', 'GET.1'], root);
+    commit(root, 'docs: close GET.1');
+    git(root, 'switch', '-q', '-c', 'get-2/above');
+
+    expect(capture(['close', 'GET.2'], root).text).toContain('No commit to close it with');
+  });
+
+  it('fails on a base roadmap.yaml names that is no branch', () => {
+    const root = repo();
+    writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), 'blocks: [GET]\nbase: typo-does-not-exist\n');
+    commit(root, 'feat: an earlier task');
+    git(root, 'switch', '-q', '-c', 'get-1/fresh');
+
+    expect(capture(['close', 'GET.1'], root)).toEqual({
+      code: 1,
+      text: 'base: typo-does-not-exist in roadmap.yaml names no branch here.\n',
+    });
+  });
+
   it('bounds the commits by the base roadmap.yaml names', () => {
     const root = repo();
     git(root, 'branch', '-M', 'trunk');
