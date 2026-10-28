@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addTask, readNextId } from './add.ts';
+import { addRows, readPlanTable } from './batch.ts';
 import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
 import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
@@ -64,7 +65,9 @@ Commands:
                              the plan's shape (critical path, parallelism, width) and its worst problems; with
                              --against, each figure against that branch's plan and what got worse; --strict fails
                              on any problem, or with --against on anything worse
-  add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID]
+  add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID] | --from FILE|-
+                             --from adds every row of the table under <!-- roadmap --> in a Markdown plan
+                             (Key | Block | Task | Requires | Done when | Lines), all of them or none
                              add a task with the next free id, here and on every local branch
   install-hook               a pre-commit hook that runs check --staged when a commit touches the plan
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
@@ -109,6 +112,7 @@ const OPTIONS = {
   block: { type: 'string' },
   state: { type: 'string' },
   by: { type: 'string' },
+  from: { type: 'string' },
   strict: { type: 'boolean' },
   requires: { type: 'string' },
   'done-when': { type: 'string' },
@@ -162,6 +166,7 @@ type Command = {
   block: string | undefined;
   state: string | undefined;
   by: string | undefined;
+  from: string | undefined;
   strict: boolean;
   requires: string | undefined;
   doneWhen: string | undefined;
@@ -199,6 +204,7 @@ function readCommand(args: string[], env: Io['env']): Command {
     block: values.block,
     state: values.state,
     by: values.by,
+    from: values.from,
     strict: values.strict === true,
     requires: values.requires,
     doneWhen: values['done-when'],
@@ -223,7 +229,31 @@ function readLines(value: string | undefined): number | 'doc' {
 }
 
 /** Adds a task with the id the tool picks; the plan is checked with it before anything is written. */
+/** Adds a plan's table of tasks in one go; `-` reads the plan from stdin. */
+function addFrom(root: string, from: string, out: Io['out']): void {
+  let text: string;
+  try {
+    text = readFileSync(from === '-' ? 0 : from, 'utf8');
+  } catch {
+    throw new RoadmapError(`Could not read ${from}.`);
+  }
+  const roadmap = readSoundRoadmap(root);
+  const branches = listBranches(root);
+  const added = addRows(root, roadmap, readPlanTable(text), (code) =>
+    readOnBranches(root, `${ROADMAP_DIR}/${code}.yaml`, branches),
+  );
+  const after = readRoadmap(root);
+  syncMarkdown(root, after);
+  out(`Added ${added.length} tasks:\n${added.map((each) => `  ${each.id} · ${each.title}\n`).join('')}`);
+  out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
+}
+
 function add(root: string, command: Command, out: Io['out']): void {
+  if (command.from !== undefined) {
+    if (command.operands.length > 0) throw new RoadmapError('add takes a block and a title, or --from, not both.');
+    addFrom(root, command.from, out);
+    return;
+  }
   const [code, title] = command.operands;
   if (code === undefined || title === undefined || title.trim() === '') {
     throw new RoadmapError('Say the block and the title: add <BLOCK> <TITLE>.');
@@ -487,9 +517,12 @@ export function run(args: string[], io: Io): number {
         if (!result.merged) io.err(`agentic-roadmap could not merge it: ${result.why}.\n`);
         return result.merged ? 0 : 1;
       }
-      case 'add':
-        add(root(), command, io.out);
+      case 'add': {
+        // A plan's path is from where the command runs, as the shell completed it, not from the roadmap.
+        const from = command.from === undefined || command.from === '-' ? command.from : resolve(io.cwd, command.from);
+        add(root(), { ...command, from }, io.out);
         return 0;
+      }
       case 'health':
         return health(root(), command, io.out);
       case undefined:

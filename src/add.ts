@@ -5,7 +5,7 @@ import { checkRoadmap } from './check.ts';
 import type { Roadmap, Task } from './model.ts';
 import { ROADMAP_DIR, RoadmapError } from './source.ts';
 
-export type NewTask = { title: string; requires: string[]; doneWhen: string; lines: number | 'doc' };
+export type NewTask = { title: string; requires: string[]; doneWhen: string; lines: number | 'doc'; risky?: boolean };
 
 function readNumber(id: string, code: string): number | null {
   const match = new RegExp(`^${code}\\.(\\d+)$`).exec(id);
@@ -51,6 +51,11 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
   };
   const problems = checkRoadmap(after).filter((problem) => problem.includes(id));
   if (problems.length > 0) throw new RoadmapError(`Not added: ${problems.join('; ')}.`);
+  appendTask(root, code, id, task);
+}
+
+/** Writes `task` as `id` at the end of block `code`'s file, as it is: whoever calls it has checked the plan. */
+export function appendTask(root: string, code: string, id: string, task: NewTask): void {
   const name = `${ROADMAP_DIR}/${code}.yaml`;
   const path = join(root, name);
   const doc = parseDocument(readFileSync(path, 'utf8'));
@@ -62,6 +67,7 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
     ...(task.requires.length > 0 ? { requires: task.requires } : {}),
     doneWhen: task.doneWhen,
     lines: task.lines,
+    ...(task.risky === true ? { risky: true } : {}),
   });
   // Requirements read best on one line, as the rest of the plan writes them.
   const requires = isMap(node) ? node.get('requires', true) : undefined;
