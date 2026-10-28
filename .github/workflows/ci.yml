@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    # The suite runs the TypeScript source, which Node strips of its types from 22 on.
+    strategy:
+      matrix:
+        node: [22, 24]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm test
+
+  installed:
+    # What a user gets: the packed tarball, installed into an empty project, on the oldest Node it supports too.
+    strategy:
+      matrix:
+        node: [20, 22, 24]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm pack --pack-destination "$RUNNER_TEMP"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install the tarball and use it
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir project && cd project
+          git init -q -b main
+          git config user.name ci && git config user.email ci@example.com
+          npm init -y > /dev/null
+          npm install -D ../agentic-roadmap-*.tgz
+          npx agentic-roadmap --version
+          npx roadmap init
+          git add -A && git commit -qm "docs: start the roadmap"
+          npx roadmap check
+          npx roadmap next --json
+          npx roadmap install-skill
+          npx roadmap install-hook
+          git switch -qc get-1/first
+          git commit -q --allow-empty -m "docs: write the first block"
+          npx roadmap close GET.1
