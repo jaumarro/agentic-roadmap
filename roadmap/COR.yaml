@@ -158,5 +158,6 @@ tasks:
   - id: COR.26
     title: close prefers the commit that fits the task over tooling commits
     requires: [COR.19]
-    doneWhen: "a feat, fix, refactor or perf commit wins over a newer build: one, and a doc-only task takes its newest docs: commit that is no close over a build: one"
+    doneWhen: 'a feat, fix, refactor or perf commit wins over a newer build: one, and a doc-only task takes its newest docs: commit that is no close over a build: one'
     lines: 15
+    commit: 'eca032b'
