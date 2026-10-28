@@ -29,8 +29,8 @@
     "url": "git+https://github.com/jaumarro/agentic-roadmap.git"
   },
   "bin": {
-    "agentic-roadmap": "./dist/cli.js",
-    "roadmap": "./dist/cli.js"
+    "agentic-roadmap": "dist/cli.js",
+    "roadmap": "dist/cli.js"
   },
   "files": [
     "dist",
