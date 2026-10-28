@@ -147,6 +147,7 @@ tasks:
     requires: [COR.6]
     doneWhen: a .gitattributes ending without a newline keeps its last rule and gains the driver's on its own line
     lines: 5
+    commit: '012a82c'
   - id: COR.25
     title: Writing a block keeps its line endings and folded text
     requires: [COR.4]
