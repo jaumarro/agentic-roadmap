@@ -155,3 +155,8 @@ tasks:
     requires: [COR.4]
     doneWhen: close and add on a CRLF block keep CRLF, and a folded >- scalar stays folded
     lines: 20
+  - id: COR.26
+    title: close prefers the commit that fits the task over tooling commits
+    requires: [COR.19]
+    doneWhen: "a feat, fix, refactor or perf commit wins over a newer build: one, and a doc-only task takes its newest docs: commit that is no close over a build: one"
+    lines: 15
