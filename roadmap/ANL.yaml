@@ -28,3 +28,4 @@ tasks:
     requires: [ANL.1]
     doneWhen: graph --mermaid prints a flowchart with each task's state and critical ones marked, a parallel track as its own subgraph; graph --json gives nodes and edges with state, wave and critical
     lines: 50
+    commit: '3dc6c3e'
