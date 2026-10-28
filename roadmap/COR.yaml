@@ -142,6 +142,7 @@ tasks:
     doneWhen: both call the installed bin by a path that stays across upgrades, and running an installer again rewrites a stale line
     lines: 30
     risky: true
+    commit: 'a2a3db3'
   - id: COR.24
     title: install-merge-driver keeps a .gitattributes with no final newline intact
     requires: [COR.6]
