@@ -5,6 +5,7 @@ tasks:
     requires: [COR.5]
     doneWhen: every error goes to stderr with a non-zero exit, stdout carries only the answer, and next --json piped into a JSON reader never sees an error line
     lines: 15
+    commit: '6f9383c'
   - id: CLI.2
     title: Print the version, and each command's own help
     requires: [COR.5]
