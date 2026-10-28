@@ -1,9 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parse, YAMLError } from 'yaml';
-import type { z } from 'zod';
 import { readStaged } from './git.ts';
-import { blockSchema, configSchema, type Roadmap } from './model.ts';
+import { InvalidPlan, readBlock, readConfig, type Roadmap } from './model.ts';
 
 export const ROADMAP_DIR = 'roadmap';
 export const CONFIG_FILE = 'roadmap.yaml';
@@ -61,21 +60,22 @@ function parseYaml(read: ReadFile, file: string): unknown {
   }
 }
 
-function readYaml<T>(read: ReadFile, file: string, schema: z.ZodType<T>): T {
+function readYaml<T>(read: ReadFile, file: string, check: (content: unknown) => T): T {
   const content = parseYaml(read, file);
   const name = `${ROADMAP_DIR}/${file}`;
   if (content === null || content === undefined) throw new RoadmapError(`${name} is empty.`);
-  const checked = schema.safeParse(content);
-  if (checked.success) return checked.data;
-  const [issue] = checked.error.issues;
-  const where = issue?.path.join('.') || 'the file';
-  throw new RoadmapError(`${name}: ${where}: ${issue?.message ?? 'not valid'}`);
+  try {
+    return check(content);
+  } catch (error) {
+    if (!(error instanceof InvalidPlan)) throw error;
+    throw new RoadmapError(`${name}: ${error.where || 'the file'}: ${error.message}`);
+  }
 }
 
 /** The roadmap `read` gives, each block read from its own file in the order the config lists them. */
 export function readRoadmapWith(read: ReadFile): Roadmap {
-  const config = readYaml(read, CONFIG_FILE, configSchema);
-  const blocks = config.blocks.map((code) => ({ code, ...readYaml(read, `${code}.yaml`, blockSchema) }));
+  const config = readYaml(read, CONFIG_FILE, readConfig);
+  const blocks = config.blocks.map((code) => ({ code, ...readYaml(read, `${code}.yaml`, readBlock) }));
   return {
     blocks,
     focus: config.focus,

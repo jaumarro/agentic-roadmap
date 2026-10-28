@@ -11,9 +11,6 @@ importers:
       yaml:
         specifier: ^2.3.0
         version: 2.3.0
-      zod:
-        specifier: ^4.6.7
-        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: ^24.19.2
@@ -860,9 +857,6 @@ packages:
     resolution: {integrity: sha512-8/1wgzdKc7bc9E6my5wZjmdavHLvO/QOmLG1FBugblEvY4IXrLjlViIOmL24HthU042lWTDRO90Fz1Yp66UnMw==}
     engines: {node: '>= 14', npm: '>= 7'}
 
-  zod@4.6.7:
-    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
-
 snapshots:
 
   '@jridgewell/resolve-uri@3.1.2': {}
@@ -1380,5 +1374,3 @@ snapshots:
   why-is-node-running@3.2.1: {}
 
   yaml@2.3.0: {}
-
-  zod@4.6.7: {}
