@@ -40,7 +40,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepare": "pnpm build",
+    "prepare": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint --type-aware --deny-warnings",
     "test": "vitest run",
