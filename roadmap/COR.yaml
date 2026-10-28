@@ -103,6 +103,7 @@ tasks:
     doneWhen: a backup branch at the task's tip leaves close taking the task's feat; a fresh branch from the base is still refused; a stacked branch takes only its own commits
     lines: 30
     risky: true
+    commit: '0023d13'
   - id: COR.18
     title: Fetched remote branches count for ids and for started tasks
     requires: [COR.16]
