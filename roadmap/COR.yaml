@@ -83,6 +83,7 @@ tasks:
     doneWhen: on a fresh task branch with no commit of its own, close without --commit refuses; a docs-only branch closes with its newest docs commit
     lines: 20
     risky: true
+    commit: '88899f7'
   - id: COR.15
     title: check survives a cycle
     requires: [COR.3]
