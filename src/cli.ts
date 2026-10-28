@@ -431,7 +431,12 @@ function close(root: string, command: Command, out: Io['out']): void {
   const [id] = command.operands;
   if (id === undefined) throw new RoadmapError('Say which task to close: close <ID>.');
   if (command.commit === '') throw new RoadmapError('--commit needs a commit.');
-  const { base } = readRoadmap(root);
+  const roadmap = readSoundRoadmap(root);
+  // The task comes first: a missing one is the error to give, not the commit that would have closed it.
+  if (!roadmap.blocks.some((block) => block.tasks.some((task) => task.id === id))) {
+    throw new RoadmapError(`No task ${id} in this roadmap.`);
+  }
+  const { base } = roadmap;
   // A base that names nothing would leave close no bound, free to take another task's work.
   if (base !== undefined && resolveCommit(root, base) === null) {
     throw new RoadmapError(`base: ${base} in roadmap.yaml names no branch here.`);
@@ -447,7 +452,7 @@ function close(root: string, command: Command, out: Io['out']): void {
   // A branch, a tag or HEAD is written as the commit it names today, which a later move cannot change.
   const sha = resolveCommit(root, revision);
   if (sha === null) throw new RoadmapError(`This repo has no commit ${revision}.`);
-  const code = closeTask(root, readSoundRoadmap(root), id, sha);
+  const code = closeTask(root, roadmap, id, sha);
   syncMarkdown(root, readRoadmap(root));
   out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
 }
