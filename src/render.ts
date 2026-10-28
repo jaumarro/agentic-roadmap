@@ -80,12 +80,17 @@ function normalize(markdown: string): string {
     .trimEnd();
 }
 
-/** The problem with the Markdown when one exists and says something the YAML does not; none without one. */
-export function checkMarkdown(root: string, roadmap: Roadmap): string[] {
-  const name = readMarkdownPath(roadmap);
+function readFromDisk(root: string, name: string): string | null {
   const path = join(root, name);
-  if (!existsSync(path)) return [];
-  if (normalize(readFileSync(path, 'utf8')) === normalize(renderMarkdown(roadmap))) return [];
+  return existsSync(path) ? readFileSync(path, 'utf8') : null;
+}
+
+/** The problem with the Markdown when one exists and says something the YAML does not; none without one. */
+export function checkMarkdown(root: string, roadmap: Roadmap, read = readFromDisk): string[] {
+  const name = readMarkdownPath(roadmap);
+  const text = read(root, name);
+  if (text === null) return [];
+  if (normalize(text) === normalize(renderMarkdown(roadmap))) return [];
   return [`${name} does not match ${ROADMAP_DIR}/: edit the YAML, not the Markdown, then run render`];
 }
 

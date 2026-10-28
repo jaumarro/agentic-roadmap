@@ -78,3 +78,15 @@ export function listBranches(root: string): string[] {
   const refs = git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']) ?? '';
   return refs.split('\n').filter(Boolean);
 }
+
+/** What `path`, from `root`, holds in the index: what the next commit records; null when the index has no such file. */
+export function readStaged(root: string, path: string): string | null {
+  return git(root, ['show', `:./${path}`]);
+}
+
+/** Where `root` sits from the top of its repo, and the folder git runs hooks from; null outside a repo. */
+export function readRepoPaths(root: string): { prefix: string; hooks: string } | null {
+  const prefix = git(root, ['rev-parse', '--show-prefix']);
+  const hooks = git(root, ['rev-parse', '--path-format=absolute', '--git-path', 'hooks']);
+  return prefix === null || hooks === null ? null : { prefix, hooks };
+}

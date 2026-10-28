@@ -6,7 +6,15 @@ import { addTask, readNextId } from './add.ts';
 import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
 import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
-import { listBranches, readKnownCommits, readLastWorkCommit, readOnBranches, resolveCommit } from './git.ts';
+import {
+  listBranches,
+  readKnownCommits,
+  readLastWorkCommit,
+  readOnBranches,
+  readStaged,
+  resolveCommit,
+} from './git.ts';
+import { installHook } from './hook.ts';
 import type { Roadmap } from './model.ts';
 import { setFocus } from './focus.ts';
 import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
@@ -15,7 +23,7 @@ import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
 import { installSkill } from './install-skill.ts';
 import { listRows, renderHealth, renderList, renderShown, renderWhy, STATES } from './query.ts';
 import { checkMarkdown, measureProgress, renderProgress, syncMarkdown, writeMarkdown } from './render.ts';
-import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
+import { findRoot, initRoadmap, readRoadmap, readStagedRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
 const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
@@ -27,7 +35,8 @@ Commands:
   focus <CODE|ID>... | --clear
                              take these blocks and tasks first, in this order; --clear takes the plan as it reads
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given
-  check                      find what makes the plan unsound, and a Markdown that no longer matches it
+  check [--staged]           find what makes the plan unsound, and a Markdown that no longer matches it; --staged
+                             checks the plan the next commit records
   render                     write the plan as Markdown where roadmap.yaml says, docs/roadmap.md unless told;
                              close, add and focus keep it current from then on
   status [--json]            how much of each block is done
@@ -41,6 +50,7 @@ Commands:
                              on any problem, or with --against on anything worse
   add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID]
                              add a task with the next free id, here and on every local branch
+  install-hook               a pre-commit hook that runs check --staged when a commit touches the plan
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
   install-skill              copy the agents' workflow into .claude/skills, next to roadmap/; again to update it
 
@@ -64,6 +74,7 @@ const OPTIONS = {
   lines: { type: 'string' },
   against: { type: 'string' },
   clear: { type: 'boolean' },
+  staged: { type: 'boolean' },
   help: { type: 'boolean' },
 } as const;
 
@@ -82,6 +93,7 @@ const ARITY: Record<string, number> = {
   list: 0,
   health: 0,
   add: 2,
+  'install-hook': 0,
   'install-merge-driver': 0,
   'install-skill': 0,
   'merge-block': 3,
@@ -105,6 +117,7 @@ type Command = {
   lines: string | undefined;
   against: string | undefined;
   clear: boolean;
+  staged: boolean;
   help: boolean;
 };
 
@@ -137,6 +150,7 @@ function readCommand(args: string[], env: Io['env']): Command {
     lines: values.lines,
     against: values.against,
     clear: values.clear === true,
+    staged: values.staged === true,
     help: values.help === true,
   };
 }
@@ -307,14 +321,15 @@ function close(root: string, command: Command, out: Io['out']): void {
   out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
 }
 
-function check(root: string, out: Io['out']): number {
-  const roadmap = readRoadmap(root);
+function check(root: string, command: Command, out: Io['out']): number {
+  const roadmap = command.staged ? readStagedRoadmap(root) : readRoadmap(root);
+  const readMarkdown = command.staged ? readStaged : undefined;
   const cited = roadmap.blocks.flatMap((block) => block.tasks.flatMap((task) => (task.commit ? [task.commit] : [])));
   const known = readKnownCommits(root, cited);
   const problems = [
     ...checkRoadmap(roadmap),
     ...findMissingCommits(roadmap, (sha) => known.has(sha)),
-    ...checkMarkdown(root, roadmap),
+    ...checkMarkdown(root, roadmap, readMarkdown),
   ];
   out(problems.length === 0 ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(problems)}`);
   const warnings = warnRoadmap(roadmap);
@@ -349,7 +364,7 @@ export function run(args: string[], io: Io): number {
         close(root(), command, io.out);
         return 0;
       case 'check':
-        return check(root(), io.out);
+        return check(root(), command, io.out);
       case 'render': {
         const at = root();
         io.out(`Wrote ${writeMarkdown(at, readSoundRoadmap(at))}.\n`);
@@ -368,6 +383,9 @@ export function run(args: string[], io: Io): number {
         return 0;
       case 'list':
         list(root(), command, io.out);
+        return 0;
+      case 'install-hook':
+        io.out(`Commits that touch the plan now run check --staged first; the hook is ${installHook(root())}.\n`);
         return 0;
       case 'install-merge-driver':
         io.out(`git now merges roadmap/*.yaml task by task; the attribute is in ${installMergeDriver(root())}.\n`);
