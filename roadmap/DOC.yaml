@@ -9,5 +9,6 @@ tasks:
   - id: DOC.2
     title: Keep the Markdown copy only for a repo that asks for it
     requires: [DOC.1]
-    doneWhen: "with no markdown: in roadmap.yaml, add, close and focus write no Markdown and check ignores one; render still writes docs/roadmap.md on demand; with markdown: set, it is kept and checked as before; this repo commits none"
+    doneWhen: 'with no markdown: in roadmap.yaml, add, close and focus write no Markdown and check ignores one; render still writes docs/roadmap.md on demand; with markdown: set, it is kept and checked as before; this repo commits none'
     lines: 20
+    commit: 'a619672'
