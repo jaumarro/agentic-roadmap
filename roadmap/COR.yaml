@@ -89,3 +89,4 @@ tasks:
     requires: [COR.3]
     doneWhen: check on a plan with a cycle in one block prints the cycle and exits 1, with no stack overflow; the pipe test passes on Node 24.1
     lines: 10
+    commit: '8fd2611'
