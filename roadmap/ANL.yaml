@@ -5,6 +5,7 @@ tasks:
     requires: [QRY.3, PAR.3]
     doneWhen: one analysis gives each task its wave, bottom level and float; health prints the same figures; a small task off the critical path no longer goes ahead of one on it
     lines: 80
+    commit: '260a7b0'
   - id: ANL.2
     title: List the pending tasks by wave, critical ones marked
     requires: [ANL.1, QRY.2]
