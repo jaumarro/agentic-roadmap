@@ -59,6 +59,6 @@
 | - | - | - | - | - |
 | ✅ ANL.1 | Order next and free by focus, then by how much work each task unblocks | QRY.3, PAR.3 | 260a7b0: one analysis gives each task its wave, bottom level and float; health prints the same figures; a small task off the critical path no longer goes ahead of one on it | ~80 |
 | ANL.2 | List the pending tasks by wave, critical ones marked | ANL.1, QRY.2 | list --by wave groups the tasks not done by wave, focused first within each, critical marked, parallel tracks apart, with --state and --json as for list | ~30 |
-| ANL.3 | Warn when free hands out more tasks than the plan keeps busy | PAR.1, QRY.3 | free N with N over the plan's width says how many sessions it keeps busy | ~10 |
+| ✅ ANL.3 | Warn when free hands out more tasks than the plan keeps busy | PAR.1, QRY.3 | 02ea856: free N with N over the plan's width says how many sessions it keeps busy | ~10 |
 | ANL.4 | Compare each closed task's estimate with the lines its commit changed | QRY.3 | health says how far estimates fall from the lines the closing commits changed, by block, and health --json gives the figures | ~40 |
 | ANL.6 | Give the dependency graph as Mermaid or JSON | ANL.1 | graph --mermaid prints a flowchart with each task's state and critical ones marked, a parallel track as its own subgraph; graph --json gives nodes and edges with state, wave and critical | ~50 |

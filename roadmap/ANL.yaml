@@ -16,6 +16,7 @@ tasks:
     requires: [PAR.1, QRY.3]
     doneWhen: free N with N over the plan's width says how many sessions it keeps busy
     lines: 10
+    commit: '02ea856'
   - id: ANL.4
     title: Compare each closed task's estimate with the lines its commit changed
     requires: [QRY.3]
