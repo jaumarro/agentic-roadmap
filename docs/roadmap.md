@@ -12,6 +12,7 @@
 | ✅ COR.4 | Add a task with an id the tool picks | COR.3 | 98eb237: two branches that each add a task to the same block get different ids, and check passes after merging both | ~120 |
 | ✅ COR.5 | Clean errors, strict flags and no roadmap inside another | COR.3 | b6fb0f3: a YAML syntax error and a folder it cannot write end in a message with the file and line, never a stack trace, and init writes nothing half-done; --root with no value or with a flag fails; init under an existing roadmap refuses; next tells «all done», «no tasks» and «blocked» apart; --help exits 0 | ~100 |
 | ✅ COR.6 | Merge two branches' block files by task id, so parallel adds and closes merge without asking | COR.4 | 451f9b8: with merge-driver installed, two branches that each add a task to one block, and two that close different tasks in it, merge with no conflict and check passes; the same id changed on both sides still stops the merge | ~80 |
+| COR.7 | Check the staged plan before each commit, with a pre-commit hook to install | — | check --staged reads roadmap/ and the Markdown from the index; install-hook adds a pre-commit that runs it when they are staged, keeping any hook already there; a commit with a broken requires is refused | ~60 |
 
 ## QRY · Ask the whole plan
 
