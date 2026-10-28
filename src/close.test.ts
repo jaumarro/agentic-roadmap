@@ -59,6 +59,29 @@ describe('close', () => {
     expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(build);
   });
 
+  it('refuses on a fresh task branch with no commit of its own, rather than take an earlier task’s', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    commit(root, 'feat: an earlier task');
+    git(root, 'switch', '-q', '-c', 'get-1/fresh');
+
+    const closed = capture(['close', 'GET.1'], root);
+
+    expect(closed.code).toBe(1);
+    expect(closed.text).toContain('No commit to close it with');
+  });
+
+  it('closes a docs-only task with the newest docs commit of its branch', () => {
+    const root = repo();
+    git(root, 'branch', '-M', 'main');
+    git(root, 'switch', '-q', '-c', 'get-1/write');
+    const written = commit(root, 'docs: write the first block');
+
+    capture(['close', 'GET.1'], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(written);
+  });
+
   it('takes the feature commit over the tests that follow it', () => {
     const root = repo();
     const feature = commit(root, 'feat: write the first block');
