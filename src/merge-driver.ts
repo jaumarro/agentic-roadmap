@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mergeBlock } from './merge.ts';
 import { ROADMAP_DIR, RoadmapError } from './source.ts';
@@ -21,7 +21,8 @@ export function runMergeDriver(base: string, ours: string, theirs: string): { me
 
 /** Makes git merge `roadmap/*.yaml` with this tool: the attribute in `.gitattributes`, the driver in the repo's config. */
 export function installMergeDriver(root: string): string {
-  const cli = fileURLToPath(new URL('cli.ts', import.meta.url));
+  // The same extension as this file: cli.ts from the source, cli.js once built.
+  const cli = fileURLToPath(new URL(`cli${extname(import.meta.url)}`, import.meta.url));
   const command = `node "${cli}" merge-block %O %A %B`;
   try {
     execFileSync('git', ['config', `merge.${DRIVER}.name`, 'agentic-roadmap: merge block files task by task'], {
