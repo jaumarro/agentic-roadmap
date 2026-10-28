@@ -11,6 +11,9 @@ otherwise, and the commands that change the plan keep it current. It has no prog
 rewrites conflicts across branches: `status` prints it. Keep your formatter off the generated file, or it re-pads the
 tables on every close.
 
+`agentic-roadmap install-hook` adds a pre-commit hook that runs `check --staged` whenever a commit touches the plan, so
+a broken one never lands. A repo whose hooks husky or lefthook keep gets the line to add to its own instead.
+
 Status: early. The commands land one usable slice at a time; `agentic-roadmap help` lists them.
 
 Coding agents learn the workflow from [`skill/SKILL.md`](skill/SKILL.md): taking the next task, branching, closing it,
