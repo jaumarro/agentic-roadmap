@@ -49,8 +49,10 @@ export function installMergeDriver(root: string): string {
     throw new RoadmapError('Could not set the merge driver in the git config: is this a git repo?');
   }
   const attributes = join(root, '.gitattributes');
-  const lines = existsSync(attributes) ? readFileSync(attributes, 'utf8').split('\n') : [];
-  const missing = ATTRIBUTES.filter((attribute) => !lines.includes(attribute));
-  if (missing.length > 0) appendFileSync(attributes, missing.map((attribute) => `${attribute}\n`).join(''));
+  const text = existsSync(attributes) ? readFileSync(attributes, 'utf8') : '';
+  const missing = ATTRIBUTES.filter((attribute) => !text.split('\n').includes(attribute));
+  // Appended to a last line with no newline, a rule would run into it and break both.
+  const separator = text === '' || text.endsWith('\n') ? '' : '\n';
+  if (missing.length > 0) appendFileSync(attributes, `${separator}${missing.map((each) => `${each}\n`).join('')}`);
   return attributes;
 }
