@@ -1,6 +1,6 @@
 ---
 name: roadmap-workflow
-description: Work from a repo's agentic-roadmap plan, the roadmap/ folder of YAML blocks. Use it to find what to do next, to start and close a task, to ask why a task is not ready, and to write or change the plan so its health holds. Use it whenever a repo has roadmap/roadmap.yaml, or the user asks what to work on next.
+description: Work from a repo's agentic-roadmap plan, the roadmap/ folder of YAML blocks. Use it to find what to do next, to start and close a task, to ask why a task is not ready, and to write or change the plan so its health holds. Use it whenever a repo has roadmap/roadmap.yaml, when you plan work in such a repo (plan mode included), or when the user asks what to work on next.
 ---
 
 # Working from the roadmap
@@ -30,6 +30,26 @@ Ids and commits are the tool's to write. Never type an `id:` or a `commit:` into
 - `agentic-roadmap graph`: the tasks left and their requirements as a Mermaid flowchart, to show the user the dependencies; `--json` for nodes and edges, `--all` with the done tasks too.
 - `agentic-roadmap status`: how much of each block is done.
 - `next`, `free`, `show`, `why`, `list`, `status` and `health` take `--json`: read that instead of parsing the text.
+
+## Proposing a plan
+
+When you plan work in a repo with `roadmap/`, end the plan with its tasks as a table, under a `<!-- roadmap -->` line, so the user approves the tasks as they will enter the roadmap:
+
+```markdown
+<!-- roadmap -->
+
+| Key      | Block | Task                       | Requires     | Done when                                     | Lines |
+| -------- | ----- | -------------------------- | ------------ | --------------------------------------------- | ----- |
+| parse    | ANL   | Parse the log              | —            | parse on a sample log gives one row per entry | 40    |
+| report ⚠︎ | ANL   | Report from the parsed log | parse, COR.3 | report prints totals per block                | 30    |
+```
+
+- Key: a short name for the row, unique in the table; `add` gives the real id. ⚠︎ after it marks a risky task.
+- Block: a block the roadmap has. For a new one, create it first (below), and say so in the plan.
+- Requires: keys of other rows, or ids already in the plan, comma-separated; `—` for none. Only what the task uses.
+- Done when and Lines follow the rules below: checkable, and at most about 150 lines of logic.
+
+Once the user approves the plan, run `agentic-roadmap add --from <the plan's file>`. It adds every row with its id, swaps the keys for those ids, and writes them all or, when the plan would break, none. Read its health line, then commit the plan as `docs:`.
 
 ## Writing or changing the plan
 
