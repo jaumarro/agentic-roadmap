@@ -8,13 +8,16 @@ import { readKnownCommits } from './git.ts';
 import { initRoadmap, readRoadmap } from './source.ts';
 
 function git(root: string, ...args: string[]): string {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  return execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
 }
 
 function commit(root: string, subject: string): string {
   writeFileSync(join(root, `${subject.length}-${Date.now()}.txt`), subject);
   git(root, 'add', '-A');
-  git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', subject);
+  git(root, 'commit', '-qm', subject);
   return git(root, 'rev-parse', '--short', 'HEAD');
 }
 
