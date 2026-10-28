@@ -110,8 +110,9 @@ Fields are only added, never renamed or removed, within a major version.
 
 `close` without `--commit` looks at the commits since the branch left its base (`base:` in `roadmap.yaml`, else the
 remote's default branch, else `main` or `master`), stopping at the newest `docs: close <ID>` of another task. Of those
-it takes the newest `feat`, `fix`, `refactor`, `perf` or `build` commit, else the newest that is not `docs:`, else, on a
-task's own branch, the newest `docs:` one. With none it refuses; pass `--commit <sha|branch|tag|HEAD>` to say which.
+it takes the newest `feat`, `fix`, `refactor` or `perf` commit, else the newest `build` one, else the newest that is
+not `docs:`, else, on a task's own branch, the newest `docs:` one that is no close. A task with `lines: doc` takes that
+`docs:` one first, so a tooling `build:` commit made along the way never closes it. With none it refuses; pass `--commit <sha|branch|tag|HEAD>` to say which.
 
 Closing on the task's branch needs the base to keep that commit: a merge commit or a fast-forward. A squash merge drops
 it, so in a repo that squashes, close on the base after the merge, with `--commit` naming the squashed commit. In a
