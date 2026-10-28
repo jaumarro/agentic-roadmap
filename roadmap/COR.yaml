@@ -56,3 +56,4 @@ tasks:
     requires: [COR.4]
     doneWhen: add --from FILE reads the table under <!-- roadmap --> in a Markdown plan, gives each row an id the way add does, resolves keys in Requires to those ids, and writes all of them or, when check fails, none
     lines: 60
+    commit: '4d92380'
