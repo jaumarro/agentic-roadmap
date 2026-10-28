@@ -11,6 +11,7 @@ import { closeTask } from './close.ts';
 import {
   listAllBranches,
   readKnownCommits,
+  readBase,
   readLastWorkCommit,
   readCommonDir,
   readInWorktrees,
@@ -434,6 +435,12 @@ function close(root: string, command: Command, out: Io['out']): void {
   // A base that names nothing would leave close no bound, free to take another task's work.
   if (base !== undefined && resolveCommit(root, base) === null) {
     throw new RoadmapError(`base: ${base} in roadmap.yaml names no branch here.`);
+  }
+  // With no base to bound it, the search would reach back into history older than the task.
+  if (command.commit === undefined && readBase(root, base) === null) {
+    throw new RoadmapError(
+      'close cannot tell which branch tasks start from: set base: in roadmap.yaml, or pass --commit.',
+    );
   }
   const revision = command.commit ?? readLastWorkCommit(root, id, base);
   if (revision === null) throw new RoadmapError('No commit to close it with: commit the work first, or pass --commit.');

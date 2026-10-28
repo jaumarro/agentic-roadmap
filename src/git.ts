@@ -39,7 +39,7 @@ const CHANGE_COMMIT = /^(feat|fix|refactor|perf|build)(\([^)]*\))?!?:/;
 const CLOSE_COMMIT = /^docs(\([^)]*\))?!?: close ([A-Z][A-Z0-9]*\.[0-9]+)\b/;
 
 /** The branch tasks start from: `configured`, else the remote's default branch, else main or master; null for none. */
-function readBase(root: string, configured: string | undefined): string | null {
+export function readBase(root: string, configured: string | undefined): string | null {
   if (configured !== undefined) return configured;
   const remote = git(root, ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']);
   const candidates = [remote?.replace(/^origin\//, ''), 'main', 'master', remote];
