@@ -47,4 +47,17 @@ jobs:
             echo "The release tag is $TAG but package.json says $version." >&2
             exit 1
           fi
-      - run: npm publish --provenance --access public
+      # A version published by hand, or by an earlier run, is left as it is, so a re-run passes.
+      - name: The version is not on npm yet
+        id: unpublished
+        run: |
+          name="$(node -p 'require("./package.json").name')"
+          version="$(node -p 'require("./package.json").version')"
+          if npm view "$name@$version" version > /dev/null 2>&1; then
+            echo "$name@$version is already on npm."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.unpublished.outputs.publish == 'true'
+        run: npm publish --provenance --access public
