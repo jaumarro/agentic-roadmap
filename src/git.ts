@@ -43,7 +43,8 @@ export function readKnownCommits(root: string, shas: string[]): Set<string> {
 
 // A `docs:` commit records the plan, and tests usually follow the change they cover: the work is the change itself.
 const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
-const CHANGE_COMMIT = /^(feat|fix|refactor|perf|build)(\([^)]*\))?!?:/;
+const LOGIC_COMMIT = /^(feat|fix|refactor|perf)(\([^)]*\))?!?:/;
+const BUILD_COMMIT = /^build(\([^)]*\))?!?:/;
 
 // What close asks to commit once it wrote a task's commit: where that task's work ends and the next one's starts.
 const CLOSE_COMMIT = /^docs(\([^)]*\))?!?: close ([A-Z][A-Z0-9]*\.[0-9]+)\b/;
@@ -79,19 +80,28 @@ function readOwnCommits(root: string, id: string, configuredBase: string | undef
 }
 
 /**
- * The short sha that closes task `id`, from the commits it made: the newest conventional change (`feat`, `fix`,
- * `refactor`, `perf`, `build`), else the newest that is not a `docs:` one, else, on a task's own branch, the newest
- * `docs:` one, for a task that only writes documents. Null when it made none, so another task's work is never taken.
+ * The short sha that closes task `id`, from the commits it made. Its work is the newest `feat`, `fix`, `refactor` or
+ * `perf` commit, else the newest `build` one, else the newest that is not `docs:`; on a task's own branch, the newest
+ * `docs:` one that is no close comes after those. A document task takes that `docs:` one first. Null when it made
+ * none, so another task's work is never taken.
  */
-export function readLastWorkCommit(root: string, id: string, base?: string): string | null {
+export function readLastWorkCommit(
+  root: string,
+  id: string,
+  base: string | undefined,
+  isDocument: boolean,
+): string | null {
   const commits = readOwnCommits(root, id, base);
+  const newest = (fits: (subject: string) => boolean) => commits.find(([, subject = '']) => fits(subject));
   const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  // On the base itself the newest docs commit is likely the plan's, so only a task's branch falls back to one.
+  // On the base itself the newest docs commit is likely the plan's, so only a task's own branch takes one.
   const ownBranch = current !== readBase(root, base);
-  const change = commits.find(([, subject = '']) => CHANGE_COMMIT.test(subject));
-  const work = change ?? commits.find(([, subject = '']) => !PLAN_COMMIT.test(subject));
-  const document = ownBranch ? commits[0] : undefined;
-  return (work ?? document)?.[0] ?? null;
+  const written = ownBranch ? newest((subject) => PLAN_COMMIT.test(subject) && !CLOSE_COMMIT.test(subject)) : undefined;
+  const logic = newest((subject) => LOGIC_COMMIT.test(subject));
+  // A build commit is a task's work only when no logic commit is: else it is tooling made along the way.
+  const work = logic ?? newest((subject) => BUILD_COMMIT.test(subject)) ?? newest((s) => !PLAN_COMMIT.test(s));
+  const found = isDocument ? (written ?? work) : (work ?? written);
+  return found?.[0] ?? null;
 }
 
 /**

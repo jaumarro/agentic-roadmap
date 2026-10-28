@@ -448,7 +448,8 @@ function close(root: string, command: Command, out: Io['out']): void {
       'close cannot tell which branch tasks start from: set base: in roadmap.yaml, or pass --commit.',
     );
   }
-  const revision = command.commit ?? readLastWorkCommit(root, id, base);
+  const task = roadmap.blocks.flatMap((block) => block.tasks).find((each) => each.id === id);
+  const revision = command.commit ?? readLastWorkCommit(root, id, base, task?.lines === 'doc');
   if (revision === null) throw new RoadmapError('No commit to close it with: commit the work first, or pass --commit.');
   // A branch, a tag or HEAD is written as the commit it names today, which a later move cannot change.
   const sha = resolveCommit(root, revision);
