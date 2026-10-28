@@ -68,12 +68,14 @@ function countTasks(count: number): string {
 const MAX_CHAIN = 5;
 const MAX_BLOCKS_WAITED_ON = 3;
 
-/** The longest run of pending tasks inside one block that ends at `id`; the plan has no cycle by now. */
+/** The longest run of pending tasks inside one block that ends at `id`. */
 function readChain(id: string, byId: Map<string, Task>, chains: Map<string, number>): number {
   const known = chains.get(id);
   if (known !== undefined) return known;
   const task = byId.get(id);
   if (task === undefined || task.commit !== undefined) return 0;
+  // A cycle, which check reports on its own, must end the walk rather than the stack: one met again counts as nothing.
+  chains.set(id, 0);
   const code = id.split('.')[0];
   const inBlock = task.requires.filter((need) => need.split('.')[0] === code);
   const chain = 1 + Math.max(0, ...inBlock.map((need) => readChain(need, byId, chains)));
