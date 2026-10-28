@@ -3,30 +3,57 @@
 Your project's plan, kept as YAML files in the repo. People and coding agents ask it what to do next, and close each
 task with the commit that did it.
 
+## In one minute
+
+A plan is a block of tasks, each with what it requires and when it counts as done:
+
+```yaml
+# roadmap/LOG.yaml
+name: Login
+tasks:
+  - id: LOG.1
+    title: Sign in with email
+    doneWhen: a user signs in and sees their page
+    lines: 80
+  - id: LOG.2
+    title: Remember the session
+    requires: [LOG.1]
+    doneWhen: a reload keeps the user signed in
+    lines: 40
+```
+
+Ask it what to do, do it on a branch named after the task, and close it with its commit:
+
+```console
+$ roadmap next
+Next: LOG.1 · Sign in with email
+  Done when: a user signs in and sees their page
+  Start it on a branch named log-1/…
+
+$ git switch -c log-1/sign-in
+$ git commit -m "feat: sign in with email"
+$ roadmap close LOG.1
+Closed LOG.1 with d719ae2 in roadmap/LOG.yaml. Commit it as «docs: close LOG.1».
+$ git commit -am "docs: close LOG.1"
+$ git switch main && git merge log-1/sign-in
+
+$ roadmap next
+Next: LOG.2 · Remember the session
+  Done when: a reload keeps the user signed in
+  Start it on a branch named log-2/…
+
+$ roadmap status
+LOG · Login  1 / 2  50 %
+All          1 / 2  50 %
+```
+
 - **No database, no server.** The plan is plain files in `roadmap/`, reviewed like any other code.
 - **Safe in parallel.** The tool picks ids and commits. Sessions in one clone, on its branches and worktrees, never take
   the same id, committed or not: `add` takes a lock the worktrees share and reads all of them. Clones on other machines
-  see each other only through pushed branches; an id both took is caught when they merge. A task counts as started as
-  soon as a branch is named after it.
-- **Readable anywhere.** `roadmap render` writes the plan as Markdown tables whenever you want to share it.
-
-## Why this one
-
-Most tools for agents' tasks are issue trackers: a backlog that agents claim work from, kept in a database. This one is
-a plan: ordered, its dependencies checked, and its shape measured.
-
-|                      | agentic-roadmap                                                                          | Trackers such as Beads or taskops         |
-| -------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Where the plan lives | YAML files in `roadmap/`, read and reviewed in PRs                                       | a database (Dolt, SQLite) or a JSONL log  |
-| What runs it         | Node and two libraries                                                                   | a database engine, often a daemon or sync |
-| Who has started what | read from branch names: nothing to keep in sync                                          | claims written to the store               |
-| A plan that is wrong | `check` refuses cycles, unknown requirements, repeated ids and commits that do not exist | mostly left to whoever writes it          |
-| A plan that is weak  | `health`: critical path, parallelism, bottlenecks, oversized tasks                       | not measured                              |
-| What to take next    | the task the most work waits on, after your focus                                        | priority or order you set                 |
-| From a plan to tasks | the plan ends with a table; `add --from` adds it all, or nothing                         | one task at a time                        |
-
-Pick a tracker when you want a queue of issues many agents pull from across machines. Pick this when the work is a
-plan you want to read, review and keep sound while several sessions build it.
+  see each other through fetched branches; an id both took before either pushed is caught when they merge. A task
+  counts as started as soon as a branch is named after it.
+- **A plan that holds.** `check` refuses cycles, unknown requirements, repeated ids and commits the repo does not have.
+  `health` measures the critical path, how many sessions the plan keeps busy, and its bottlenecks.
 
 ## Install
 
@@ -48,7 +75,8 @@ npx roadmap install-hook          # refuses commits that break the plan
 npx roadmap install-merge-driver  # merges parallel edits to the plan task by task
 ```
 
-After an upgrade, run `install-skill` again so agents read the new workflow.
+Commit `roadmap/` on your base branch before the first task. After an upgrade, run `install-skill` again so agents
+read the new workflow.
 
 ## For coding agents
 
@@ -60,27 +88,8 @@ commit, and plan work that ends with a table `add --from` turns into tasks.
 - Other agents that read `AGENTS.md` (Codex, Cursor and others): add a line pointing at it, as
   `Plan and track work with agentic-roadmap: read node_modules/agentic-roadmap/skill/SKILL.md and follow it.`
 
-Every command that answers a question takes `--json`, and errors go to stderr, so an agent can parse the answer.
-
-## The plan
-
-`roadmap/roadmap.yaml` lists the blocks in order. Each block lives in its own file, `roadmap/<CODE>.yaml`:
-
-```yaml
-name: Login
-tasks:
-  - id: LOG.1
-    title: Sign in with email
-    doneWhen: a user signs in and sees their page
-    lines: 80
-  - id: LOG.2
-    title: Remember the session
-    requires: [LOG.1]
-    doneWhen: a reload keeps the user signed in
-    lines: 40
-```
-
-Don't write ids or commits by hand: `add` and `close` do it.
+Every command that answers a question takes `--json`, and errors go to stderr, so an agent can parse the answer. The
+[CLI reference](docs/cli.md) has the JSON shapes, exit codes and what each command needs from git.
 
 ## Daily use
 
@@ -90,20 +99,38 @@ Don't write ids or commits by hand: `add` and `close` do it.
 | Start the task           | a branch named after it: `log-1/sign-in`                                                    |
 | Finish it                | `roadmap close LOG.1`, then commit as `docs: close LOG.1`                                   |
 | Add a task               | `roadmap add LOG "Sign out" --done-when "the button signs out" --lines 20 --requires LOG.1` |
+| Add a whole plan         | `roadmap add --from plan.md`, from the table under `<!-- roadmap -->`                       |
 | Several sessions at once | `roadmap free 3` gives one free task per session                                            |
+| What can run in parallel | `roadmap list --by wave`, or `roadmap graph` for a Mermaid diagram                          |
 | Is the plan fine?        | `roadmap check` and `roadmap health`                                                        |
 | How far along?           | `roadmap status`                                                                            |
 
-`roadmap help` lists every command.
+Don't write ids or commits by hand: `add` and `close` do it. `roadmap help` lists every command, and
+`roadmap <command> --help` explains one.
 
 To keep a Markdown copy in the repo, name it in `roadmap/roadmap.yaml` (`markdown: docs/roadmap.md`): `add`, `close`
 and `focus` then keep it current, and `check` fails when someone edits it by hand. Keep your formatter off it. Two
 branches closing tasks in one block will conflict on it, which is why there is none by default.
 
+## How it differs from task trackers
+
+Most tools for agents' work, such as Beads or taskops, are issue trackers: a backlog agents claim work from, kept in a
+store of their own. This one is a plan: ordered, its dependencies checked, and its shape measured.
+
+|                      | agentic-roadmap                                                  | Issue trackers for agents      |
+| -------------------- | ---------------------------------------------------------------- | ------------------------------ |
+| Where the plan lives | YAML files in `roadmap/`, read and reviewed in PRs               | their own store, as a database |
+| Who has started what | read from branch names: nothing to keep in sync                  | claims written to the store    |
+| What to take next    | the task the most work waits on, after your focus                | the priority or order you set  |
+| From a plan to tasks | the plan ends with a table; `add --from` adds it all, or nothing | issues created one by one      |
+
+Pick a tracker when you want a queue of issues many agents pull from across machines. Pick this when the work is a
+plan you want to read, review and keep sound while several sessions build it.
+
 ## Coming from another plan
 
 Ask your agent to move it in. With the skill installed, it reads your plan, whatever its shape, and builds `roadmap/`
-with `add`.
+with `add --from`.
 
 ## License
 

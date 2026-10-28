@@ -34,7 +34,8 @@
   },
   "files": [
     "dist",
-    "skill"
+    "skill",
+    "docs/cli.md"
   ],
   "type": "module",
   "scripts": {
