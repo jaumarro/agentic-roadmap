@@ -50,5 +50,5 @@
 
 | Id | Task | Requires | Done when | Lines |
 | - | - | - | - | - |
-| REV.1 | Make the package installable, by npm or a git dependency, with the maintainer's yes | AGT.2 | reviewer can add agentic-roadmap as a dependency without a local path | doc |
+| ✅ REV.1 | Make the package installable, by npm or a git dependency, with the maintainer's yes | AGT.2 | 258b0b9: reviewer can add agentic-roadmap as a dependency without a local path | doc |
 | REV.2 | Move reviewer's plan to the package and drop its plan scripts | REV.1 | reviewer's pnpm scripts call the CLI, scripts/plan-* are gone and /api/roadmap answers the same JSON as before | ~150 |

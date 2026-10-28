@@ -5,6 +5,7 @@ tasks:
     requires: [AGT.2]
     doneWhen: reviewer can add agentic-roadmap as a dependency without a local path
     lines: doc
+    commit: '258b0b9'
   - id: REV.2
     title: Move reviewer's plan to the package and drop its plan scripts
     requires: [REV.1]
