@@ -114,6 +114,19 @@ describe('with the merge driver installed', () => {
     expect(checked.text).toMatch(/^The plan is sound\.\n/);
   });
 
+  it('keeps the last rule of a .gitattributes that ends without a newline', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+    git(root, 'init', '-q', '-b', 'main');
+    initRoadmap(root);
+    writeFileSync(join(root, '.gitattributes'), '*.png binary');
+
+    capture(['install-merge-driver'], root);
+
+    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe(
+      '*.png binary\nroadmap/*.yaml merge=agentic-roadmap\nroadmap/roadmap.yaml merge=text\n',
+    );
+  });
+
   it('leaves both sides marked when the two branches changed one task differently', () => {
     const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
     git(root, 'init', '-q', '-b', 'main');
