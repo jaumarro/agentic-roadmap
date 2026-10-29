@@ -6,8 +6,9 @@ commit it was built from.
 
 ## Each release
 
-1. On `main`, with CI green, add the version's section at the top of `CHANGELOG.md` and commit it as
-   `docs: changelog for X.Y.Z`.
+1. On `main`, with CI green, rename `## Unreleased` at the top of `CHANGELOG.md` to the version, as `## 0.3.0`, and
+   commit it as `docs: changelog for X.Y.Z`. Each change lands under `## Unreleased` as it is made, so the section is
+   already written.
 2. Bump the version; this commits `package.json` and tags it:
 
    ```bash
