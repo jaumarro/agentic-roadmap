@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Block, Roadmap, Task } from './model.ts';
 import { ROADMAP_DIR, RoadmapError } from './source.ts';
+import { writeInside } from './write-inside.ts';
 
 const DEFAULT_MARKDOWN = 'docs/roadmap.md';
 const DONE_MARK = '✅ ';
@@ -52,11 +53,10 @@ export function renderMarkdown(roadmap: Roadmap): string {
 /** Writes the Markdown where the config says; the path written. */
 export function writeMarkdown(root: string, roadmap: Roadmap): string {
   const name = readMarkdownPath(roadmap);
-  const path = join(root, name);
   try {
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, renderMarkdown(roadmap));
+    writeInside(root, name, renderMarkdown(roadmap));
   } catch (error) {
+    if (error instanceof RoadmapError) throw error;
     throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
   }
   return name;

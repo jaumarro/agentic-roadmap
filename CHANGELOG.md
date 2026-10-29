@@ -10,6 +10,18 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
 - Only the package's root is importable: a path into `dist/`, as `agentic-roadmap/dist/source.js`, no longer resolves.
 
+## 0.2.1
+
+Security fixes for a plan written by someone else, as in a pull request. A plan that relied on either refusal below was
+already unsafe to run, so they ship as a patch.
+
+- `markdown:` in `roadmap.yaml` must be a path inside the repo: one with `..` or an absolute one is refused. Before,
+  `close`, `add`, `focus` and `render` wrote the Markdown wherever it pointed.
+- The Markdown and `install-skill` no longer write through a symlink, or through a folder that links out of the repo.
+- Text in the plan may not hold control characters other than tabs and line breaks, so a title cannot send escape
+  sequences to the terminal.
+- A YAML file that expands aliases without end is refused as a plan error, naming the file, instead of crashing.
+
 ## 0.2.0
 
 - `close <ID> --commit <SHA>` records a done task's commit again, as after a rebase rewrote it. Without `--commit`, a

@@ -68,7 +68,8 @@ function parseYaml(read: ReadFile, file: string): unknown {
   try {
     return parse(text);
   } catch (error) {
-    if (!(error instanceof YAMLError)) throw error;
+    // yaml refuses an alias bomb with a plain ReferenceError, not a YAMLError.
+    if (!(error instanceof YAMLError)) throw new RoadmapError(`${name}: ${String(error)}`);
     const line = error.linePos?.[0].line;
     // yaml ends its message with where it is, which the line number in front already says.
     const message = error.message.split('\n')[0]?.replace(/ at line \d+, column \d+:?$/, '');
