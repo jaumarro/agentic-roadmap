@@ -1,5 +1,6 @@
 import { checkChapters, readChapterOf } from './chapters.ts';
 import type { Block, Roadmap, Task } from './model.ts';
+import { ROADMAP_DIR } from './source.ts';
 
 function countBy(values: string[]): Map<string, number> {
   const counts = new Map<string, number>();
@@ -45,7 +46,9 @@ export type Problem =
   | { kind: 'unknown-chapter-block'; block: string }
   | { kind: 'block-in-chapters'; block: string }
   | { kind: 'later-requirement'; task: string; requires: string; from: 'chapter' | 'track' }
-  | { kind: 'cycle'; tasks: string[] };
+  | { kind: 'cycle'; tasks: string[] }
+  | { kind: 'missing-commit'; task: string; commit: string }
+  | { kind: 'stale-markdown'; path: string };
 
 /** A problem in words a person can act on. */
 export function describeProblem(problem: Problem): string {
@@ -70,6 +73,10 @@ export function describeProblem(problem: Problem): string {
     }
     case 'cycle':
       return `a cycle: ${problem.tasks.join(' → ')}`;
+    case 'missing-commit':
+      return `${problem.task} cites ${problem.commit}, which this repo does not have`;
+    case 'stale-markdown':
+      return `${problem.path} does not match ${ROADMAP_DIR}/: edit the YAML, not the Markdown, then run render`;
   }
   return problem satisfies never;
 }
@@ -171,12 +178,12 @@ export function warnRoadmap(roadmap: Roadmap): string[] {
 }
 
 /** The done tasks whose commit `hasCommit` does not find. */
-export function findMissingCommits(roadmap: Roadmap, hasCommit: (sha: string) => boolean): string[] {
+export function findMissingCommits(roadmap: Roadmap, hasCommit: (sha: string) => boolean): Problem[] {
   return readBlocksOnce(roadmap)
     .flatMap((block) => block.tasks)
-    .flatMap((task) =>
+    .flatMap((task): Problem[] =>
       task.commit === undefined || hasCommit(task.commit)
         ? []
-        : [`${task.id} cites ${task.commit}, which this repo does not have`],
+        : [{ kind: 'missing-commit', task: task.id, commit: task.commit }],
     );
 }

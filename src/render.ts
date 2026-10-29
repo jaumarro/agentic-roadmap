@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Problem } from './check.ts';
 import type { Block, Roadmap, Task } from './model.ts';
 import { ROADMAP_DIR, RoadmapError } from './source.ts';
 import { writeInside } from './write-inside.ts';
@@ -89,13 +90,13 @@ function readFromDisk(root: string, name: string): string | null {
 }
 
 /** The problem with the Markdown the repo keeps when it says something the YAML does not. */
-export function checkMarkdown(root: string, roadmap: Roadmap, read = readFromDisk): string[] {
+export function checkMarkdown(root: string, roadmap: Roadmap, read = readFromDisk): Problem[] {
   if (roadmap.markdown === undefined) return [];
-  const name = roadmap.markdown;
-  const text = read(root, name);
+  const path = roadmap.markdown;
+  const text = read(root, path);
   if (text === null) return [];
   if (normalize(text) === normalize(renderMarkdown(roadmap))) return [];
-  return [`${name} does not match ${ROADMAP_DIR}/: edit the YAML, not the Markdown, then run render`];
+  return [{ kind: 'stale-markdown', path }];
 }
 
 /** Each block's progress, and the whole plan's. */

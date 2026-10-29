@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addTask, readNextId } from './add.ts';
 import { addRows, readPlanTable } from './batch.ts';
-import { describeProblems, findMissingCommits, warnRoadmap } from './check.ts';
+import { checkRoadmap, describeProblem, describeProblems, findMissingCommits, warnRoadmap } from './check.ts';
 import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
 import {
@@ -55,7 +55,7 @@ Commands:
                              take these blocks and tasks first, in this order; --clear takes the plan as it reads
   close <ID> [--commit SHA]  mark a task done with its commit: the newest feat, fix, refactor or perf one unless given;
                              given, it also records a done task's commit again, as after a rebase
-  check [--staged]           find what makes the plan unsound, and a Markdown that no longer matches it; --staged
+  check [--staged] [--json]  find what makes the plan unsound, and a Markdown that no longer matches it; --staged
                              checks the plan the next commit records
   render                     write the plan as Markdown where roadmap.yaml's markdown: says, docs/roadmap.md unless
                              told; with markdown: set, close, add and focus keep it current
@@ -139,7 +139,7 @@ const FLAGS: Record<string, string[]> = {
   free: ['json'],
   focus: ['clear'],
   close: ['commit'],
-  check: ['staged'],
+  check: ['staged', 'json'],
   status: ['json'],
   show: ['json'],
   why: ['json'],
@@ -526,14 +526,20 @@ function check(root: string, command: Command, out: Io['out']): number {
   const shallow = missing.length > 0 && isShallow(root);
   const unseen = shallow ? [`this clone is shallow, so ${missing.length} cited commits went unchecked`] : [];
   const problems = [
-    ...describeProblems(roadmap),
+    ...checkRoadmap(roadmap),
     ...(shallow ? [] : missing),
     ...checkMarkdown(root, roadmap, readMarkdown),
   ];
-  out(problems.length === 0 ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(problems)}`);
   const warnings = [...unseen, ...warnRoadmap(roadmap)];
+  const sound = problems.length === 0;
+  if (command.json) {
+    out(`${JSON.stringify({ sound, problems, warnings }, null, 2)}\n`);
+    return sound ? 0 : 1;
+  }
+  const described = problems.map(describeProblem);
+  out(sound ? 'The plan is sound.\n' : `The plan has problems:\n${listProblems(described)}`);
   if (warnings.length > 0) out(`Warnings, which do not fail it:\n${listProblems(warnings)}`);
-  return problems.length === 0 ? 0 : 1;
+  return sound ? 0 : 1;
 }
 
 /** Runs one command with `args`; the exit code it ends with. */
