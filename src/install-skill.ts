@@ -1,7 +1,8 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RoadmapError } from './source.ts';
+import { writeInside } from './write-inside.ts';
 
 const SKILL = 'roadmap-workflow';
 
@@ -15,9 +16,9 @@ export function installSkill(root: string): string {
   const folder = join(root, '.claude', 'skills', SKILL);
   const target = join(folder, 'SKILL.md');
   try {
-    mkdirSync(folder, { recursive: true });
-    writeFileSync(target, readFileSync(source, 'utf8'));
+    writeInside(root, relative(root, target), readFileSync(source, 'utf8'));
   } catch (error) {
+    if (error instanceof RoadmapError) throw error;
     throw new RoadmapError(`Could not install the skill in ${folder}: ${readCode(error)}.`);
   }
   return relative(root, target);
