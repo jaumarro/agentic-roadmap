@@ -1,5 +1,5 @@
 import { analyze, readCriticalPath, weigh } from './analyze.ts';
-import type { Roadmap, Task } from './model.ts';
+import { isUnblocked, readDoneIds, type Roadmap, type Task } from './model.ts';
 
 const SIZE_CAP = 150;
 // Below this, sessions run in parallel mostly wait on each other.
@@ -148,14 +148,14 @@ export function measureHealth(roadmap: Roadmap): Health {
   const shape = analyze(roadmap);
   const workLeft = shape.work;
   const criticalPath = { lines: shape.span, tasks: readCriticalPath(shape) };
-  const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
+  const done = readDoneIds(roadmap);
   const bottlenecks = pending
     .map((task) => {
       const blocks = pending
         .filter((other) => pendingAncestors.get(other.id)?.has(task.id) === true)
         .reduce((sum, other) => sum + weigh(other), 0);
       const rest = workLeft - weigh(task);
-      const ready = task.requires.every((id) => done.has(id));
+      const ready = isUnblocked(task, done);
       return { id: task.id, blocks, share: rest === 0 ? 0 : blocks / rest, ready };
     })
     .filter((each) => each.blocks > 0)
@@ -174,7 +174,7 @@ export function measureHealth(roadmap: Roadmap): Health {
     criticalPath,
     parallelism: criticalPath.lines === 0 ? 0 : workLeft / criticalPath.lines,
     width: measureWidth(pending, pendingAncestors),
-    readyNow: pending.filter((task) => task.requires.every((id) => done.has(id))).length,
+    readyNow: pending.filter((task) => isUnblocked(task, done)).length,
     bottlenecks,
     redundant: findRedundant(tasks, ancestors),
     crossBlockShare: edges.length === 0 ? 0 : crossing / edges.length,

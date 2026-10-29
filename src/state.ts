@@ -1,4 +1,4 @@
-import type { Roadmap, Task } from './model.ts';
+import { isUnblocked, readDoneIds, type Roadmap, type Task } from './model.ts';
 import { namesTask } from './next.ts';
 
 /** Where a task stands: closed with a commit, on a branch, free to take, or waiting on a task not done. */
@@ -7,11 +7,11 @@ export type TaskState = 'done' | 'started' | 'ready' | 'waiting';
 /** Each task's state, by id, given the repo's local branches. */
 export function readStates(roadmap: Roadmap, branches: string[]): Map<string, TaskState> {
   const tasks = roadmap.blocks.flatMap((block) => block.tasks);
-  const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
+  const done = readDoneIds(roadmap);
   const readState = (task: Task): TaskState => {
     if (done.has(task.id)) return 'done';
     if (branches.some((branch) => namesTask(branch, task.id))) return 'started';
-    return task.requires.every((id) => done.has(id)) ? 'ready' : 'waiting';
+    return isUnblocked(task, done) ? 'ready' : 'waiting';
   };
   return new Map(tasks.map((task) => [task.id, readState(task)]));
 }

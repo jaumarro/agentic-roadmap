@@ -54,6 +54,18 @@ export type Roadmap = {
   warnings?: Warnings;
 };
 
+/** The ids of the tasks closed with a commit. */
+export function readDoneIds(roadmap: Roadmap): Set<string> {
+  return new Set(
+    roadmap.blocks.flatMap((block) => block.tasks.filter((task) => task.commit !== undefined)).map((task) => task.id),
+  );
+}
+
+/** Whether every task `task` requires is done, so nothing keeps it from being taken. */
+export function isUnblocked(task: Task, done: Set<string>): boolean {
+  return task.requires.every((id) => done.has(id));
+}
+
 /** What makes a file not a plan: where in it, as `tasks.0.id`, and what is wrong there. */
 export class InvalidPlan extends Error {
   readonly where: string;

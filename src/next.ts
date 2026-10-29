@@ -1,6 +1,6 @@
 import { analyze } from './analyze.ts';
 import { isOnTrack, readChapterOf } from './chapters.ts';
-import type { Roadmap, Task } from './model.ts';
+import { isUnblocked, readDoneIds, type Roadmap, type Task } from './model.ts';
 
 /** Where `task` stands in the focus: the first entry naming it or its block, and past every entry when none does. */
 function readFocusRank(focus: string[], task: Task): number {
@@ -18,12 +18,12 @@ function readFocusRank(focus: string[], task: Task): number {
 export function listReady(roadmap: Roadmap): Task[] {
   const focus = roadmap.focus ?? [];
   const tasks = roadmap.blocks.flatMap((block) => block.tasks);
-  const done = new Set(tasks.filter((task) => task.commit !== undefined).map((task) => task.id));
+  const done = readDoneIds(roadmap);
   const chapterOf = readChapterOf(roadmap);
   const ready = tasks.filter(
     (task) =>
       task.commit === undefined &&
-      task.requires.every((id) => done.has(id)) &&
+      isUnblocked(task, done) &&
       (!isOnTrack(chapterOf, task) || readFocusRank(focus, task) < focus.length),
   );
   const shape = analyze(roadmap).tasks;
