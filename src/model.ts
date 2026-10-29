@@ -185,6 +185,17 @@ export function readConfig(value: unknown): Config {
     ...readOptional(fields, 'chapters', '', (each, where) => readList(each, where, readChapter)),
     ...readOptional(fields, 'warnings', '', readWarnings),
     ...readOptional(fields, 'base', '', (each, where) => readText(each, where)),
-    ...readOptional(fields, 'markdown', '', (each, where) => readText(each, where)),
+    ...readOptional(fields, 'markdown', '', readInsidePath),
   };
+}
+
+/** A path inside the repo: relative, never climbing out with `..`, as a plan from a stranger may try. */
+function readInsidePath(value: unknown, path: string): string {
+  const message = 'a path inside the repo, as docs/roadmap.md';
+  const text = readText(value, path, message);
+  const climbs = text.split(/[\\/]/).includes('..');
+  if (climbs || text.startsWith('/') || text.startsWith('\\') || /^[A-Za-z]:/.test(text)) {
+    throw new InvalidPlan(path, message);
+  }
+  return text;
 }
