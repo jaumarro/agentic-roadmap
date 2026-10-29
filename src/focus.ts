@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseDocument } from 'yaml';
-import { checkRoadmap } from './check.ts';
+import { describeProblems } from './check.ts';
 import type { Roadmap } from './model.ts';
 import { CONFIG_FILE, ROADMAP_DIR, RoadmapError } from './source.ts';
 
@@ -14,7 +14,7 @@ function readCode(error: unknown): string {
  * new focus first, so a focus naming no block or task is never written, and an unsound one already there can be fixed.
  */
 export function setFocus(root: string, roadmap: Roadmap, focus: string[]): void {
-  const problems = checkRoadmap({ ...roadmap, focus });
+  const problems = describeProblems({ ...roadmap, focus });
   if (problems.length > 0)
     throw new RoadmapError(`The focus would leave the plan unsound:\n  ${problems.join('\n  ')}`);
   const name = `${ROADMAP_DIR}/${CONFIG_FILE}`;

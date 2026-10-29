@@ -1,5 +1,5 @@
 import { appendTask, readNextId } from './add.ts';
-import { checkRoadmap } from './check.ts';
+import { describeProblems } from './check.ts';
 import type { Roadmap, Task } from './model.ts';
 import { RoadmapError } from './source.ts';
 
@@ -120,7 +120,7 @@ export function addRows(
     })),
   };
   const ids = [...idOf.values()];
-  const problems = checkRoadmap(after).filter((problem) => ids.some((id) => problem.includes(id)));
+  const problems = describeProblems(after).filter((problem) => ids.some((id) => problem.includes(id)));
   if (problems.length > 0) {
     // The ids were never written, so the problem names the table's keys.
     const named = [...idOf].reduce(

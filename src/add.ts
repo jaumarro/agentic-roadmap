@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parse, parseDocument, YAMLSeq } from 'yaml';
-import { checkRoadmap } from './check.ts';
+import { describeProblems } from './check.ts';
 import type { Roadmap, Task } from './model.ts';
 import { ROADMAP_DIR, RoadmapError } from './source.ts';
 
@@ -50,7 +50,7 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
     ...roadmap,
     blocks: roadmap.blocks.map((each) => (each.code === code ? { ...each, tasks: [...each.tasks, added] } : each)),
   };
-  const problems = checkRoadmap(after).filter((problem) => problem.includes(id));
+  const problems = describeProblems(after).filter((problem) => problem.includes(id));
   if (problems.length > 0) throw new RoadmapError(`Not added: ${problems.join('; ')}.`);
   appendTask(root, code, id, task);
 }

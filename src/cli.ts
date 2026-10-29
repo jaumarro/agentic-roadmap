@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addTask, readNextId } from './add.ts';
 import { addRows, readPlanTable } from './batch.ts';
-import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
+import { describeProblems, findMissingCommits, warnRoadmap } from './check.ts';
 import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
 import { closeTask } from './close.ts';
 import {
@@ -392,7 +392,7 @@ function listProblems(problems: string[]): string {
 /** The plan read under `root`, refused with its problems when it is not sound. */
 function readSoundRoadmap(root: string): Roadmap {
   const roadmap = readRoadmap(root);
-  const problems = checkRoadmap(roadmap);
+  const problems = describeProblems(roadmap);
   if (problems.length > 0) {
     throw new RoadmapError(`The plan has problems; fix them first:\n${listProblems(problems).trimEnd()}`);
   }
@@ -503,7 +503,7 @@ function check(root: string, command: Command, out: Io['out']): number {
   const shallow = missing.length > 0 && isShallow(root);
   const unseen = shallow ? [`this clone is shallow, so ${missing.length} cited commits went unchecked`] : [];
   const problems = [
-    ...checkRoadmap(roadmap),
+    ...describeProblems(roadmap),
     ...(shallow ? [] : missing),
     ...checkMarkdown(root, roadmap, readMarkdown),
   ];

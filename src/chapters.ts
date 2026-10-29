@@ -1,3 +1,4 @@
+import type { Problem } from './check.ts';
 import type { Roadmap, Task } from './model.ts';
 
 /** Each block's chapter, by its place in the order, and null for a parallel track; null when the plan has no chapters. */
@@ -16,26 +17,26 @@ function readBlockCode(id: string): string {
 }
 
 /** What breaks the chapters: a block they name that the plan lacks or names twice, and a requirement out of order. */
-export function checkChapters(roadmap: Roadmap, tasks: Task[]): string[] {
+export function checkChapters(roadmap: Roadmap, tasks: Task[]): Problem[] {
   const chapterOf = readChapterOf(roadmap);
   if (chapterOf === null) return [];
   const named = (roadmap.chapters ?? []).flatMap((chapter) => chapter.blocks);
   const unknown = [...new Set(named)].filter((code) => !chapterOf.has(code));
   const twice = [...new Set(named.filter((code, at) => named.indexOf(code) !== at))];
   // A chapter may need its own and earlier chapters, and a track may need any; no chapter needs a track.
-  const later = tasks.flatMap((task) => {
+  const later = tasks.flatMap((task): Problem[] => {
     const own = chapterOf.get(readBlockCode(task.id));
     if (own === null || own === undefined) return [];
-    return task.requires.flatMap((id) => {
+    return task.requires.flatMap((id): Problem[] => {
       const needed = chapterOf.get(readBlockCode(id));
       if (needed === undefined || (needed !== null && needed <= own)) return [];
-      const where = needed === null ? 'a parallel track' : 'a later chapter';
-      return [`${task.id} requires ${id}, from ${where}`];
+      const from = needed === null ? 'track' : 'chapter';
+      return [{ kind: 'later-requirement', task: task.id, requires: id, from }];
     });
   });
   return [
-    ...unknown.map((code) => `a chapter names block ${code}, which the plan does not list`),
-    ...twice.map((code) => `block ${code} is in more than one chapter`),
+    ...unknown.map((block): Problem => ({ kind: 'unknown-chapter-block', block })),
+    ...twice.map((block): Problem => ({ kind: 'block-in-chapters', block })),
     ...later,
   ];
 }

@@ -35,29 +35,79 @@ function readBlocksOnce(roadmap: Roadmap): Roadmap['blocks'] {
   return roadmap.blocks.filter((block, at) => roadmap.blocks.findIndex((each) => each.code === block.code) === at);
 }
 
-/** What makes the plan unsound on its own, without git: each problem in words a person can act on. */
-export function checkRoadmap(roadmap: Roadmap): string[] {
+/** What makes a plan unsound, as data; `describeProblem` puts one in words. */
+export type Problem =
+  | { kind: 'repeated-block'; block: string }
+  | { kind: 'unknown-focus'; entry: string }
+  | { kind: 'outside-block'; task: string; block: string }
+  | { kind: 'repeated-id'; id: string; count: number }
+  | { kind: 'unknown-requirement'; task: string; requires: string }
+  | { kind: 'unknown-chapter-block'; block: string }
+  | { kind: 'block-in-chapters'; block: string }
+  | { kind: 'later-requirement'; task: string; requires: string; from: 'chapter' | 'track' }
+  | { kind: 'cycle'; tasks: string[] };
+
+/** A problem in words a person can act on. */
+export function describeProblem(problem: Problem): string {
+  switch (problem.kind) {
+    case 'repeated-block':
+      return `block ${problem.block} is listed twice`;
+    case 'unknown-focus':
+      return `the focus names ${problem.entry}, which is no block or task`;
+    case 'outside-block':
+      return `${problem.task} sits in block ${problem.block}`;
+    case 'repeated-id':
+      return `${problem.id} is given to ${problem.count} tasks`;
+    case 'unknown-requirement':
+      return `${problem.task} requires ${problem.requires}, which no task has`;
+    case 'unknown-chapter-block':
+      return `a chapter names block ${problem.block}, which the plan does not list`;
+    case 'block-in-chapters':
+      return `block ${problem.block} is in more than one chapter`;
+    case 'later-requirement': {
+      const where = problem.from === 'track' ? 'a parallel track' : 'a later chapter';
+      return `${problem.task} requires ${problem.requires}, from ${where}`;
+    }
+    case 'cycle':
+      return `a cycle: ${problem.tasks.join(' → ')}`;
+  }
+  return problem satisfies never;
+}
+
+/** What makes the plan unsound on its own, without git. */
+export function checkRoadmap(roadmap: Roadmap): Problem[] {
   const blocks = readBlocksOnce(roadmap);
   const tasks = blocks.flatMap((block) => block.tasks);
   const ids = new Set(tasks.map((task) => task.id));
-  const repeatedBlocks = readRepeated(roadmap.blocks.map((block) => block.code));
   const outside = blocks.flatMap((block) =>
-    block.tasks.filter((task) => !task.id.startsWith(`${block.code}.`)).map((task) => ({ task, block })),
+    block.tasks
+      .filter((task) => !task.id.startsWith(`${block.code}.`))
+      .map((task): Problem => ({ kind: 'outside-block', task: task.id, block: block.code })),
   );
   const unknown = tasks.flatMap((task) =>
-    task.requires.filter((id) => !ids.has(id)).map((id) => `${task.id} requires ${id}, which no task has`),
+    task.requires
+      .filter((id) => !ids.has(id))
+      .map((id): Problem => ({ kind: 'unknown-requirement', task: task.id, requires: id })),
   );
   const codes = new Set(blocks.map((block) => block.code));
   const unfocused = (roadmap.focus ?? []).filter((entry) => !codes.has(entry) && !ids.has(entry));
   return [
-    ...repeatedBlocks.map(([code]) => `block ${code} is listed twice`),
-    ...unfocused.map((entry) => `the focus names ${entry}, which is no block or task`),
-    ...outside.map(({ task, block }) => `${task.id} sits in block ${block.code}`),
-    ...readRepeated(tasks.map((task) => task.id)).map(([id, count]) => `${id} is given to ${count} tasks`),
+    ...readRepeated(roadmap.blocks.map((block) => block.code)).map(([block]): Problem => ({
+      kind: 'repeated-block',
+      block,
+    })),
+    ...unfocused.map((entry): Problem => ({ kind: 'unknown-focus', entry })),
+    ...outside,
+    ...readRepeated(tasks.map((task) => task.id)).map(([id, count]): Problem => ({ kind: 'repeated-id', id, count })),
     ...unknown,
     ...checkChapters(roadmap, tasks),
-    ...findCycles(tasks).map((cycle) => `a cycle: ${cycle.join(' → ')}`),
+    ...findCycles(tasks).map((cycle): Problem => ({ kind: 'cycle', tasks: cycle })),
   ];
+}
+
+/** The plan's problems in words, as the CLI prints them. */
+export function describeProblems(roadmap: Roadmap): string[] {
+  return checkRoadmap(roadmap).map(describeProblem);
 }
 
 const BLOCK_SIZE: [number, number] = [5, 25];
