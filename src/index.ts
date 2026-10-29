@@ -18,5 +18,5 @@ export type { Graph } from './graph.ts';
 export { readGraph } from './graph.ts';
 export type { Progress } from './render.ts';
 export { measureProgress } from './render.ts';
-export type { Health } from './health.ts';
-export { measureHealth } from './health.ts';
+export type { Health, HealthProblem } from './health.ts';
+export { describeHealthProblem, measureHealth } from './health.ts';

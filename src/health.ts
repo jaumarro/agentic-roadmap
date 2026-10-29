@@ -5,7 +5,17 @@ const SIZE_CAP = 150;
 // Below this, sessions run in parallel mostly wait on each other.
 const QUEUE_PARALLELISM = 1.5;
 const BOTTLENECK_SHARE = 0.4;
-const MAX_PROBLEMS = 5;
+
+type Redundant = { id: string; requires: string; through: string };
+type Backward = { id: string; requires: string };
+
+/** A problem in the plan's shape, as data; `describeHealthProblem` gives it in words, with what to do. */
+export type HealthProblem =
+  | { kind: 'oversized'; task: string; lines: number }
+  | { kind: 'queue'; parallelism: number }
+  | { kind: 'bottleneck'; task: string; share: number }
+  | { kind: 'redundant'; requirements: Redundant[] }
+  | { kind: 'backward'; requirements: Backward[] };
 
 export type Health = {
   tasksLeft: number;
@@ -21,14 +31,14 @@ export type Health = {
   /** The tasks not done most of the rest waits on, worst first; `ready` when it can be taken now. */
   bottlenecks: { id: string; blocks: number; share: number; ready: boolean }[];
   /** Requirements a longer path already implies. */
-  redundant: { id: string; requires: string; through: string }[];
+  redundant: Redundant[];
   /** Of every requirement, the share that crosses into another block. */
   crossBlockShare: number;
   /** Requirements on a block listed after the task's own: the blocks' order says the opposite of the plan. */
-  backward: { id: string; requires: string }[];
+  backward: Backward[];
   oversized: { id: string; lines: number }[];
-  /** The worst problems, worst first, each with what to do. */
-  problems: string[];
+  /** Every problem, worst first. */
+  problems: HealthProblem[];
 };
 
 /** What each task needs, directly or through others. */
@@ -87,35 +97,43 @@ function readPercent(share: number): string {
   return `${Math.round(share * 100)} %`;
 }
 
-function rankProblems(health: Omit<Health, 'problems'>): string[] {
-  const oversized = health.oversized.map(
-    ({ id, lines }) => `${id} is ~${lines} lines, over the cap of ${SIZE_CAP}: split it into slices`,
-  );
-  const queue =
+function rankProblems(health: Omit<Health, 'problems'>): HealthProblem[] {
+  const oversized = health.oversized.map(({ id, lines }): HealthProblem => ({ kind: 'oversized', task: id, lines }));
+  const queue: HealthProblem[] =
     health.tasksLeft > 2 && health.parallelism < QUEUE_PARALLELISM
-      ? [
-          `The plan is a queue: parallelism ${health.parallelism.toFixed(1)}, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need`,
-        ]
+      ? [{ kind: 'queue', parallelism: health.parallelism }]
       : [];
   // One that can be taken now is a first step, and taking it first is what happens anyway: only a waiting one is a risk.
   const bottlenecks = health.bottlenecks
     .filter((each) => each.share >= BOTTLENECK_SHARE && !each.ready)
-    .map((each) => `${each.id} blocks ${readPercent(each.share)} of the rest of the work while it waits: split it`);
+    .map((each): HealthProblem => ({ kind: 'bottleneck', task: each.id, share: each.share }));
   // All in one problem, so one pass drops them all instead of one per run.
-  const redundantPairs = health.redundant.map((each) => `${each.id} → ${each.requires} (via ${each.through})`);
-  const redundant =
-    redundantPairs.length === 0
-      ? []
-      : [`Requirements another one already implies: ${redundantPairs.join(', ')}: drop them`];
-  const backwardPairs = health.backward.map((each) => `${each.id} → ${each.requires}`);
-  const backward =
-    backwardPairs.length === 0
-      ? []
-      : [`Requirements on a block listed later: ${backwardPairs.join(', ')}: reorder the blocks in roadmap.yaml`];
-  const all = [...oversized, ...queue, ...bottlenecks, ...redundant, ...backward];
-  if (all.length <= MAX_PROBLEMS) return all;
-  const more = all.length - MAX_PROBLEMS;
-  return [...all.slice(0, MAX_PROBLEMS), `… and ${more} more: health --json lists every figure`];
+  const redundant: HealthProblem[] =
+    health.redundant.length === 0 ? [] : [{ kind: 'redundant', requirements: health.redundant }];
+  const backward: HealthProblem[] =
+    health.backward.length === 0 ? [] : [{ kind: 'backward', requirements: health.backward }];
+  return [...oversized, ...queue, ...bottlenecks, ...redundant, ...backward];
+}
+
+/** A health problem in words, with what to do. */
+export function describeHealthProblem(problem: HealthProblem): string {
+  switch (problem.kind) {
+    case 'oversized':
+      return `${problem.task} is ~${problem.lines} lines, over the cap of ${SIZE_CAP}: split it into slices`;
+    case 'queue':
+      return `The plan is a queue: parallelism ${problem.parallelism.toFixed(1)}, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need`;
+    case 'bottleneck':
+      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits: split it`;
+    case 'redundant': {
+      const pairs = problem.requirements.map((each) => `${each.id} → ${each.requires} (via ${each.through})`);
+      return `Requirements another one already implies: ${pairs.join(', ')}: drop them`;
+    }
+    case 'backward': {
+      const pairs = problem.requirements.map((each) => `${each.id} → ${each.requires}`);
+      return `Requirements on a block listed later: ${pairs.join(', ')}: reorder the blocks in roadmap.yaml`;
+    }
+  }
+  return problem satisfies never;
 }
 
 /** How healthy the plan left to do is: its shape as a graph of tasks, and the worst problems with what to do. */

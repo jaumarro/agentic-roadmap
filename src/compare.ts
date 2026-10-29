@@ -1,5 +1,5 @@
 import { readOnBranches, resolveCommit } from './git.ts';
-import type { Health } from './health.ts';
+import { describeHealthProblem, type Health, type HealthProblem } from './health.ts';
 import type { Roadmap } from './model.ts';
 import { readRoadmapWith, ROADMAP_DIR, RoadmapError } from './source.ts';
 
@@ -45,15 +45,24 @@ function readFigure(figure: Figure, health: Health): string {
   return figure.name === 'parallelism' ? value.toFixed(1) : `${value}`;
 }
 
-// A problem quotes its figures, as «parallelism 1.2»: the same problem with a new figure is not a new one. The digits of
-// an id, as GET.12, stay, or two tasks' problems would read as one.
-function readProblemKind(problem: string): string {
-  return problem.replace(/(?<![A-Z0-9.])\d+(\.\d+)?/g, '#');
+// The same problem with a new figure, as a queue at parallelism 1.2 instead of 1.1, is not a new one.
+function identifyProblem(problem: HealthProblem): string {
+  switch (problem.kind) {
+    case 'oversized':
+    case 'bottleneck':
+      return `${problem.kind} ${problem.task}`;
+    case 'queue':
+      return problem.kind;
+    case 'redundant':
+    case 'backward':
+      return `${problem.kind} ${JSON.stringify(problem.requirements)}`;
+  }
+  return problem satisfies never;
 }
 
 function listNewProblems(comparison: Comparison): string[] {
-  const kinds = new Set(comparison.before.problems.map(readProblemKind));
-  return comparison.after.problems.filter((problem) => !kinds.has(readProblemKind(problem)));
+  const known = new Set(comparison.before.problems.map(identifyProblem));
+  return comparison.after.problems.filter((problem) => !known.has(identifyProblem(problem))).map(describeHealthProblem);
 }
 
 /** One line of what a change did to the figures it moved, worse ones marked, then each problem it brought in. */

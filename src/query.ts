@@ -1,4 +1,4 @@
-import type { Health } from './health.ts';
+import { describeHealthProblem, type Health, type HealthProblem } from './health.ts';
 import { analyze } from './analyze.ts';
 import { isOnTrack, readChapterOf } from './chapters.ts';
 import type { Roadmap } from './model.ts';
@@ -163,9 +163,15 @@ export function renderWhy(id: string, state: string, waits: Wait[]): string {
   return `${id} waits on:\n${renderWaits(waits, 1)}`;
 }
 
-function readProblems(problems: string[]): string {
+// The rest is noise until these are fixed; --json keeps every problem.
+const PROBLEMS_SHOWN = 5;
+
+function readProblems(problems: HealthProblem[]): string {
   if (problems.length === 0) return 'No problems.\n';
-  return `Problems, worst first:\n${problems.map((problem, at) => `  ${at + 1}. ${problem}\n`).join('')}`;
+  const shown = problems.slice(0, PROBLEMS_SHOWN).map(describeHealthProblem);
+  const more = problems.length - shown.length;
+  const words = more > 0 ? [...shown, `… and ${more} more: health --json lists every one`] : shown;
+  return `Problems, worst first:\n${words.map((problem, at) => `  ${at + 1}. ${problem}\n`).join('')}`;
 }
 
 // A longer chain reads as its start and its end; --json keeps every task.
