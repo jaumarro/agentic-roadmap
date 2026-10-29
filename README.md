@@ -96,6 +96,7 @@ Every command that answers a question takes `--json`, and errors go to stderr, s
 | Step                     | Command                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------- |
 | What do I do now?        | `roadmap next`                                                                              |
+| Start a block            | `roadmap add-block LOG "Login"`                                                             |
 | Start the task           | a branch named after it: `log-1/sign-in`                                                    |
 | Finish it                | `roadmap close LOG.1`, then commit as `docs: close LOG.1`                                   |
 | Add a task               | `roadmap add LOG "Sign out" --done-when "the button signs out" --lines 20 --requires LOG.1` |
@@ -108,9 +109,35 @@ Every command that answers a question takes `--json`, and errors go to stderr, s
 Don't write ids or commits by hand: `add` and `close` do it. `roadmap help` lists every command, and
 `roadmap <command> --help` explains one.
 
-To keep a Markdown copy in the repo, name it in `roadmap/roadmap.yaml` (`markdown: docs/roadmap.md`): `add`, `close`
-and `focus` then keep it current, and `check` fails when someone edits it by hand. Keep your formatter off it. Two
-branches closing tasks in one block will conflict on it, which is why there is none by default.
+In a repo that squashes branches on merge, the commit `close` cited on the branch is gone after the merge. Close on the
+base instead, once merged: `roadmap close LOG.1 --commit <the squashed commit>`.
+
+## Configuration
+
+`roadmap/roadmap.yaml` holds the plan's settings. Only `blocks` is required:
+
+```yaml
+blocks: [LOG, PAY, OPS] # the blocks in the order the plan reads them, each in roadmap/<CODE>.yaml
+focus: [PAY] # blocks and tasks to take first, as `roadmap focus` writes it
+base: develop # the branch tasks start from: the remote's default branch, else main or master, unless set
+markdown: docs/roadmap.md # a Markdown copy to keep current; none unless set
+chapters: # stages of the plan, in order
+  - name: First release
+    blocks: [LOG, PAY]
+warnings: # where check warns, without failing
+  blockSize: [5, 25] # tasks in a block
+  chain: 5 # pending tasks in a row inside one block
+  blocksWaitedOn: 3 # blocks of its chapter one block waits on
+```
+
+**Chapters** split a long plan into stages. A task may require tasks of its own chapter or an earlier one, never a later
+one nor a track's, and `check` refuses a plan that does. Once there are chapters, a block in none of them (`OPS` above) is a
+**parallel track**: work that runs beside the chapters, as tooling or docs. `next` and `free` leave a track's tasks out
+unless `focus` names them, so a session gives itself to a track on purpose; `list` marks them with `track`.
+
+A Markdown copy is kept current by `add`, `close` and `focus`, and `check` fails when someone edits it by hand. Keep
+your formatter off it. Two branches closing tasks in one block will conflict on it, which is why there is none by
+default.
 
 ## From code
 

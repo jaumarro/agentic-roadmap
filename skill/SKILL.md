@@ -26,6 +26,8 @@ Stacking task branches, each on the one before, as a prototype that merges nothi
 
 `agentic-roadmap free N` hands out the first N tasks free to take, one per session, each with the branch to start it on. Each session takes one and branches at once, so the next `next` or `free` leaves it out. The order is the same as `next`'s: what `focus` names, then the task the most work waits on, a risky one last. `agentic-roadmap focus <CODE|ID>...` puts blocks and tasks first, and `focus --clear` takes the plan as it reads again; commit it as `docs:`.
 
+When `roadmap.yaml` has `chapters`, a block in none of them is a parallel track: `next` and `free` leave its tasks out unless `focus` names them. To work a track, focus it in that session, or take its task by id after `why <ID>` shows it ready.
+
 ## Asking the plan
 
 - `agentic-roadmap why <ID>`: what a task waits on, down to the tasks that can be taken now. Use it before choosing something that is not Next.
@@ -59,7 +61,7 @@ Once the user approves the plan, run `agentic-roadmap add --from <the plan's fil
 
 1. Add each task with `agentic-roadmap add <BLOCK> "<title>" --done-when "<text>" --lines <N|doc> [--requires ID,ID]`. `--done-when` is checkable by a command, a test or a screen; `--lines` is your estimate of the logic it adds, tests aside, or `doc` for a document. `add` checks the plan with the task before writing it, and ends with what it did to the plan's health: read that line, and act on any «New problem».
 2. Keep each task a vertical slice that can be used and checked on its own, at most about 150 lines of logic: split a bigger one. Add the tasks in the order they are built, so each one's requirements exist when it is added. Require only the tasks whose result a task uses, not every task before it: each needless requirement is a session left waiting.
-3. A new block is a three-letter code, a file `roadmap/<CODE>.yaml` with its `name` and `tasks: []`, and its code in `roadmap.yaml`'s `blocks`, after the blocks it requires; then `add` its tasks. To change a task already there (its title, «Done when», size, requirements, or `risky: true`), edit its block's file; never change its id.
+3. Start a new block with `agentic-roadmap add-block <CODE> "<name>"`, a three-letter code; it goes after the other blocks in `roadmap.yaml`, so move it up if a block listed before it requires it. Then `add` its tasks. To change a task already there (its title, «Done when», size, requirements, or `risky: true`), edit its block's file; never change its id.
 4. Run `agentic-roadmap check`. It must say «The plan is sound»: it refuses unknown requirements, repeated ids or blocks, cycles, an id outside its block, and commits the repo does not have.
 5. Run `agentic-roadmap health` and fix the problems it ranks, worst first: tasks over the size cap, a plan that is a queue, a waiting task most of the work depends on, requirements another one already implies, and requirements on a block listed later. Rerun it until it says «No problems», or say which problem you leave and why.
 6. Commit the plan as `docs:`, on its own.

@@ -9,6 +9,9 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   each function gives what a command's `--json` gives. The library only reads, and runs no git: writing stays the
   CLI's. `checkRoadmap` gives each problem as data, as `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
 - `check --json` gives `{ sound, problems, warnings }`, each problem as data.
+- `add-block <CODE> <NAME>` starts a block with no tasks, after the others in `roadmap.yaml`.
+- `init`'s example block ends in a task that can be closed: taking and closing the first real task, not deleting the
+  block it sits in.
 - Breaking: one name per concept in the JSON. In `next` and `free`, `branch` is now `branchPrefix`, as it is only the
   start of a branch's name. In `show`, `startedOn` is now `branches`, as in `next`'s `inProgress`, and `block` is the
   block's code, with its name in `blockName`.
