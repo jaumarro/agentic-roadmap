@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { type Commit, cutAtOtherClose, pickWorkCommit } from './pick-commit.ts';
 
 /** git's output in `root`, trimmed; null when git fails, as outside a repo. */
 function git(root: string, args: string[]): string | null {
@@ -41,14 +42,6 @@ export function readKnownCommits(root: string, shas: string[]): Set<string> {
   }
 }
 
-// A `docs:` commit records the plan, and tests usually follow the change they cover: the work is the change itself.
-const PLAN_COMMIT = /^docs(\([^)]*\))?!?:/;
-const LOGIC_COMMIT = /^(feat|fix|refactor|perf)(\([^)]*\))?!?:/;
-const BUILD_COMMIT = /^build(\([^)]*\))?!?:/;
-
-// What close asks to commit once it wrote a task's commit: where that task's work ends and the next one's starts.
-const CLOSE_COMMIT = /^docs(\([^)]*\))?!?: close ([A-Z][A-Z0-9]*\.[0-9]+)\b/;
-
 /** The branch tasks start from: `configured`, else the remote's default branch, else main or master; null for none. */
 export function readBase(root: string, configured: string | undefined): string | null {
   if (configured !== undefined) return configured;
@@ -62,46 +55,31 @@ export function readBase(root: string, configured: string | undefined): string |
  * ends that task's work, as below a stacked branch. Branch names play no part, so a pushed copy or a backup of the
  * branch takes nothing away. On the base itself, or with no base to tell, every commit since that close.
  */
-function readOwnCommits(root: string, id: string, configuredBase: string | undefined): string[][] {
-  const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  const base = readBase(root, configuredBase);
+function readOwnCommits(root: string, id: string, base: string | null, current: string | null): Commit[] {
   const bases = base === null || current === base ? [] : [base, `origin/${base}`];
   const range = ['HEAD', '--not', ...bases.filter((name) => resolveCommit(root, name) !== null)];
   const log = git(root, ['log', '-n', '200', '--format=%h%x09%s', ...range, '--']) ?? '';
   const commits = log
     .split('\n')
     .filter(Boolean)
-    .map((line) => line.split('\t'));
-  const end = commits.findIndex(([, subject = '']) => {
-    const closed = CLOSE_COMMIT.exec(subject)?.[2];
-    return closed !== undefined && closed !== id;
-  });
-  return end === -1 ? commits : commits.slice(0, end);
+    .map((line): Commit => {
+      const [sha = '', subject = ''] = line.split('\t');
+      return { sha, subject };
+    });
+  return cutAtOtherClose(commits, id);
 }
 
-/**
- * The short sha that closes task `id`, from the commits it made. Its work is the newest `feat`, `fix`, `refactor` or
- * `perf` commit, else the newest `build` one, else the newest that is not `docs:`; on a task's own branch, the newest
- * `docs:` one that is no close comes after those. A document task takes that `docs:` one first. Null when it made
- * none, so another task's work is never taken.
- */
+/** The short sha that closes task `id`, from the commits it made, as `pickWorkCommit` picks it. */
 export function readLastWorkCommit(
   root: string,
   id: string,
-  base: string | undefined,
+  configuredBase: string | undefined,
   isDocument: boolean,
 ): string | null {
-  const commits = readOwnCommits(root, id, base);
-  const newest = (fits: (subject: string) => boolean) => commits.find(([, subject = '']) => fits(subject));
   const current = git(root, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  // On the base itself the newest docs commit is likely the plan's, so only a task's own branch takes one.
-  const ownBranch = current !== readBase(root, base);
-  const written = ownBranch ? newest((subject) => PLAN_COMMIT.test(subject) && !CLOSE_COMMIT.test(subject)) : undefined;
-  const logic = newest((subject) => LOGIC_COMMIT.test(subject));
-  // A build commit is a task's work only when no logic commit is: else it is tooling made along the way.
-  const work = logic ?? newest((subject) => BUILD_COMMIT.test(subject)) ?? newest((s) => !PLAN_COMMIT.test(s));
-  const found = isDocument ? (written ?? work) : (work ?? written);
-  return found?.[0] ?? null;
+  const base = readBase(root, configuredBase);
+  const commits = readOwnCommits(root, id, base, current);
+  return pickWorkCommit(commits, { isDocument, ownBranch: current !== base });
 }
 
 /**
