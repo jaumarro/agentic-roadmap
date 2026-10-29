@@ -127,7 +127,7 @@ const free = listFree(roadmap, branches); // in the order `next` and `free` hand
 ```
 
 `readRoadmapWith(read)` reads a plan from files you hold, as another branch's, with `read(file)` giving each file in
-`roadmap/` by name. `listInProgress` gives the tasks a branch started.
+`roadmap/` by name, or null when there is none. `listInProgress` gives the tasks a branch started.
 
 ## How it differs from task trackers
 
