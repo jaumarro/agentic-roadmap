@@ -14,15 +14,18 @@ export function readRoadmapAt(root: string, revision: string): Roadmap {
   });
 }
 
-export type Comparison = { against: string; before: Health; after: Health; worse: string[] };
+/** A figure by the key `health --json` gives it. */
+export type FigureKey = 'criticalPath' | 'parallelism' | 'width' | 'problems';
 
-type Figure = { name: string; read: (health: Health) => number; better: 'lower' | 'higher' };
+export type Comparison = { against: string; before: Health; after: Health; worse: FigureKey[] };
+
+type Figure = { key: FigureKey; name: string; read: (health: Health) => number; better: 'lower' | 'higher' };
 
 const FIGURES: Figure[] = [
-  { name: 'critical path', read: (health) => health.criticalPath.lines, better: 'lower' },
-  { name: 'parallelism', read: (health) => health.parallelism, better: 'higher' },
-  { name: 'width', read: (health) => health.width, better: 'higher' },
-  { name: 'problems', read: (health) => health.problems.length, better: 'lower' },
+  { key: 'criticalPath', name: 'critical path', read: (health) => health.criticalPath.lines, better: 'lower' },
+  { key: 'parallelism', name: 'parallelism', read: (health) => health.parallelism, better: 'higher' },
+  { key: 'width', name: 'width', read: (health) => health.width, better: 'higher' },
+  { key: 'problems', name: 'problems', read: (health) => health.problems.length, better: 'lower' },
 ];
 
 /** The plan's health here against `against`'s: what each figure was and is, and which got worse. */
@@ -33,7 +36,7 @@ export function compareHealth(against: string, before: Health, after: Health): C
     // Rounded as shown, so a change too small to read is not called worse.
     const changed = Math.round(is * 10) !== Math.round(was * 10);
     return changed && (figure.better === 'lower' ? is > was : is < was);
-  }).map((figure) => figure.name);
+  }).map((figure) => figure.key);
   return { against, before, after, worse };
 }
 
@@ -57,7 +60,7 @@ function listNewProblems(comparison: Comparison): string[] {
 export function renderDelta(comparison: Comparison): string {
   const { before, after, worse } = comparison;
   const moved = FIGURES.filter((figure) => readFigure(figure, before) !== readFigure(figure, after)).map((figure) => {
-    const mark = worse.includes(figure.name) ? ' (worse)' : '';
+    const mark = worse.includes(figure.key) ? ' (worse)' : '';
     return `${figure.name} ${readFigure(figure, before)} → ${readFigure(figure, after)}${mark}`;
   });
   const line = moved.length === 0 ? 'Health: no figure moved.\n' : `Health: ${moved.join(' · ')}\n`;
@@ -90,7 +93,7 @@ export function renderComparison(comparison: Comparison): string {
       'Critical path',
       `~${before.criticalPath.lines}`,
       `~${after.criticalPath.lines} lines`,
-      worse.includes('critical path'),
+      worse.includes('criticalPath'),
     ),
     readRow('Parallelism', before.parallelism.toFixed(1), after.parallelism.toFixed(1), worse.includes('parallelism')),
     readRow('Width', `${before.width}`, `${after.width}`, worse.includes('width')),
