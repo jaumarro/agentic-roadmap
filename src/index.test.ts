@@ -2,11 +2,18 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { run } from './cli.ts';
 import { initRoadmap } from './source.ts';
 import {
   checkRoadmap,
+  describeTask,
+  explainWait,
   listFree,
   listInProgress,
+  listRows,
+  measureHealth,
+  measureProgress,
+  readGraph,
   readRoadmap,
   readRoadmapWith,
   readStates,
@@ -19,7 +26,29 @@ function project(): string {
   return root;
 }
 
+function readJson(args: string[], cwd: string): unknown {
+  let text = '';
+  run([...args, '--json'], { cwd, env: {}, out: (written) => (text += written), err: () => undefined });
+  return JSON.parse(text);
+}
+
 describe('the library', () => {
+  it('gives what each command gives as JSON', () => {
+    // Outside a git repo, so the CLI sees no branches, as the library given none.
+    const root = project();
+    const roadmap = readRoadmap(root);
+
+    expect(describeTask(roadmap, [], 'GET.2')).toEqual(readJson(['show', 'GET.2'], root));
+    expect({ id: 'GET.2', state: 'waiting', waitsOn: explainWait(roadmap, [], 'GET.2') }).toEqual(
+      readJson(['why', 'GET.2'], root),
+    );
+    expect(listRows(roadmap, [], {})).toEqual(readJson(['list'], root));
+    expect(readGraph(roadmap, [], false)).toEqual(readJson(['graph'], root));
+    expect(measureProgress(roadmap)).toEqual(readJson(['status'], root));
+    expect(measureHealth(roadmap)).toEqual(readJson(['health'], root));
+    expect(listFree(roadmap, [])).toEqual(readJson(['free', '9'], root));
+  });
+
   it('reads a plan and where its tasks stand, given the branches', () => {
     const roadmap = readRoadmap(project());
     const branches = ['get-1/start'];
