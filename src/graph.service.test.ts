@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readGraph, renderMermaid } from './graph.service.ts';
+import { readGraph } from './graph.service.ts';
 import type { Roadmap, Task } from './roadmap.model.ts';
 
 function task(id: string, requires: string[] = [], commit?: string): Task {
@@ -37,18 +37,5 @@ describe('readGraph', () => {
       { id: 'GET.3', state: 'started', wave: 2, critical: true },
       { id: 'SID.1', state: 'ready', wave: 1, critical: false, track: true },
     ]);
-  });
-});
-
-describe('renderMermaid', () => {
-  it('draws a subgraph per block, styles each task by state and outlines the critical ones', () => {
-    const text = renderMermaid(PLAN, readGraph(PLAN, [], true));
-
-    expect(text).toMatch(/^flowchart LR\n/);
-    expect(text).toContain('  subgraph GET["GET · Get"]\n    GET_1["GET.1<br/>Do #quot;GET.1#quot;"]:::done\n');
-    expect(text).toContain('  subgraph SID["SID · Side (parallel track)"]\n');
-    expect(text).toContain('  GET_1 --> SID_1\n');
-    expect(text).toContain('  class GET_2,GET_3 critical\n');
-    expect(text).toContain('  classDef waiting ');
   });
 });

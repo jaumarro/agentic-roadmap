@@ -2,9 +2,11 @@
 import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { addTask, readNextId } from './task.add.writer.ts';
+import { readNextId } from './task.id.policy.ts';
+import { addTask } from './task.add.writer.ts';
 import { type Command, readCommand, readHelp, USAGE } from './args.parser.ts';
-import { addRows, readPlanTable } from './task.batch.writer.ts';
+import { readPlanTable } from './plan-table.parser.ts';
+import { addRows } from './task.batch.writer.ts';
 import { checkRoadmap, describeProblem, describeProblems, findMissingCommits, warnRoadmap } from './check.service.ts';
 import { renderComparison, renderDelta, renderHealth } from './health.view.ts';
 import { compareHealth } from './health.compare.service.ts';
@@ -21,7 +23,8 @@ import {
   readStaged,
   resolveCommit,
 } from './git.adapter.ts';
-import { readGraph, renderMermaid } from './graph.service.ts';
+import { renderMermaid } from './graph.mermaid.view.ts';
+import { readGraph } from './graph.service.ts';
 import { installHook } from './hook.installer.ts';
 import { withLock } from './lock.adapter.ts';
 import { setFocus } from './focus.writer.ts';
