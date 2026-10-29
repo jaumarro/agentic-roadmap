@@ -1,5 +1,5 @@
 const TASK_ID = /^[A-Z][A-Z0-9]*\.[0-9]+$/;
-const BLOCK_CODE = /^[A-Z][A-Z0-9]*$/;
+export const BLOCK_CODE = /^[A-Z][A-Z0-9]*$/;
 const SHA = /^[0-9a-f]{7,40}$/;
 
 export type Task = {

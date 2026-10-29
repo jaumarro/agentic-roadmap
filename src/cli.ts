@@ -28,6 +28,7 @@ import { setFocus } from './focus.ts';
 import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
+import { addBlock } from './add-block.ts';
 import { installSkill } from './install-skill.ts';
 import {
   listRows,
@@ -76,6 +77,7 @@ Commands:
                              --from adds every row of the table under <!-- roadmap --> in a Markdown plan
                              (Key | Block | Task | Requires | Done when | Lines), all of them or none
                              add a task with the next free id, here and on every local branch
+  add-block <CODE> <NAME>    start a block with no tasks, after the others in roadmap.yaml
   install-hook               a pre-commit hook that runs check --staged when a commit touches the plan
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
   install-skill              copy the agents' workflow into .claude/skills, next to roadmap/; again to update it
@@ -166,6 +168,7 @@ const ARITY: Record<string, number> = {
   list: 0,
   health: 0,
   add: 2,
+  'add-block': 2,
   'install-hook': 0,
   'install-merge-driver': 0,
   'install-skill': 0,
@@ -619,6 +622,17 @@ export function run(args: string[], io: Io): number {
         // Picking an id and writing it is one step for every session sharing the repo: outside one, nothing is shared.
         if (gitDir === null) add(at, { ...command, from }, io.out);
         else withLock(gitDir, () => add(at, { ...command, from }, io.out));
+        return 0;
+      }
+      case 'add-block': {
+        const [code = '', name = ''] = command.operands;
+        if (command.operands.length < 2) throw new RoadmapError('Say the block: add-block <CODE> <NAME>.');
+        const at = root();
+        const file = addBlock(at, readRoadmap(at), code, name);
+        syncMarkdown(at, readRoadmap(at));
+        io.out(
+          `Started ${code} in ${file}. Add its tasks with add ${code} "…", then commit it as «docs: plan ${code}».\n`,
+        );
         return 0;
       }
       case 'health':
