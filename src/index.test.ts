@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
-import { initRoadmap } from './source.ts';
+import { initRoadmap } from './roadmap.repository.ts';
 import {
   checkRoadmap,
   describeTask,

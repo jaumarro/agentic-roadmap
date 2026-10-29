@@ -3,20 +3,20 @@
  * Writing it stays the CLI's, so ids and commits are only ever written by `add` and `close`. Nothing here runs git: the
  * caller passes its own branches, and `readRoadmapWith` reads the files from wherever the caller has them.
  */
-export type { Block, Chapter, Roadmap, Task, Warnings } from './model.ts';
-export type { ReadFile } from './source.ts';
-export { readRoadmap, readRoadmapWith, RoadmapError } from './source.ts';
-export type { Problem } from './check.ts';
-export { checkRoadmap, describeProblem } from './check.ts';
-export type { ShownTask, TaskState, Wait } from './state.ts';
-export { describeTask, explainWait, readStates } from './state.ts';
-export type { FreeTask, InProgress } from './free.ts';
-export { listFree, listInProgress } from './free.ts';
-export type { Row } from './query.ts';
-export { listRows } from './query.ts';
-export type { Graph } from './graph.ts';
-export { readGraph } from './graph.ts';
-export type { Progress } from './query.ts';
-export { measureProgress } from './query.ts';
-export type { Health, HealthProblem } from './health.ts';
-export { describeHealthProblem, measureHealth } from './health.ts';
+export type { Block, Chapter, Roadmap, Task, Warnings } from './roadmap.model.ts';
+export type { ReadFile } from './roadmap.repository.ts';
+export { readRoadmap, readRoadmapWith, RoadmapError } from './roadmap.repository.ts';
+export type { Problem } from './check.service.ts';
+export { checkRoadmap, describeProblem } from './check.service.ts';
+export type { ShownTask, TaskState, Wait } from './state.service.ts';
+export { describeTask, explainWait, readStates } from './state.service.ts';
+export type { FreeTask, InProgress } from './free.service.ts';
+export { listFree, listInProgress } from './free.service.ts';
+export type { Row } from './query.service.ts';
+export { listRows } from './query.service.ts';
+export type { Graph } from './graph.service.ts';
+export { readGraph } from './graph.service.ts';
+export type { Progress } from './query.service.ts';
+export { measureProgress } from './query.service.ts';
+export type { Health, HealthProblem } from './health.service.ts';
+export { describeHealthProblem, measureHealth } from './health.service.ts';

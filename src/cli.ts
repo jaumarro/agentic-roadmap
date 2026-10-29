@@ -2,12 +2,12 @@
 import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { addTask, readNextId } from './add.ts';
-import { type Command, readCommand, readHelp, USAGE } from './args.ts';
-import { addRows, readPlanTable } from './batch.ts';
-import { checkRoadmap, describeProblem, describeProblems, findMissingCommits, warnRoadmap } from './check.ts';
-import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './compare.ts';
-import { closeTask } from './close.ts';
+import { addTask, readNextId } from './task.add.writer.ts';
+import { type Command, readCommand, readHelp, USAGE } from './args.parser.ts';
+import { addRows, readPlanTable } from './task.batch.writer.ts';
+import { checkRoadmap, describeProblem, describeProblems, findMissingCommits, warnRoadmap } from './check.service.ts';
+import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './health.compare.service.ts';
+import { closeTask } from './task.close.writer.ts';
 import {
   listAllBranches,
   isShallow,
@@ -19,22 +19,22 @@ import {
   readOnBranches,
   readStaged,
   resolveCommit,
-} from './git.ts';
-import { readGraph, renderMermaid } from './graph.ts';
-import { installHook } from './hook.ts';
-import { withLock } from './lock.ts';
-import type { Roadmap } from './model.ts';
-import { setFocus } from './focus.ts';
-import { listFree, listInProgress } from './free.ts';
-import { measureHealth } from './health.ts';
-import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
-import { addBlock } from './add-block.ts';
-import { installSkill } from './install-skill.ts';
-import { listRows, measureProgress, sortByWave, STATES } from './query.ts';
-import { checkMarkdown, syncMarkdown, writeMarkdown } from './render.ts';
-import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
-import { readStagedRoadmap } from './staged.ts';
-import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
+} from './git.adapter.ts';
+import { readGraph, renderMermaid } from './graph.service.ts';
+import { installHook } from './hook.installer.ts';
+import { withLock } from './lock.adapter.ts';
+import type { Roadmap } from './roadmap.model.ts';
+import { setFocus } from './focus.writer.ts';
+import { listFree, listInProgress } from './free.service.ts';
+import { measureHealth } from './health.service.ts';
+import { installMergeDriver, runMergeDriver } from './merge-driver.installer.ts';
+import { addBlock } from './block.writer.ts';
+import { installSkill } from './skill.installer.ts';
+import { listRows, measureProgress, sortByWave, STATES } from './query.service.ts';
+import { checkMarkdown, syncMarkdown, writeMarkdown } from './markdown.writer.ts';
+import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { readStagedRoadmap } from './roadmap.git.repository.ts';
+import { describeTask, explainWait, readStates, type TaskState } from './state.service.ts';
 import {
   describeNothingReady,
   renderFree,
@@ -45,7 +45,7 @@ import {
   renderShown,
   renderWaves,
   renderWhy,
-} from './text.ts';
+} from './terminal.view.ts';
 
 function readVersion(): string {
   const manifest: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
