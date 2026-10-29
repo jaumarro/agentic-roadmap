@@ -74,9 +74,9 @@ describe('free', () => {
     const next: unknown = JSON.parse(capture(['next', '--json'], root).text);
 
     expect(free).toEqual([
-      { id: 'GET.1', block: 'GET', title: 'One', doneWhen: 'one works', risky: false, branch: 'get-1/' },
-      { id: 'GET.2', block: 'GET', title: 'Two', doneWhen: 'two works', risky: false, branch: 'get-2/' },
-      { id: 'GET.3', block: 'GET', title: 'Three', doneWhen: 'three works', risky: false, branch: 'get-3/' },
+      { id: 'GET.1', block: 'GET', title: 'One', doneWhen: 'one works', risky: false, branchPrefix: 'get-1/' },
+      { id: 'GET.2', block: 'GET', title: 'Two', doneWhen: 'two works', risky: false, branchPrefix: 'get-2/' },
+      { id: 'GET.3', block: 'GET', title: 'Three', doneWhen: 'three works', risky: false, branchPrefix: 'get-3/' },
     ]);
     expect(next).toMatchObject({ next: { id: 'GET.1' }, ready: [{ id: 'GET.2' }, { id: 'GET.3' }], inProgress: [] });
   });

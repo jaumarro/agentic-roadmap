@@ -33,19 +33,20 @@ describe('describeTask', () => {
 
     expect(shown).toMatchObject({
       id: 'ABC.2',
-      block: { code: 'ABC', name: 'First' },
+      block: 'ABC',
+      blockName: 'First',
       state: 'ready',
       requires: [{ id: 'ABC.1', state: 'done' }],
       unblocks: [
         { id: 'XYZ.1', state: 'waiting' },
         { id: 'XYZ.2', state: 'waiting' },
       ],
-      startedOn: [],
+      branches: [],
     });
   });
 
   it('names the branches a started task is on', () => {
-    expect(describeTask(PLAN, ['abc-3/start'], 'ABC.3')?.startedOn).toEqual(['abc-3/start']);
+    expect(describeTask(PLAN, ['abc-3/start'], 'ABC.3')?.branches).toEqual(['abc-3/start']);
   });
 
   it('gives nothing for a task the plan does not have', () => {
