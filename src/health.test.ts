@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { measureHealth } from './health.ts';
+import { describeHealthProblem, measureHealth } from './health.ts';
 import type { Roadmap, Task } from './model.ts';
+import { renderHealth } from './query.ts';
 
 function task(id: string, requires: string[] = [], lines: number | 'doc' = 10, commit?: string): Task {
   return { id, title: id, requires, doneWhen: 'x', lines, ...(commit ? { commit } : {}) };
@@ -101,7 +102,7 @@ describe('the problems it ranks', () => {
   it('flags a plan that is a single queue', () => {
     const chain = Array.from({ length: 6 }, (_, at) => task(`ABC.${at + 1}`, at === 0 ? [] : [`ABC.${at}`]));
 
-    expect(measureHealth(plan(...chain)).problems[0]).toMatch(/^The plan is a queue: parallelism 1\.0/);
+    expect(measureHealth(plan(...chain)).problems[0]).toEqual({ kind: 'queue', parallelism: 1 });
   });
 
   it('ranks an oversized task, then a queue, then a bottleneck, then a redundant requirement', () => {
@@ -115,11 +116,7 @@ describe('the problems it ranks', () => {
       ),
     );
 
-    expect(health.problems.map((problem) => problem.split(':')[0])).toEqual([
-      'ABC.1 is ~400 lines, over the cap of 150',
-      'The plan is a queue',
-      'Requirements another one already implies',
-    ]);
+    expect(health.problems.map((problem) => problem.kind)).toEqual(['oversized', 'queue', 'redundant']);
   });
 
   it('flags a bottleneck only while it waits, not one that can be taken now', () => {
@@ -135,8 +132,8 @@ describe('the problems it ranks', () => {
       ),
     );
 
-    const flagged = health.problems.filter((problem) => problem.includes('blocks'));
-    expect(flagged).toEqual([expect.stringMatching(/^ABC\.2 blocks \d+ % of the rest of the work while it waits/)]);
+    const flagged = health.problems.flatMap((problem) => (problem.kind === 'bottleneck' ? [problem.task] : []));
+    expect(flagged).toEqual(['ABC.2']);
   });
 
   it('gives every redundant requirement in one problem', () => {
@@ -149,23 +146,54 @@ describe('the problems it ranks', () => {
       ),
     );
 
-    expect(health.problems).toContain(
-      'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2), ABC.4 → ABC.2 (via ABC.3): drop them',
-    );
+    expect(health.problems).toContainEqual({
+      kind: 'redundant',
+      requirements: [
+        { id: 'ABC.3', requires: 'ABC.1', through: 'ABC.2' },
+        { id: 'ABC.4', requires: 'ABC.2', through: 'ABC.3' },
+      ],
+    });
   });
 
   it('takes a requirement on an earlier block as normal and flags one on a later block', () => {
     const health = measureHealth(plan(task('ABC.1', ['XYZ.1']), task('XYZ.1'), task('XYZ.2', ['ABC.1'])));
 
     expect(health.backward).toEqual([{ id: 'ABC.1', requires: 'XYZ.1' }]);
-    expect(health.problems.at(-1)).toBe(
-      'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml',
-    );
+    expect(health.problems.at(-1)).toEqual({ kind: 'backward', requirements: [{ id: 'ABC.1', requires: 'XYZ.1' }] });
   });
 
-  it('says how many problems it left out past the first five', () => {
+  it('gives every problem, past the five the text shows', () => {
     const big = Array.from({ length: 7 }, (_, at) => task(`ABC.${at + 1}`, [], 200));
 
-    expect(measureHealth(plan(...big)).problems.at(-1)).toBe('… and 2 more: health --json lists every figure');
+    expect(measureHealth(plan(...big)).problems).toHaveLength(7);
+  });
+});
+
+describe('a health problem in words', () => {
+  it('says what is wrong and what to do', () => {
+    const words = [
+      describeHealthProblem({ kind: 'oversized', task: 'ABC.1', lines: 400 }),
+      describeHealthProblem({ kind: 'queue', parallelism: 1.04 }),
+      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5 }),
+      describeHealthProblem({
+        kind: 'redundant',
+        requirements: [{ id: 'ABC.3', requires: 'ABC.1', through: 'ABC.2' }],
+      }),
+      describeHealthProblem({ kind: 'backward', requirements: [{ id: 'ABC.1', requires: 'XYZ.1' }] }),
+    ];
+
+    expect(words).toEqual([
+      'ABC.1 is ~400 lines, over the cap of 150: split it into slices',
+      'The plan is a queue: parallelism 1.0, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need',
+      'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
+      'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
+      'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml',
+    ]);
+  });
+
+  it('shows the first five and says how many it left out', () => {
+    const big = Array.from({ length: 7 }, (_, at) => task(`ABC.${at + 1}`, [], 200));
+
+    expect(renderHealth(measureHealth(plan(...big)))).toContain('  6. … and 2 more: health --json lists every one\n');
   });
 });
