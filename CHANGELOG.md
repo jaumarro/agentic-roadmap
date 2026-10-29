@@ -8,6 +8,7 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 - `import { readRoadmap, readStates, listFree, ... } from 'agentic-roadmap'` reads a plan from code, with its types.
   The library only reads, and runs no git: writing stays the CLI's. `checkRoadmap` gives each problem as data, as
   `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
+- Only the package's root is importable: a path into `dist/`, as `agentic-roadmap/dist/source.js`, no longer resolves.
 
 ## 0.2.0
 
