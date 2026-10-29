@@ -28,8 +28,8 @@ function readCode(error: unknown): string {
   return error instanceof Error && 'code' in error ? String(error.code) : String(error);
 }
 
-/** A roadmap file's text by its name in `roadmap/`, from the working tree or from another branch. */
-export type ReadFile = (file: string) => string;
+/** A roadmap file's text by its name in `roadmap/`, from the working tree or from another branch; null when missing. */
+export type ReadFile = (file: string) => string | null;
 
 function readFromDisk(root: string): ReadFile {
   return (file) => {
@@ -44,10 +44,27 @@ function readFromDisk(root: string): ReadFile {
   };
 }
 
+/** What `read` gives for `file`, with a missing file or a reader that fails told as a RoadmapError naming the file. */
+function readText(read: ReadFile, file: string): string {
+  const name = `${ROADMAP_DIR}/${file}`;
+  let text: unknown;
+  try {
+    text = read(file);
+  } catch (error) {
+    if (error instanceof RoadmapError) throw error;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new RoadmapError(`Could not read ${name}: ${reason}`);
+  }
+  if (text === null) throw new RoadmapError(`${name} is missing.`);
+  // A caller in plain JavaScript can hand back anything, as a promise from an async reader.
+  if (typeof text !== 'string') throw new RoadmapError(`Could not read ${name}: the reader gave no text.`);
+  return text;
+}
+
 /** What `file` holds as YAML, with any failure to read or parse it as a one-line message naming the file. */
 function parseYaml(read: ReadFile, file: string): unknown {
   const name = `${ROADMAP_DIR}/${file}`;
-  const text = read(file);
+  const text = readText(read, file);
   try {
     return parse(text);
   } catch (error) {

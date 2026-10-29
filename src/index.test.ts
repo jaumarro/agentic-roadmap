@@ -3,7 +3,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { initRoadmap } from './source.ts';
-import { checkRoadmap, listFree, listInProgress, readRoadmap, readRoadmapWith, readStates } from './index.ts';
+import {
+  checkRoadmap,
+  listFree,
+  listInProgress,
+  readRoadmap,
+  readRoadmapWith,
+  readStates,
+  RoadmapError,
+} from './index.ts';
 
 function project(): string {
   const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
@@ -31,5 +39,17 @@ describe('the library', () => {
     const roadmap = readRoadmapWith((file) => files.get(file) ?? '');
 
     expect(roadmap).toEqual(readRoadmap(root));
+  });
+
+  it('names the file a reader lacks or fails on, as a RoadmapError', () => {
+    const config = 'blocks: [GET]\n';
+    const missing = (file: string) => (file === 'roadmap.yaml' ? config : null);
+    const failing = (file: string) => {
+      if (file === 'roadmap.yaml') return config;
+      throw new Error('no such object');
+    };
+
+    expect(() => readRoadmapWith(missing)).toThrow(new RoadmapError('roadmap/GET.yaml is missing.'));
+    expect(() => readRoadmapWith(failing)).toThrow(new RoadmapError('Could not read roadmap/GET.yaml: no such object'));
   });
 });
