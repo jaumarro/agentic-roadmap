@@ -126,8 +126,10 @@ const states = readStates(roadmap, branches); // Map of id to 'done' | 'started'
 const free = listFree(roadmap, branches); // in the order `next` and `free` hand them out
 ```
 
-`readRoadmapWith(read)` reads a plan from files you hold, as another branch's, with `read(file)` giving each file in
-`roadmap/` by name, or null when there is none. `listInProgress` gives the tasks a branch started.
+Each command's `--json` has its function, giving the same shape: `describeTask` for `show`, `explainWait` for `why`,
+`listRows` for `list`, `readGraph` for `graph`, `measureProgress` for `status`, `measureHealth` for `health`, and
+`listInProgress` for the tasks a branch started. `readRoadmapWith(read)` reads a plan from files you hold, as another
+branch's, with `read(file)` giving each file in `roadmap/` by name, or null when there is none.
 
 ## How it differs from task trackers
 

@@ -5,9 +5,17 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 ## Unreleased
 
-- `import { readRoadmap, readStates, listFree, ... } from 'agentic-roadmap'` reads a plan from code, with its types.
-  The library only reads, and runs no git: writing stays the CLI's. `checkRoadmap` gives each problem as data, as
-  `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
+- `import { readRoadmap, readStates, listFree, ... } from 'agentic-roadmap'` reads a plan from code, with its types:
+  each function gives what a command's `--json` gives. The library only reads, and runs no git: writing stays the
+  CLI's. `checkRoadmap` gives each problem as data, as `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
+- `check --json` gives `{ sound, problems, warnings }`, each problem as data.
+- Breaking: one name per concept in the JSON. In `next` and `free`, `branch` is now `branchPrefix`, as it is only the
+  start of a branch's name. In `show`, `startedOn` is now `branches`, as in `next`'s `inProgress`, and `block` is the
+  block's code, with its name in `blockName`.
+- Breaking: `health --against --json` names the figures in `worse` by their keys, as `criticalPath`, not by their
+  labels.
+- Breaking: a command refuses an option it does not take. `check --json` used to print prose, and `status --block`
+  to list every block.
 - Only the package's root is importable: a path into `dist/`, as `agentic-roadmap/dist/source.js`, no longer resolves.
 
 ## 0.2.1

@@ -78,6 +78,18 @@ it: `{ "nodes": [...], "edges": [{ "from": "LOG.1", "to": "LOG.2" }] }`. Without
 
 `status --json`: `[{ "code", "name", "done", "total" }]`, one per block.
 
+`check --json`: whether the plan is sound, each problem as data, and the warnings, which do not fail it. Each problem
+has a `kind`, as `unknown-requirement`, `cycle`, `missing-commit` or `stale-markdown`, and the ids it is about. It
+exits 1 when `sound` is false.
+
+```json
+{
+  "sound": false,
+  "problems": [{ "kind": "unknown-requirement", "task": "LOG.2", "requires": "LOG.9" }],
+  "warnings": []
+}
+```
+
 `health --json`: the figures `health` prints, and `problems`, the worst first, each with what to do.
 
 ```json
@@ -96,6 +108,12 @@ it: `{ "nodes": [...], "edges": [{ "from": "LOG.1", "to": "LOG.2" }] }`. Without
   "problems": []
 }
 ```
+
+`health --against <ref> --json`: `{ "against", "before", "after", "worse" }`, where `before` and `after` are shaped as
+`health --json`, and `worse` names the figures that got worse by their keys: `criticalPath`, `parallelism`, `width` or
+`problems`.
+
+A command refuses an option it does not take, so `--json` on a command without JSON output is an error, not prose.
 
 Fields are only added, never renamed or removed, within a major version.
 
