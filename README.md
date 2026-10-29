@@ -115,17 +115,19 @@ branches closing tasks in one block will conflict on it, which is why there is n
 ## From code
 
 An app that shows the plan reads it with the package itself, so it never parses the YAML on its own. Writing stays the
-CLI's.
+CLI's, and nothing in the library runs git: you pass the branches you read.
 
 ```ts
-import { findRoot, listAllBranches, listRows, readRoadmap } from 'agentic-roadmap';
+import { checkRoadmap, listFree, readRoadmap, readStates } from 'agentic-roadmap';
 
-const root = findRoot(process.cwd());
-const rows = listRows(readRoadmap(root), listAllBranches(root), {});
+const roadmap = readRoadmap(root);
+const problems = checkRoadmap(roadmap); // [{ kind: 'cycle', tasks: [...] }, ...]; describeProblem gives the words
+const states = readStates(roadmap, branches); // Map of id to 'done' | 'started' | 'ready' | 'waiting'
+const free = listFree(roadmap, branches); // in the order `next` and `free` hand them out
 ```
 
-It also exports `readStates`, `describeTask`, `listFree`, `listInProgress`, `measureProgress` and `checkRoadmap`, with
-their types.
+`readRoadmapWith(read)` reads a plan from files you hold, as another branch's, with `read(file)` giving each file in
+`roadmap/` by name. `listInProgress` gives the tasks a branch started.
 
 ## How it differs from task trackers
 

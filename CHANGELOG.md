@@ -5,8 +5,9 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 ## Unreleased
 
-- `import { readRoadmap, listRows, ... } from 'agentic-roadmap'` reads a plan from code, with its types. The library
-  only reads; writing stays the CLI's.
+- `import { readRoadmap, readStates, listFree, ... } from 'agentic-roadmap'` reads a plan from code, with its types.
+  The library only reads, and runs no git: writing stays the CLI's. `checkRoadmap` gives each problem as data, as
+  `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
 
 ## 0.2.0
 
