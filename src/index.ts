@@ -1,17 +1,15 @@
 /**
  * Reading a roadmap from code, as an app that shows the plan does. Writing it stays the CLI's, so ids and commits are
- * only ever written by `add` and `close`.
+ * only ever written by `add` and `close`. Nothing here runs git: the caller passes its own branches, and
+ * `readRoadmapWith` reads the files from wherever the caller has them, as another branch.
  */
 export type { Block, Chapter, Config, Roadmap, Task } from './model.ts';
 export { InvalidPlan } from './model.ts';
-export { findRoot, readRoadmap, RoadmapError } from './source.ts';
-export { checkRoadmap } from './check.ts';
-export { listAllBranches } from './git.ts';
-export type { TaskState, ShownTask } from './state.ts';
-export { readStates, describeTask } from './state.ts';
-export type { Row } from './query.ts';
-export { listRows } from './query.ts';
+export type { ReadFile } from './source.ts';
+export { readRoadmap, readRoadmapWith, RoadmapError } from './source.ts';
+export type { Problem } from './check.ts';
+export { checkRoadmap, describeProblem } from './check.ts';
+export type { TaskState } from './state.ts';
+export { readStates } from './state.ts';
 export type { FreeTask, InProgress } from './free.ts';
 export { listFree, listInProgress } from './free.ts';
-export type { Progress } from './render.ts';
-export { measureProgress } from './render.ts';
