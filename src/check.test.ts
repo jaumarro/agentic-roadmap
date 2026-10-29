@@ -60,7 +60,7 @@ describe('findMissingCommits', () => {
     const plan = { blocks: [block('ABC', task('ABC.1', [], 'abc1234'), task('ABC.2', [], 'def5678'))] };
 
     expect(findMissingCommits(plan, (sha) => sha === 'abc1234')).toEqual([
-      'ABC.2 cites def5678, which this repo does not have',
+      { kind: 'missing-commit', task: 'ABC.2', commit: 'def5678' },
     ]);
   });
 });

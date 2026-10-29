@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -119,5 +119,21 @@ describe('run', () => {
 
     expect(code).toBe(1);
     expect(text).toContain('agentic-roadmap init');
+  });
+
+  it('gives check as JSON: each problem as data, and fails on any', () => {
+    const root = project();
+    capture(['init'], root);
+    const sound = capture(['check', '--json'], root);
+    writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), 'blocks: [GET]\nfocus: [NOPE]\n');
+    const unsound = capture(['check', '--json'], root);
+
+    expect(sound.code).toBe(0);
+    expect(JSON.parse(sound.out)).toMatchObject({ sound: true, problems: [] });
+    expect(unsound.code).toBe(1);
+    expect(JSON.parse(unsound.out)).toMatchObject({
+      sound: false,
+      problems: [{ kind: 'unknown-focus', entry: 'NOPE' }],
+    });
   });
 });
