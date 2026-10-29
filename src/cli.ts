@@ -450,7 +450,7 @@ function next(root: string, command: Command, out: Io['out']): void {
     return;
   }
   out(`Next: ${first.id} · ${first.title}\n  Done when: ${first.doneWhen}\n`);
-  out(`  Start it on a branch named ${first.branch}…\n`);
+  out(`  Start it on a branch named ${first.branchPrefix}…\n`);
   if (rest.length > 0) out(`\nAlso ready:\n${rest.map((task) => `  ${task.id} · ${task.title}\n`).join('')}`);
   out(renderInProgress(inProgress));
 }

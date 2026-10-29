@@ -3,7 +3,15 @@ import { listReady, namesTask, readBranchName } from './next.ts';
 import { readStates } from './state.ts';
 
 /** A task free to take, with what one session needs to start it. */
-export type FreeTask = { id: string; block: string; title: string; doneWhen: string; risky: boolean; branch: string };
+export type FreeTask = {
+  id: string;
+  block: string;
+  title: string;
+  doneWhen: string;
+  risky: boolean;
+  /** How the branch that starts it begins: its id in lower case and a slash, as `log-2/`. */
+  branchPrefix: string;
+};
 
 export type InProgress = { id: string; title: string; branches: string[] };
 
@@ -19,7 +27,7 @@ export function listFree(roadmap: Roadmap, branches: string[]): FreeTask[] {
       title: task.title,
       doneWhen: task.doneWhen,
       risky: task.risky === true,
-      branch: readBranchName(task.id),
+      branchPrefix: readBranchName(task.id),
     }));
 }
 
@@ -41,7 +49,7 @@ export function listInProgress(roadmap: Roadmap, branches: string[]): InProgress
 export function renderFree(free: FreeTask[], count: number, width: number): string {
   const taken = free.slice(0, count);
   if (taken.length === 0) return 'No task is free to take.\n';
-  const rows = taken.map((task, at) => `${at + 1}. ${task.id} · ${task.title}\n   Branch: ${task.branch}…\n`);
+  const rows = taken.map((task, at) => `${at + 1}. ${task.id} · ${task.title}\n   Branch: ${task.branchPrefix}…\n`);
   const fewer = taken.length < count ? `Only ${taken.length} free, of the ${count} asked.\n` : '';
   const sessions = width === 1 ? '1 session' : `${width} sessions`;
   const wide = count > width ? `The plan keeps at most ${sessions} busy at once.\n` : '';

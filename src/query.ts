@@ -121,7 +121,7 @@ function readLines(lines: number | 'doc'): string {
 
 function readPlace(shown: ShownTask): string {
   if (shown.commit !== null) return `Done with ${shown.commit}.`;
-  if (shown.startedOn.length > 0) return `Started on ${shown.startedOn.join(', ')}.`;
+  if (shown.branches.length > 0) return `Started on ${shown.branches.join(', ')}.`;
   return shown.state === 'ready' ? 'Ready to take.' : 'Waiting: run «why» to see on what.';
 }
 
@@ -136,7 +136,7 @@ export function renderShown(shown: ShownTask): string {
   const review = shown.risky ? '  Risky: it gets a full review.\n' : '';
   return [
     `${shown.id} · ${shown.title}${mark}\n`,
-    `  Block: ${shown.block.code} · ${shown.block.name}\n`,
+    `  Block: ${shown.block} · ${shown.blockName}\n`,
     `  Done when: ${shown.doneWhen}\n`,
     `  Size: ${readLines(shown.lines)}\n`,
     review,

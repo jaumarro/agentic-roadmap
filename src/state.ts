@@ -19,12 +19,13 @@ export function readStates(roadmap: Roadmap, branches: string[]): Map<string, Ta
 type TaskRef = { id: string; title: string; state: TaskState };
 
 export type ShownTask = TaskRef & {
-  block: { code: string; name: string };
+  block: string;
+  blockName: string;
   doneWhen: string;
   lines: number | 'doc';
   risky: boolean;
   commit: string | null;
-  startedOn: string[];
+  branches: string[];
   requires: TaskRef[];
   unblocks: TaskRef[];
 };
@@ -39,12 +40,13 @@ export function describeTask(roadmap: Roadmap, branches: string[], id: string): 
   const refer = (each: Task): TaskRef => ({ id: each.id, title: each.title, state: states.get(each.id) ?? 'waiting' });
   return {
     ...refer(task),
-    block: { code: block.code, name: block.name },
+    block: block.code,
+    blockName: block.name,
     doneWhen: task.doneWhen,
     lines: task.lines,
     risky: task.risky === true,
     commit: task.commit ?? null,
-    startedOn: branches.filter((branch) => namesTask(branch, id)),
+    branches: branches.filter((branch) => namesTask(branch, id)),
     requires: tasks.filter((each) => task.requires.includes(each.id)).map(refer),
     unblocks: tasks.filter((each) => each.requires.includes(id)).map(refer),
   };
