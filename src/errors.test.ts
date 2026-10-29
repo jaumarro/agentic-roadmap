@@ -91,6 +91,8 @@ describe('options', () => {
     [['next', '--root', ''], '--root needs a folder'],
     [['next', '--bogus'], "Unknown option '--bogus'"],
     [['next', 'extra'], 'next takes no arguments'],
+    [['check', '--json'], 'check takes no --json'],
+    [['status', '--block', 'GET'], 'status takes no --block'],
   ])('refuses %j', (args, message) => {
     const { code, text } = capture(args, project());
 
