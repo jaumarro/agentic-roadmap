@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { quote, readCommand } from './bin.locator.ts';
 import { readRepoPaths } from './git.adapter.ts';
 import { readMarkdownPath } from './markdown.writer.ts';
-import { readRoadmap, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError } from './roadmap.model.ts';
+import { readRoadmap } from './roadmap.repository.ts';
 
 const MARK = '# agentic-roadmap: check the staged plan';
 

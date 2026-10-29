@@ -5,7 +5,8 @@
  */
 export type { Block, Chapter, Roadmap, Task, Warnings } from './roadmap.model.ts';
 export type { ReadFile } from './roadmap.repository.ts';
-export { readRoadmap, readRoadmapWith, RoadmapError } from './roadmap.repository.ts';
+export { RoadmapError } from './roadmap.model.ts';
+export { readRoadmap, readRoadmapWith } from './roadmap.repository.ts';
 export type { Problem } from './check.service.ts';
 export { checkRoadmap, describeProblem } from './check.service.ts';
 export type { ShownTask, TaskState, Wait } from './state.service.ts';

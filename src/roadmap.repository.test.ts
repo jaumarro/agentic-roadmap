@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findRoot, initRoadmap, readRoadmap, RoadmapError } from './roadmap.repository.ts';
+import { RoadmapError } from './roadmap.model.ts';
+import { findRoot, initRoadmap, readRoadmap } from './roadmap.repository.ts';
 
 function project(): string {
   return mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));

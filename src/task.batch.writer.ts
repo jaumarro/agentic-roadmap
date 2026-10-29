@@ -1,7 +1,6 @@
 import { appendTask, readNextId } from './task.add.writer.ts';
 import { describeProblems } from './check.service.ts';
-import type { Roadmap, Task } from './roadmap.model.ts';
-import { RoadmapError } from './roadmap.repository.ts';
+import { RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 
 /** What marks, in a Markdown plan, the table of tasks to add. */
 export const TABLE_MARK = '<!-- roadmap -->';

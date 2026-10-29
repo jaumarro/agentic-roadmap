@@ -2,8 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parse, parseDocument, YAMLSeq } from 'yaml';
 import { describeProblems } from './check.service.ts';
-import type { Roadmap, Task } from './roadmap.model.ts';
-import { ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 
 export type NewTask = { title: string; requires: string[]; doneWhen: string; lines: number | 'doc'; risky?: boolean };
 

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { RoadmapError } from './roadmap.repository.ts';
+import { RoadmapError } from './roadmap.model.ts';
 
 export const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]
        agentic-roadmap <command> --help, or help <command>: that command alone; --version: this one's

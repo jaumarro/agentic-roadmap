@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { readCommand } from './bin.locator.ts';
 import { readRepoPaths } from './git.adapter.ts';
 import { mergeBlock } from './block.merge.service.ts';
-import { ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError } from './roadmap.model.ts';
 
 const DRIVER = 'agentic-roadmap';
 // The config is no block, so it merges as text; a later line wins over the earlier one for the same file.

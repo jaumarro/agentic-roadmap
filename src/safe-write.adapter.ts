@@ -1,6 +1,6 @@
 import { lstatSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
-import { RoadmapError } from './roadmap.repository.ts';
+import { RoadmapError } from './roadmap.model.ts';
 
 function isOutside(root: string, path: string): boolean {
   const rel = relative(root, path);

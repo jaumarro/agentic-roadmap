@@ -23,7 +23,6 @@ import {
 import { readGraph, renderMermaid } from './graph.service.ts';
 import { installHook } from './hook.installer.ts';
 import { withLock } from './lock.adapter.ts';
-import type { Roadmap } from './roadmap.model.ts';
 import { setFocus } from './focus.writer.ts';
 import { listFree, listInProgress } from './free.service.ts';
 import { measureHealth } from './health.service.ts';
@@ -32,7 +31,8 @@ import { addBlock } from './block.writer.ts';
 import { installSkill } from './skill.installer.ts';
 import { listRows, measureProgress, sortByWave, STATES } from './query.service.ts';
 import { checkMarkdown, syncMarkdown, writeMarkdown } from './markdown.writer.ts';
-import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
+import { findRoot, initRoadmap, readRoadmap } from './roadmap.repository.ts';
 import { readStagedRoadmap } from './roadmap.git.repository.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.service.ts';
 import {

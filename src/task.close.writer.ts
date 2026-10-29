@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, Scalar } from 'yaml';
-import type { Roadmap } from './roadmap.model.ts';
-import { readCode, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
+import { readCode } from './roadmap.repository.ts';
 
 /**
  * Marks task `id` done with `sha` in its block's file, keeping the file's comments and layout; the block's code. A task

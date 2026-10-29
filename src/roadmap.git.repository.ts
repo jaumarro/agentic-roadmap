@@ -1,6 +1,6 @@
 import { readStaged } from './git.adapter.ts';
-import type { Roadmap } from './roadmap.model.ts';
-import { readRoadmapWith, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
+import { readRoadmapWith } from './roadmap.repository.ts';
 
 /** The roadmap under `root` as the index holds it: what the next commit records. */
 export function readStagedRoadmap(root: string): Roadmap {

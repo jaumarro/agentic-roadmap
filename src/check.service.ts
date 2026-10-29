@@ -1,6 +1,5 @@
 import { checkChapters, readChapterOf } from './chapters.service.ts';
-import type { Block, Roadmap, Task } from './roadmap.model.ts';
-import { ROADMAP_DIR } from './roadmap.repository.ts';
+import { ROADMAP_DIR, type Block, type Roadmap, type Task } from './roadmap.model.ts';
 
 function countBy(values: string[]): Map<string, number> {
   const counts = new Map<string, number>();

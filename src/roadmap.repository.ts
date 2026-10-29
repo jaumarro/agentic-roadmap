@@ -1,13 +1,15 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parse, YAMLError } from 'yaml';
-import { InvalidPlan, readBlock, readConfig, type Roadmap } from './roadmap.model.ts';
-
-export const ROADMAP_DIR = 'roadmap';
-export const CONFIG_FILE = 'roadmap.yaml';
-
-/** A roadmap that cannot be found or read, with a message meant for the person at the terminal. */
-export class RoadmapError extends Error {}
+import {
+  CONFIG_FILE,
+  InvalidPlan,
+  readBlock,
+  readConfig,
+  ROADMAP_DIR,
+  RoadmapError,
+  type Roadmap,
+} from './roadmap.model.ts';
 
 /** The folder holding `roadmap/roadmap.yaml`: `override` when given, else the nearest one from `start` upwards. */
 export function findRoot(start: string, override?: string): string {

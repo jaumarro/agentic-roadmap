@@ -2,8 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseDocument } from 'yaml';
 import { describeProblems } from './check.service.ts';
-import type { Roadmap } from './roadmap.model.ts';
-import { CONFIG_FILE, readCode, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { CONFIG_FILE, ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
+import { readCode } from './roadmap.repository.ts';
 
 /**
  * Writes `focus` into roadmap.yaml, keeping its comments; an empty focus removes the key. The plan is checked with the

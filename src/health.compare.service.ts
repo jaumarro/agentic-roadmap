@@ -1,7 +1,8 @@
 import { readOnBranches, resolveCommit } from './git.adapter.ts';
 import { describeHealthProblem, type Health, type HealthProblem } from './health.service.ts';
 import type { Roadmap } from './roadmap.model.ts';
-import { readRoadmapWith, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError } from './roadmap.model.ts';
+import { readRoadmapWith } from './roadmap.repository.ts';
 
 /** The roadmap as `revision` has it, read from git without checking it out. */
 export function readRoadmapAt(root: string, revision: string): Roadmap {

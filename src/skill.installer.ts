@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCode, RoadmapError } from './roadmap.repository.ts';
+import { RoadmapError } from './roadmap.model.ts';
+import { readCode } from './roadmap.repository.ts';
 import { writeInside } from './safe-write.adapter.ts';
 
 const SKILL = 'roadmap-workflow';

@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { RoadmapError } from './roadmap.repository.ts';
+import { RoadmapError } from './roadmap.model.ts';
 
 const LOCK = 'agentic-roadmap.lock';
 // An add takes well under a second; a lock older than this was left by a session that died mid-add.

@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Problem } from './check.service.ts';
-import type { Block, Roadmap, Task } from './roadmap.model.ts';
-import { readCode, ROADMAP_DIR, RoadmapError } from './roadmap.repository.ts';
+import { ROADMAP_DIR, RoadmapError, type Block, type Roadmap, type Task } from './roadmap.model.ts';
+import { readCode } from './roadmap.repository.ts';
 import { writeInside } from './safe-write.adapter.ts';
 
 const DEFAULT_MARKDOWN = 'docs/roadmap.md';

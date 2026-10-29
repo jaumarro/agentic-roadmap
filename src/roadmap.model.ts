@@ -66,6 +66,12 @@ export function isUnblocked(task: Task, done: Set<string>): boolean {
   return task.requires.every((id) => done.has(id));
 }
 
+export const ROADMAP_DIR = 'roadmap';
+export const CONFIG_FILE = 'roadmap.yaml';
+
+/** A roadmap that cannot be found or read, with a message meant for the person at the terminal. */
+export class RoadmapError extends Error {}
+
 /** What makes a file not a plan: where in it, as `tasks.0.id`, and what is wrong there. */
 export class InvalidPlan extends Error {
   readonly where: string;
