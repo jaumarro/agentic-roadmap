@@ -6,7 +6,8 @@ import { addTask, readNextId } from './task.add.writer.ts';
 import { type Command, readCommand, readHelp, USAGE } from './args.parser.ts';
 import { addRows, readPlanTable } from './task.batch.writer.ts';
 import { checkRoadmap, describeProblem, describeProblems, findMissingCommits, warnRoadmap } from './check.service.ts';
-import { compareHealth, readRoadmapAt, renderComparison, renderDelta } from './health.compare.service.ts';
+import { renderComparison, renderDelta, renderHealth } from './health.view.ts';
+import { compareHealth } from './health.compare.service.ts';
 import { closeTask } from './task.close.writer.ts';
 import {
   listAllBranches,
@@ -33,12 +34,11 @@ import { listRows, measureProgress, sortByWave, STATES } from './query.service.t
 import { checkMarkdown, syncMarkdown, writeMarkdown } from './markdown.writer.ts';
 import { ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
 import { findRoot, initRoadmap, readRoadmap } from './roadmap.repository.ts';
-import { readStagedRoadmap } from './roadmap.git.repository.ts';
+import { readStagedRoadmap, readRoadmapAt } from './roadmap.git.repository.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.service.ts';
 import {
   describeNothingReady,
   renderFree,
-  renderHealth,
   renderInProgress,
   renderList,
   renderProgress,

@@ -1,4 +1,3 @@
-import { describeHealthProblem, type Health, type HealthProblem } from './health.service.ts';
 import type { Roadmap } from './roadmap.model.ts';
 import type { FreeTask, InProgress } from './free.service.ts';
 import { type Progress, type Row, STATES } from './query.service.ts';
@@ -112,50 +111,6 @@ export function renderWhy(id: string, state: string, waits: Wait[]): string {
   if (state === 'done') return `${id} is done.\n`;
   if (waits.length === 0) return `${id} waits on nothing: it is ${state}.\n`;
   return `${id} waits on:\n${renderWaits(waits, 1)}`;
-}
-
-// The rest is noise until these are fixed; --json keeps every problem.
-const PROBLEMS_SHOWN = 5;
-
-function readProblems(problems: HealthProblem[]): string {
-  if (problems.length === 0) return 'No problems.\n';
-  const shown = problems.slice(0, PROBLEMS_SHOWN).map(describeHealthProblem);
-  const more = problems.length - shown.length;
-  const words = more > 0 ? [...shown, `… and ${more} more: health --json lists every one`] : shown;
-  return `Problems, worst first:\n${words.map((problem, at) => `  ${at + 1}. ${problem}\n`).join('')}`;
-}
-
-// A longer chain reads as its start and its end; --json keeps every task.
-const CHAIN_SHOWN = 8;
-
-function shortenChain(ids: string[]): string {
-  if (ids.length <= CHAIN_SHOWN) return ids.join(' → ');
-  const left = ids.length - 6;
-  return [...ids.slice(0, 3), `… ${left} more …`, ...ids.slice(-3)].join(' → ');
-}
-
-function countTasks(count: number): string {
-  const noun = count === 1 ? 'task' : 'tasks';
-  return `${count} ${noun}`;
-}
-
-/** The plan's health as a person reads it: its shape in a few figures, then what to fix first. */
-export function renderHealth(health: Health): string {
-  if (health.tasksLeft === 0) return 'Everything is done: there is no plan left to measure.\n';
-  const { criticalPath } = health;
-  const chain = shortenChain(criticalPath.tasks);
-  const crossing = Math.round(health.crossBlockShare * 100);
-  const left = countTasks(health.tasksLeft);
-  const onPath = countTasks(criticalPath.tasks.length);
-  return [
-    `Plan health: ${left} left, ~${health.workLeft} lines\n`,
-    `  Critical path   ~${criticalPath.lines} lines over ${onPath}: ${chain}\n`,
-    `  Parallelism     ${health.parallelism.toFixed(1)} sessions busy on average (work left ÷ critical path)\n`,
-    `  Width           ${health.width} tasks at most at once · ${health.readyNow} ready now\n`,
-    `  Across blocks   ${crossing} % of requirements\n`,
-    '\n',
-    readProblems(health.problems),
-  ].join('');
 }
 
 function readPercent(done: number, total: number): string {

@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
-import { compareHealth, renderDelta } from './health.compare.service.ts';
+import { renderDelta } from './health.view.ts';
+import { compareHealth } from './health.compare.service.ts';
 import { measureHealth } from './health.service.ts';
 import { initRoadmap, readRoadmap } from './roadmap.repository.ts';
 
