@@ -112,6 +112,21 @@ To keep a Markdown copy in the repo, name it in `roadmap/roadmap.yaml` (`markdow
 and `focus` then keep it current, and `check` fails when someone edits it by hand. Keep your formatter off it. Two
 branches closing tasks in one block will conflict on it, which is why there is none by default.
 
+## From code
+
+An app that shows the plan reads it with the package itself, so it never parses the YAML on its own. Writing stays the
+CLI's.
+
+```ts
+import { findRoot, listAllBranches, listRows, readRoadmap } from 'agentic-roadmap';
+
+const root = findRoot(process.cwd());
+const rows = listRows(readRoadmap(root), listAllBranches(root), {});
+```
+
+It also exports `readStates`, `describeTask`, `listFree`, `listInProgress`, `measureProgress` and `checkRoadmap`, with
+their types.
+
 ## How it differs from task trackers
 
 Most tools for agents' work, such as Beads or taskops, are issue trackers: a backlog agents claim work from, kept in a

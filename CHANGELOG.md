@@ -3,6 +3,11 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
+## Unreleased
+
+- `import { readRoadmap, listRows, ... } from 'agentic-roadmap'` reads a plan from code, with its types. The library
+  only reads; writing stays the CLI's.
+
 ## 0.2.0
 
 - `close <ID> --commit <SHA>` records a done task's commit again, as after a rebase rewrote it. Without `--commit`, a
