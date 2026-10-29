@@ -82,8 +82,25 @@ function readFields(value: unknown, path: string, known: string[]): Fields {
   return value;
 }
 
+const TAB = 0x09;
+const LINE_FEED = 0x0a;
+const CARRIAGE_RETURN = 0x0d;
+
+/** A control character other than tab and line breaks: what an escape sequence starts with, as one that hijacks a terminal. */
+function isControl(code: number): boolean {
+  const isBreak = code === TAB || code === LINE_FEED || code === CARRIAGE_RETURN;
+  return !isBreak && (code < 0x20 || (code >= 0x7f && code < 0xa0));
+}
+
+/** Control characters all sit in one UTF-16 unit, so the units are enough to find them. */
+function holdsControl(text: string): boolean {
+  for (let index = 0; index < text.length; index++) if (isControl(text.charCodeAt(index))) return true;
+  return false;
+}
+
 function readText(value: unknown, path: string, message = 'expected text'): string {
   if (typeof value !== 'string' || value === '') throw new InvalidPlan(path, message);
+  if (holdsControl(value)) throw new InvalidPlan(path, 'holds a control character, as an escape sequence');
   return value;
 }
 
