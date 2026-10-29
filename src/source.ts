@@ -116,12 +116,12 @@ const STARTER_BLOCK = `name: Getting started
 tasks:
   - id: GET.1
     title: Write the first real block of this roadmap
-    doneWhen: roadmap/ has a block of its own with its tasks
+    doneWhen: roadmap/ has a block of its own, from add-block, with its tasks, from add
     lines: doc
   - id: GET.2
-    title: Remove this example block
+    title: Take the first real task and close it
     requires: [GET.1]
-    doneWhen: GET is gone from roadmap.yaml and its file deleted
+    doneWhen: a task of that block is closed with the commit that did it
     lines: doc
 `;
 

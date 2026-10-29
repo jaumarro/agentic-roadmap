@@ -110,8 +110,9 @@ function readVersion(): string {
 }
 
 // The plan has to be on the base branch before a task's branch can mark anything started.
-const AFTER_INIT = `Write your blocks, run check, then commit roadmap/ on your base branch, as «docs: start the roadmap».
-Each task then gets its own branch from there, named after it, as abc-1/short-slug.
+const AFTER_INIT = `Start a block with add-block ABC "Its name", give it tasks with add, then commit roadmap/ on your base branch,
+as «docs: start the roadmap». Each task then gets its own branch from there, named after it, as abc-1/short-slug.
+The example block GET walks you through it; delete it, and GET from roadmap.yaml, once its two tasks are done.
 `;
 
 const OPTIONS = {
