@@ -3,11 +3,7 @@ import { join } from 'node:path';
 import { parseDocument } from 'yaml';
 import { describeProblems } from './check.ts';
 import type { Roadmap } from './model.ts';
-import { CONFIG_FILE, ROADMAP_DIR, RoadmapError } from './source.ts';
-
-function readCode(error: unknown): string {
-  return error instanceof Error && 'code' in error ? String(error.code) : String(error);
-}
+import { CONFIG_FILE, readCode, ROADMAP_DIR, RoadmapError } from './source.ts';
 
 /**
  * Writes `focus` into roadmap.yaml, keeping its comments; an empty focus removes the key. The plan is checked with the

@@ -2,11 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, Scalar } from 'yaml';
 import type { Roadmap } from './model.ts';
-import { ROADMAP_DIR, RoadmapError } from './source.ts';
-
-function readCode(error: unknown): string {
-  return error instanceof Error && 'code' in error ? String(error.code) : String(error);
-}
+import { readCode, ROADMAP_DIR, RoadmapError } from './source.ts';
 
 /**
  * Marks task `id` done with `sha` in its block's file, keeping the file's comments and layout; the block's code. A task

@@ -2,16 +2,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Problem } from './check.ts';
 import type { Block, Roadmap, Task } from './model.ts';
-import { ROADMAP_DIR, RoadmapError } from './source.ts';
+import { readCode, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { writeInside } from './write-inside.ts';
 
 const DEFAULT_MARKDOWN = 'docs/roadmap.md';
 const DONE_MARK = '✅ ';
 const RISKY_MARK = ' ⚠︎';
-
-function readCode(error: unknown): string {
-  return error instanceof Error && 'code' in error ? String(error.code) : String(error);
-}
 
 /** The Markdown file's path from the folder holding roadmap/. */
 export function readMarkdownPath(roadmap: Roadmap): string {

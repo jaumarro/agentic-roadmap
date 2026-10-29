@@ -24,7 +24,8 @@ export function findRoot(start: string, override?: string): string {
   throw new RoadmapError(`No ${ROADMAP_DIR}/${CONFIG_FILE} here or above; run \`agentic-roadmap init\` to start one.`);
 }
 
-function readCode(error: unknown): string {
+/** A file system error's code, as ENOENT, for a message that names the failure without its stack. */
+export function readCode(error: unknown): string {
   return error instanceof Error && 'code' in error ? String(error.code) : String(error);
 }
 
