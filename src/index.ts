@@ -3,8 +3,7 @@
  * only ever written by `add` and `close`. Nothing here runs git: the caller passes its own branches, and
  * `readRoadmapWith` reads the files from wherever the caller has them, as another branch.
  */
-export type { Block, Chapter, Config, Roadmap, Task } from './model.ts';
-export { InvalidPlan } from './model.ts';
+export type { Block, Chapter, Roadmap, Task, Warnings } from './model.ts';
 export type { ReadFile } from './source.ts';
 export { readRoadmap, readRoadmapWith, RoadmapError } from './source.ts';
 export type { Problem } from './check.ts';
