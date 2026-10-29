@@ -40,7 +40,8 @@ import {
   STATES,
 } from './query.ts';
 import { checkMarkdown, measureProgress, renderProgress, syncMarkdown, writeMarkdown } from './render.ts';
-import { findRoot, initRoadmap, readRoadmap, readStagedRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
+import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
+import { readStagedRoadmap } from './staged.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
 
 const USAGE = `Usage: agentic-roadmap <command> [--root <folder>]

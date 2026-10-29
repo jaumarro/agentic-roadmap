@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parse, YAMLError } from 'yaml';
-import { readStaged } from './git.ts';
 import { InvalidPlan, readBlock, readConfig, type Roadmap } from './model.ts';
 
 export const ROADMAP_DIR = 'roadmap';
@@ -89,15 +88,6 @@ export function readRoadmapWith(read: ReadFile): Roadmap {
 /** The roadmap in the working tree under `root`. */
 export function readRoadmap(root: string): Roadmap {
   return readRoadmapWith(readFromDisk(root));
-}
-
-/** The roadmap under `root` as the index holds it: what the next commit records. */
-export function readStagedRoadmap(root: string): Roadmap {
-  return readRoadmapWith((file) => {
-    const text = readStaged(root, `${ROADMAP_DIR}/${file}`);
-    if (text === null) throw new RoadmapError(`${ROADMAP_DIR}/${file} is not staged.`);
-    return text;
-  });
 }
 
 const STARTER_CONFIG = `# The blocks of the plan, by code, in the order it reads them. Each lives in roadmap/<CODE>.yaml.
