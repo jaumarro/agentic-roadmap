@@ -21,7 +21,7 @@ For scripts and agents. `roadmap <command> --help` gives each command's flags; t
     "title": "Remember the session",
     "doneWhen": "a reload keeps the user signed in",
     "risky": false,
-    "branch": "log-2/"
+    "branchPrefix": "log-2/"
   },
   "ready": [],
   "inProgress": []
@@ -38,12 +38,13 @@ shaped as `next`, one per session.
   "id": "LOG.2",
   "title": "Remember the session",
   "state": "ready",
-  "block": { "code": "LOG", "name": "Login" },
+  "block": "LOG",
+  "blockName": "Login",
   "doneWhen": "a reload keeps the user signed in",
   "lines": 40,
   "risky": false,
   "commit": null,
-  "startedOn": [],
+  "branches": [],
   "requires": [{ "id": "LOG.1", "title": "Sign in with email", "state": "done" }],
   "unblocks": []
 }
