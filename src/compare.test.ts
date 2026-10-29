@@ -58,7 +58,7 @@ describe('health --against', () => {
 
     expect(capture(['health', '--against', 'main', '--strict'], root).code).toBe(1);
     const comparison: unknown = JSON.parse(capture(['health', '--against', 'main', '--json'], root).text);
-    expect(comparison).toMatchObject({ against: 'main', worse: ['critical path', 'problems'] });
+    expect(comparison).toMatchObject({ against: 'main', worse: ['criticalPath', 'problems'] });
   });
 
   it('refuses a branch the repo does not have', () => {
