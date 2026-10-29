@@ -90,7 +90,9 @@ exits 1 when `sound` is false.
 }
 ```
 
-`health --json`: the figures `health` prints, and `problems`, the worst first, each with what to do.
+`health --json`: the figures `health` prints, and every problem as data, the worst first. Each has a `kind`:
+`oversized` (`task`, `lines`), `queue` (`parallelism`), `bottleneck` (`task`, `share`), `redundant` and `backward`
+(`requirements`, the pairs as in the figures of the same name). The text shows the first five, each with what to do.
 
 ```json
 {

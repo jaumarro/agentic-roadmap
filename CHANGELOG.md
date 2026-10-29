@@ -12,6 +12,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 - Breaking: one name per concept in the JSON. In `next` and `free`, `branch` is now `branchPrefix`, as it is only the
   start of a branch's name. In `show`, `startedOn` is now `branches`, as in `next`'s `inProgress`, and `block` is the
   block's code, with its name in `blockName`.
+- Breaking: `health --json` gives each problem as data, as `{ kind: 'oversized', task, lines }`, not in words, and all of
+  them, not the first five. `describeHealthProblem` gives the words.
 - Breaking: `health --against --json` names the figures in `worse` by their keys, as `criticalPath`, not by their
   labels.
 - Breaking: a command refuses an option it does not take. `check --json` used to print prose, and `status --block`
