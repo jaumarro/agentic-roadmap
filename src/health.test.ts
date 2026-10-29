@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { describeHealthProblem, measureHealth } from './health.ts';
 import type { Roadmap, Task } from './model.ts';
-import { renderHealth } from './query.ts';
+import { renderHealth } from './text.ts';
 
 function task(id: string, requires: string[] = [], lines: number | 'doc' = 10, commit?: string): Task {
   return { id, title: id, requires, doneWhen: 'x', lines, ...(commit ? { commit } : {}) };

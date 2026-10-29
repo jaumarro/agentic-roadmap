@@ -94,39 +94,3 @@ export function checkMarkdown(root: string, roadmap: Roadmap, read = readFromDis
   if (normalize(text) === normalize(renderMarkdown(roadmap))) return [];
   return [{ kind: 'stale-markdown', path }];
 }
-
-/** Each block's progress, and the whole plan's. */
-export type Progress = { code: string; name: string; done: number; total: number };
-
-export function measureProgress(roadmap: Roadmap): Progress[] {
-  return roadmap.blocks.map((block) => ({
-    code: block.code,
-    name: block.name,
-    done: block.tasks.filter((task) => task.commit !== undefined).length,
-    total: block.tasks.length,
-  }));
-}
-
-function readPercent(done: number, total: number): string {
-  return total === 0 ? '—' : `${Math.round((done / total) * 100)} %`;
-}
-
-export function renderProgress(progress: Progress[]): string {
-  const done = progress.reduce((sum, block) => sum + block.done, 0);
-  const total = progress.reduce((sum, block) => sum + block.total, 0);
-  const rows = [
-    ...progress.map((block) => [
-      `${block.code} · ${block.name}`,
-      `${block.done} / ${block.total}`,
-      readPercent(block.done, block.total),
-    ]),
-    ['All', `${done} / ${total}`, readPercent(done, total)],
-  ];
-  const widths = [0, 1].map((column) => Math.max(...rows.map((row) => row[column]?.length ?? 0)));
-  return rows
-    .map(
-      ([name = '', count = '', percent = '']) =>
-        `${name.padEnd(widths[0] ?? 0)}  ${count.padEnd(widths[1] ?? 0)}  ${percent}\n`,
-    )
-    .join('');
-}

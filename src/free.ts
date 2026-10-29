@@ -41,17 +41,3 @@ export function listInProgress(roadmap: Roadmap, branches: string[]): InProgress
       return on.length === 0 ? [] : [{ id: task.id, title: task.title, branches: on }];
     });
 }
-
-/**
- * The first `count` free tasks, one per session, each with the branch to start it on. Past the plan's `width`, more
- * sessions only wait on each other, so asking for more says so.
- */
-export function renderFree(free: FreeTask[], count: number, width: number): string {
-  const taken = free.slice(0, count);
-  if (taken.length === 0) return 'No task is free to take.\n';
-  const rows = taken.map((task, at) => `${at + 1}. ${task.id} · ${task.title}\n   Branch: ${task.branchPrefix}…\n`);
-  const fewer = taken.length < count ? `Only ${taken.length} free, of the ${count} asked.\n` : '';
-  const sessions = width === 1 ? '1 session' : `${width} sessions`;
-  const wide = count > width ? `The plan keeps at most ${sessions} busy at once.\n` : '';
-  return `${rows.join('')}${fewer}${wide}`;
-}

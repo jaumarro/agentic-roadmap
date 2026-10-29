@@ -25,25 +25,27 @@ import { installHook } from './hook.ts';
 import { withLock } from './lock.ts';
 import type { Roadmap } from './model.ts';
 import { setFocus } from './focus.ts';
-import { listFree, listInProgress, renderFree, type InProgress } from './free.ts';
+import { listFree, listInProgress } from './free.ts';
 import { measureHealth } from './health.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.ts';
 import { addBlock } from './add-block.ts';
 import { installSkill } from './install-skill.ts';
-import {
-  listRows,
-  renderHealth,
-  renderList,
-  renderShown,
-  renderWaves,
-  renderWhy,
-  sortByWave,
-  STATES,
-} from './query.ts';
-import { checkMarkdown, measureProgress, renderProgress, syncMarkdown, writeMarkdown } from './render.ts';
+import { listRows, measureProgress, sortByWave, STATES } from './query.ts';
+import { checkMarkdown, syncMarkdown, writeMarkdown } from './render.ts';
 import { findRoot, initRoadmap, readRoadmap, ROADMAP_DIR, RoadmapError } from './source.ts';
 import { readStagedRoadmap } from './staged.ts';
 import { describeTask, explainWait, readStates, type TaskState } from './state.ts';
+import {
+  describeNothingReady,
+  renderFree,
+  renderHealth,
+  renderInProgress,
+  renderList,
+  renderProgress,
+  renderShown,
+  renderWaves,
+  renderWhy,
+} from './text.ts';
 
 function readVersion(): string {
   const manifest: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
@@ -208,19 +210,6 @@ function readSoundRoadmap(root: string): Roadmap {
     throw new RoadmapError(`The plan has problems; fix them first:\n${listProblems(problems).trimEnd()}`);
   }
   return roadmap;
-}
-
-function describeNothingReady(roadmap: Roadmap): string {
-  const tasks = roadmap.blocks.flatMap((block) => block.tasks);
-  if (tasks.length === 0) return 'The plan has no tasks yet.';
-  if (tasks.every((task) => task.commit !== undefined)) return 'Everything is done.';
-  return 'Nothing is ready: every task left waits on one that is not done.';
-}
-
-function renderInProgress(inProgress: InProgress[]): string {
-  if (inProgress.length === 0) return '';
-  const lines = inProgress.map((task) => `  ${task.id} · ${task.title} (on ${task.branches.join(', ')})\n`);
-  return `\nIn progress:\n${lines.join('')}`;
 }
 
 /** The task to take, never one a branch already started, then the others ready and those in progress. */
