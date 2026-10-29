@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkRoadmap, findMissingCommits, warnRoadmap } from './check.ts';
+import { checkRoadmap, describeProblems, findMissingCommits, warnRoadmap } from './check.ts';
 import type { Block, Task } from './model.ts';
 
 function task(id: string, requires: string[] = [], commit?: string): Task {
@@ -16,21 +16,22 @@ describe('checkRoadmap', () => {
   });
 
   it('finds a requirement no task has', () => {
-    expect(checkRoadmap({ blocks: [block('ABC', task('ABC.1', ['ABC.9']))] })).toEqual([
-      'ABC.1 requires ABC.9, which no task has',
-    ]);
+    const plan = { blocks: [block('ABC', task('ABC.1', ['ABC.9']))] };
+
+    expect(checkRoadmap(plan)).toEqual([{ kind: 'unknown-requirement', task: 'ABC.1', requires: 'ABC.9' }]);
+    expect(describeProblems(plan)).toEqual(['ABC.1 requires ABC.9, which no task has']);
   });
 
   it('finds an id given twice, in one block or across two', () => {
     const plan = { blocks: [block('ABC', task('ABC.1'), task('ABC.1')), block('XYZ', task('ABC.1'))] };
 
-    expect(checkRoadmap(plan)).toContain('ABC.1 is given to 3 tasks');
+    expect(describeProblems(plan)).toContain('ABC.1 is given to 3 tasks');
   });
 
   it('finds a block listed twice and a task outside its block', () => {
     const plan = { blocks: [block('ABC', task('XYZ.1')), block('ABC', task('ABC.2'))] };
 
-    expect(checkRoadmap(plan)).toEqual(['block ABC is listed twice', 'XYZ.1 sits in block ABC']);
+    expect(describeProblems(plan)).toEqual(['block ABC is listed twice', 'XYZ.1 sits in block ABC']);
   });
 
   it('finds a cycle, a task that requires itself included', () => {
@@ -38,7 +39,11 @@ describe('checkRoadmap', () => {
       blocks: [block('ABC', task('ABC.1', ['ABC.2']), task('ABC.2', ['ABC.1']), task('ABC.3', ['ABC.3']))],
     };
 
-    expect(checkRoadmap(plan)).toEqual(['a cycle: ABC.1 → ABC.2 → ABC.1', 'a cycle: ABC.3 → ABC.3']);
+    expect(checkRoadmap(plan)).toEqual([
+      { kind: 'cycle', tasks: ['ABC.1', 'ABC.2', 'ABC.1'] },
+      { kind: 'cycle', tasks: ['ABC.3', 'ABC.3'] },
+    ]);
+    expect(describeProblems(plan)).toEqual(['a cycle: ABC.1 → ABC.2 → ABC.1', 'a cycle: ABC.3 → ABC.3']);
   });
 });
 
