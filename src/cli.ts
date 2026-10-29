@@ -133,6 +133,23 @@ const OPTIONS = {
   version: { type: 'boolean' },
 } as const;
 
+/** The options each command takes, beyond --root, --help and --version, which every command takes. */
+const FLAGS: Record<string, string[]> = {
+  next: ['json'],
+  free: ['json'],
+  focus: ['clear'],
+  close: ['commit'],
+  check: ['staged'],
+  status: ['json'],
+  show: ['json'],
+  why: ['json'],
+  list: ['block', 'state', 'by', 'json'],
+  graph: ['mermaid', 'json', 'all'],
+  health: ['json', 'strict', 'against'],
+  add: ['requires', 'done-when', 'lines', 'from'],
+};
+const EVERY_COMMAND = ['root', 'help', 'version'];
+
 /** How many arguments each command takes after its name. */
 const ARITY: Record<string, number> = {
   init: 0,
@@ -230,6 +247,11 @@ function readCommand(args: string[], env: Io['env']): Command {
   if (arity !== undefined && operands.length > arity && name !== undefined) {
     throw new RoadmapError(arity === 0 ? `${name} takes no arguments.` : `${name} takes ${arity} argument.`);
   }
+  // A flag a command ignores would read as obeyed: `check --json` printing prose breaks a script that parses it.
+  const taken = name !== undefined && arity !== undefined ? [...EVERY_COMMAND, ...(FLAGS[name] ?? [])] : undefined;
+  const ignored = taken === undefined ? undefined : Object.keys(values).find((flag) => !taken.includes(flag));
+  if (ignored !== undefined)
+    throw new RoadmapError(`${name} takes no --${ignored}; \`${name} --help\` lists its options.`);
   const root = values.root ?? (env.AGENTIC_ROADMAP_ROOT || undefined);
   return {
     name,
