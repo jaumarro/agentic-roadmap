@@ -57,6 +57,15 @@ describe('add --from', () => {
     expect(readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8')).toBe(before);
   });
 
+  it('names a key with a dollar sign as it is written', () => {
+    const root = repo();
+    writeFileSync(join(root, 'plan.md'), plan('| $& | GET | A | GET.99 | x | 5 |\n'));
+
+    expect(capture(['add', '--from', 'plan.md'], root).text).toBe(
+      'Nothing added: $& requires GET.99, which no task has.\n',
+    );
+  });
+
   it('puts back what it wrote when a later block cannot be written', () => {
     const root = repo();
     capture(['add-block', 'NEW', 'New'], root);

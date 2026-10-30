@@ -58,7 +58,7 @@ export function addRows(
   if (problems.length > 0) {
     // The ids were never written, so the problem names the table's keys.
     const named = [...idOf].reduce(
-      (text, [key, id]) => text.replaceAll(new RegExp(`\\b${id.replace('.', '\\.')}\\b`, 'g'), key),
+      (text, [key, id]) => text.replaceAll(new RegExp(`\\b${id.replace('.', '\\.')}\\b`, 'g'), () => key),
       problems.join('; '),
     );
     throw new RoadmapError(`Nothing added: ${named}.`);
