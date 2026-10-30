@@ -10,6 +10,11 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   CLI's. `checkRoadmap` gives each problem as data, as `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
 - `check --json` gives `{ sound, problems, warnings }`, each problem as data.
 - `add-block <CODE> <NAME>` starts a block with no tasks, after the others in `roadmap.yaml`.
+- `add`, `close`, `focus`, `add-block` and `install-merge-driver` refuse to write through a symlink, which a repo can
+  commit to point outside it.
+- The merge driver merges `roadmap.yaml` too, its `blocks` as a set, so two branches can each start a block. Run
+  `install-merge-driver` again: it takes out the `roadmap/roadmap.yaml merge=text` rule from `.gitattributes`.
+- A command that changed the plan but could not write the Markdown says the change is made, so it isn't repeated.
 - `add --from` puts back what it wrote when a later block cannot be written, and a file that cannot be written reads as
   a message, not a stack trace.
 - `health --against` and `add`'s delta name only the requirements a change brought in: dropping a redundant one is no
