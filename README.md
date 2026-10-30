@@ -64,15 +64,16 @@ pnpm add -D agentic-roadmap   # or: npm install -D agentic-roadmap
 ```
 
 It gives two commands, `agentic-roadmap` and its short name `roadmap`; run them with `pnpm exec` or `npx`. To try it
-first without installing: `npx agentic-roadmap init`.
+first without installing: `npx agentic-roadmap init`. Use the short name only once it is installed: without this package,
+`npx roadmap` fetches an unrelated package of that name.
 
 ## Start
 
 ```bash
-npx roadmap init                  # creates roadmap/ with an example block
-npx roadmap install-skill         # teaches Claude Code the workflow
-npx roadmap install-hook          # refuses commits that break the plan
-npx roadmap install-merge-driver  # merges parallel edits to the plan task by task
+npx agentic-roadmap init                  # creates roadmap/ with an example block
+npx agentic-roadmap install-skill         # teaches Claude Code the workflow
+npx agentic-roadmap install-hook          # refuses commits that break the plan
+npx agentic-roadmap install-merge-driver  # merges parallel edits to the plan task by task
 ```
 
 Commit `roadmap/` on your base branch before the first task. After an upgrade, run `install-skill` again so agents
