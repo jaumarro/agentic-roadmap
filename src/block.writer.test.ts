@@ -87,6 +87,45 @@ describe('add-block', () => {
     ).toEqual(['GET', ...codes].toSorted());
   });
 
+  it('refuses a code another branch started', () => {
+    const root = project();
+    const inRepo = (...args: string[]) =>
+      execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: root, stdio: 'ignore' });
+    inRepo('init', '-q', '-b', 'main');
+    inRepo('add', '-A');
+    inRepo('commit', '-qm', 'docs: start');
+    inRepo('switch', '-qc', 'other');
+    capture(['add-block', 'LOG', 'One'], root);
+    inRepo('add', '-A');
+    inRepo('commit', '-qm', 'docs: plan LOG');
+    inRepo('switch', '-q', 'main');
+
+    expect(capture(['add-block', 'LOG', 'Two'], root)).toEqual({
+      code: 1,
+      text: 'Another branch or worktree already started LOG: pick another code, or merge it first.\n',
+    });
+  });
+
+  it('refuses the code of roadmap.yaml itself', () => {
+    expect(capture(['add-block', 'ROADMAP', 'Plan'], project()).text).toBe('ROADMAP is reserved: pick another code.\n');
+  });
+
+  it('refuses a line break in the name', () => {
+    expect(capture(['add-block', 'NEW', 'a\n## fake'], project()).text).toBe(
+      'The name holds a line break, and it is one line.\n',
+    );
+  });
+
+  it('turns a blocks list too long for one line into a plain list', () => {
+    const root = project();
+    for (const code of ['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC', 'DDDDDDDDDD', 'EEEEEEEEEE']) {
+      capture(['add-block', code, 'Name'], root);
+    }
+
+    expect(readFileSync(join(root, 'roadmap', 'roadmap.yaml'), 'utf8')).toContain('blocks:\n  - GET\n  - AAAAAAAAAA\n');
+    expect(readRoadmap(root).blocks).toHaveLength(6);
+  });
+
   it('trims the name, as add trims a title', () => {
     const root = project();
     capture(['add-block', 'LOG', '  Login  '], root);
