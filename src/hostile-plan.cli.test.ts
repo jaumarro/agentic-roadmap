@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -25,7 +25,38 @@ function setConfig(root: string, text: string): void {
   writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), text);
 }
 
+const BLOCK = 'name: Evil\ntasks:\n  - id: EVL.1\n    title: One\n    doneWhen: x\n    lines: 5\n';
+
 describe('a plan from a stranger', () => {
+  it('cannot have add or close write through a block file that is a symlink', () => {
+    const { root, outside } = repo();
+    writeFileSync(join(outside, 'victim.yaml'), BLOCK);
+    symlinkSync(join(outside, 'victim.yaml'), join(root, 'roadmap', 'EVL.yaml'));
+    setConfig(root, 'blocks: [GET, EVL]\n');
+
+    expect(capture(['add', 'EVL', 'Two', '--done-when', 'x', '--lines', '5'], root)).toEqual({
+      code: 1,
+      text: 'Refused to write roadmap/EVL.yaml: it is a symlink.\n',
+    });
+    expect(capture(['close', 'EVL.1', '--commit', 'HEAD'], root).code).toBe(1);
+    expect(readFileSync(join(outside, 'victim.yaml'), 'utf8')).toBe(BLOCK);
+  });
+
+  it('cannot have focus or add-block write through a roadmap.yaml that is a symlink', () => {
+    const { root, outside } = repo();
+    const config = 'blocks: [GET]\n';
+    writeFileSync(join(outside, 'victim.yaml'), config);
+    rmSync(join(root, 'roadmap', 'roadmap.yaml'));
+    symlinkSync(join(outside, 'victim.yaml'), join(root, 'roadmap', 'roadmap.yaml'));
+
+    expect(capture(['focus', 'GET'], root).text).toBe('Refused to write roadmap/roadmap.yaml: it is a symlink.\n');
+    expect(capture(['add-block', 'NEW', 'New'], root).text).toBe(
+      'Refused to write roadmap/roadmap.yaml: it is a symlink.\n',
+    );
+    expect(readFileSync(join(outside, 'victim.yaml'), 'utf8')).toBe(config);
+    expect(existsSync(join(root, 'roadmap', 'NEW.yaml'))).toBe(false);
+  });
+
   it('cannot point the Markdown outside the repo', () => {
     const { root, outside } = repo();
     setConfig(root, 'blocks: [GET]\nmarkdown: ../escaped.md\n');
