@@ -10,6 +10,10 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   CLI's. `checkRoadmap` gives each problem as data, as `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
 - `check --json` gives `{ sound, problems, warnings }`, each problem as data.
 - `add-block <CODE> <NAME>` starts a block with no tasks, after the others in `roadmap.yaml`.
+- `add --from` puts back what it wrote when a later block cannot be written, and a file that cannot be written reads as
+  a message, not a stack trace.
+- `health --against` and `add`'s delta name only the requirements a change brought in: dropping a redundant one is no
+  longer a new problem.
 - `init`'s example block ends in a task that can be closed: taking and closing the first real task, not deleting the
   block it sits in.
 - Breaking: one name per concept in the JSON. In `next` and `free`, `branch` is now `branchPrefix`, as it is only the
