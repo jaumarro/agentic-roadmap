@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { run } from './cli.ts';
 import { renderDelta } from './health.view.ts';
 import { compareHealth } from './health.compare.service.ts';
@@ -33,6 +33,39 @@ function capture(args: string[], cwd: string) {
 }
 
 const ADD = ['--done-when', 'it is there', '--lines', '30'];
+
+describe('appendTasks', () => {
+  afterEach(() => {
+    vi.doUnmock('./safe-write.adapter.ts');
+    vi.resetModules();
+  });
+
+  it('names the file it could not put back, along with what failed', async () => {
+    const root = repo();
+    writeFileSync(join(root, 'roadmap', 'NEW.yaml'), 'name: New\ntasks: []\n');
+    let writes = 0;
+    vi.resetModules();
+    vi.doMock('./safe-write.adapter.ts', () => ({
+      // The first row lands; the second row and the undo both fail.
+      writeInside: (at: string, name: string, text: string) => {
+        writes += 1;
+        if (writes > 1) throw Object.assign(new Error('no'), { code: 'EACCES' });
+        writeFileSync(join(at, name), text);
+      },
+    }));
+    const { appendTasks } = await import('./task.add.writer.ts');
+    const task = { title: 'A', requires: [], doneWhen: 'x', lines: 5 };
+
+    expect(() =>
+      appendTasks(root, [
+        { code: 'GET', id: 'GET.3', task },
+        { code: 'NEW', id: 'NEW.1', task },
+      ]),
+    ).toThrow(
+      'Could not write roadmap/NEW.yaml: EACCES. roadmap/GET.yaml kept the rows written: restore them with git.',
+    );
+  });
+});
 
 describe('add, on the plan health', () => {
   it('ends with the figures it moved, worse ones marked, and the problems it brought in', () => {
