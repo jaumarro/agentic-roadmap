@@ -31,7 +31,8 @@ export function withLock<T>(gitDir: string, work: () => T, waitMs = 5_000): T {
       break;
     } catch {
       if (isStale(path)) rmSync(path, { recursive: true, force: true });
-      else if (waited >= waitMs) throw new RoadmapError(`Another add is under way; if none is, remove ${path}.`);
+      else if (waited >= waitMs)
+        throw new RoadmapError(`Another session is changing the plan; if none is, remove ${path}.`);
       else sleep(STEP_MS);
     }
   }

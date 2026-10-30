@@ -27,7 +27,7 @@ describe('withLock', () => {
     const dir = folder();
     mkdirSync(join(dir, 'agentic-roadmap.lock'));
 
-    expect(() => withLock(dir, () => 'never', 50)).toThrow('Another add is under way');
+    expect(() => withLock(dir, () => 'never', 50)).toThrow('Another session is changing the plan');
   });
 
   it('takes over a lock left by a session that died mid-add', () => {

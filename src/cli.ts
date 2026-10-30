@@ -80,6 +80,18 @@ function readLines(value: string | undefined): number | 'doc' {
   return lines;
 }
 
+/** Keeps the Markdown current after a change already written; if it can't, says so, as a retry would repeat the change. */
+function syncAfterChange(root: string, roadmap: Roadmap, done: string): void {
+  try {
+    syncMarkdown(root, roadmap);
+  } catch (error) {
+    if (!(error instanceof RoadmapError)) throw error;
+    throw new RoadmapError(
+      `${done} ${error.message} Fix that and run render; the change is made, so do not repeat it.`,
+    );
+  }
+}
+
 /** Block `code`'s file as every branch has it committed and every other worktree has it, committed or not. */
 function readElsewhere(root: string, code: string, branches: string[]): string[] {
   const path = `${ROADMAP_DIR}/${code}.yaml`;
@@ -100,7 +112,7 @@ function addFrom(root: string, from: string, out: Io['out']): void {
   const branches = listAllBranches(root);
   const added = addRows(root, roadmap, rows, (code) => readElsewhere(root, code, branches));
   const after = readRoadmap(root);
-  syncMarkdown(root, after);
+  syncAfterChange(root, after, `Added ${added.length} tasks.`);
   out(`Added ${added.length} tasks:\n${added.map((each) => `  ${each.id} · ${each.title}\n`).join('')}`);
   out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
 }
@@ -128,7 +140,7 @@ function add(root: string, command: Command, out: Io['out']): void {
   const id = readNextId(roadmap, code, readElsewhere(root, code, listAllBranches(root)));
   addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
   const added = readRoadmap(root);
-  syncMarkdown(root, added);
+  syncAfterChange(root, added, `Added ${id}.`);
   out(`Added ${id} · ${title.trim()} to ${ROADMAP_DIR}/${code}.yaml.\n`);
   out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(added))));
 }
@@ -257,7 +269,7 @@ function focus(root: string, command: Command, out: Io['out']): void {
     throw new RoadmapError('Say what to take first: focus <CODE|ID>..., or focus --clear.');
   }
   setFocus(root, readRoadmap(root), command.operands);
-  syncMarkdown(root, readRoadmap(root));
+  syncAfterChange(root, readRoadmap(root), 'Changed the focus.');
   const said = command.clear ? 'Cleared the focus' : `The focus is ${command.operands.join(', ')}`;
   out(`${said}. Commit ${ROADMAP_DIR}/roadmap.yaml as «docs: focus the plan».\n`);
 }
@@ -289,7 +301,7 @@ function close(root: string, command: Command, out: Io['out']): void {
   const sha = resolveCommit(root, revision);
   if (sha === null) throw new RoadmapError(`This repo has no commit ${revision}.`);
   const code = closeTask(root, roadmap, id, sha, command.commit !== undefined);
-  syncMarkdown(root, readRoadmap(root));
+  syncAfterChange(root, readRoadmap(root), `Closed ${id} with ${sha}.`);
   if (task?.commit === undefined) {
     out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
   } else {
@@ -409,9 +421,12 @@ export function run(args: string[], io: Io): number {
         const [code = '', name = ''] = command.operands;
         if (command.operands.length < 2) throw new RoadmapError('Say the block: add-block <CODE> <NAME>.');
         const at = root();
-        const file = withPlanLock(at, () => addBlock(at, readRoadmap(at), code, name));
-        const after = readRoadmap(at);
-        syncMarkdown(at, after);
+        const { file, after } = withPlanLock(at, () => {
+          const written = addBlock(at, readRoadmap(at), code, name.trim());
+          const plan = readRoadmap(at);
+          syncAfterChange(at, plan, `Started ${code}.`);
+          return { file: written, after: plan };
+        });
         io.out(
           `Started ${code} in ${file}. Add its tasks with add ${code} "…", then commit it as «docs: plan ${code}».\n`,
         );
