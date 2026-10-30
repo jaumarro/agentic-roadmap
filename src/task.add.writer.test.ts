@@ -34,6 +34,18 @@ function capture(args: string[], cwd: string) {
 
 const ADD = ['--done-when', 'it is there', '--lines', '30'];
 
+describe('add, with text the plan could not read back', () => {
+  it.each([
+    ['a control character', 'a\u001b[31mb', 'Not added: title holds a control character, as an escape sequence.\n'],
+    ['a line break', 'a\n## fake', 'Not added: title holds a line break, and it is one line.\n'],
+  ])('refuses %s and leaves the plan working', (_, title, message) => {
+    const root = repo();
+
+    expect(capture(['add', 'GET', title, ...ADD], root)).toEqual({ code: 1, text: message });
+    expect(capture(['next'], root).code).toBe(0);
+  });
+});
+
 describe('appendTasks', () => {
   afterEach(() => {
     vi.doUnmock('./safe-write.adapter.ts');
