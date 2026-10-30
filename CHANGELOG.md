@@ -10,6 +10,13 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   CLI's. `checkRoadmap` gives each problem as data, as `{ kind: 'cycle', tasks }`, and `describeProblem` in words.
 - `check --json` gives `{ sound, problems, warnings }`, each problem as data.
 - `add-block <CODE> <NAME>` starts a block with no tasks, after the others in `roadmap.yaml`.
+- Breaking: a task's title and «Done when», and a block's or chapter's name, are one line. A plan holding a line break
+  in one is refused: it could forge a line of output or a heading in the Markdown. A `>` scalar ends in one; use `>-`.
+- `close` and `focus` take the lock `add` takes, so commands run at once on one checkout lose nothing, and the plan's
+  files are replaced whole, so no command reads one half written.
+- `add` and `add --from` refuse text the plan could not read back, which used to stop every later command.
+- `add-block` refuses a code another branch or worktree started, and `ROADMAP`, whose file is `roadmap.yaml` where case
+  does not count.
 - `add`, `close`, `focus`, `add-block` and `install-merge-driver` refuse to write through a symlink, which a repo can
   commit to point outside it.
 - The merge driver merges `roadmap.yaml` too, its `blocks` as a set, so two branches can each start a block. Run
