@@ -1,4 +1,16 @@
-import { lstatSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import {
+  accessSync,
+  chmodSync,
+  constants,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { RoadmapError } from './roadmap.model.ts';
 
@@ -28,5 +40,24 @@ export function writeInside(root: string, name: string, text: string): void {
     throw new RoadmapError(`Refused to write ${name}: a folder on its way links outside the repo.`);
   }
   if (isSymlink(path)) throw new RoadmapError(`Refused to write ${name}: it is a symlink.`);
-  writeFileSync(path, text);
+  replaceFile(path, text);
+}
+
+/**
+ * Writes a temporary file and renames it over `path`, so a reader never sees it half written and a crash leaves the old
+ * one. A rename would ignore a read-only file and drop its mode, so both are kept by hand.
+ */
+function replaceFile(path: string, text: string): void {
+  const exists = existsSync(path);
+  if (exists) accessSync(path, constants.W_OK);
+  const temporary = `${path}.${process.pid}.tmp`;
+  try {
+    // `wx`: a file already there, as a symlink a repo committed, is refused and never written through.
+    writeFileSync(temporary, text, { flag: 'wx' });
+    if (exists) chmodSync(temporary, statSync(path).mode);
+    renameSync(temporary, path);
+  } catch (error) {
+    rmSync(temporary, { force: true });
+    throw error;
+  }
 }
