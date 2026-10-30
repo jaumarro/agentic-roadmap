@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
 import { describeProblems } from './check.service.ts';
 import { ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
+import { readCode } from './roadmap.repository.ts';
 
 export type NewTask = { title: string; requires: string[]; doneWhen: string; lines: number | 'doc'; risky?: boolean };
 
@@ -24,21 +25,41 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
 export function appendTask(root: string, code: string, id: string, task: NewTask): void {
   const name = `${ROADMAP_DIR}/${code}.yaml`;
   const path = join(root, name);
-  const doc = parseDocument(readFileSync(path, 'utf8'));
-  const tasks = doc.get('tasks');
-  if (!isSeq(tasks)) throw new RoadmapError(`${name} has no task list to add to.`);
-  const node = doc.createNode({
-    id,
-    title: task.title,
-    ...(task.requires.length > 0 ? { requires: task.requires } : {}),
-    doneWhen: task.doneWhen,
-    lines: task.lines,
-    ...(task.risky === true ? { risky: true } : {}),
-  });
-  // Requirements read best on one line, as the rest of the plan writes them.
-  const requires = isMap(node) ? node.get('requires', true) : undefined;
-  if (requires instanceof YAMLSeq) requires.flow = true;
-  tasks.flow = false;
-  tasks.items.push(node);
-  writeFileSync(path, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+  try {
+    const doc = parseDocument(readFileSync(path, 'utf8'));
+    const tasks = doc.get('tasks');
+    if (!isSeq(tasks)) throw new RoadmapError(`${name} has no task list to add to.`);
+    const node = doc.createNode({
+      id,
+      title: task.title,
+      ...(task.requires.length > 0 ? { requires: task.requires } : {}),
+      doneWhen: task.doneWhen,
+      lines: task.lines,
+      ...(task.risky === true ? { risky: true } : {}),
+    });
+    // Requirements read best on one line, as the rest of the plan writes them.
+    const requires = isMap(node) ? node.get('requires', true) : undefined;
+    if (requires instanceof YAMLSeq) requires.flow = true;
+    tasks.flow = false;
+    tasks.items.push(node);
+    writeFileSync(path, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+  } catch (error) {
+    if (error instanceof RoadmapError) throw error;
+    throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
+  }
+}
+
+/** Writes every one of `tasks`, or none: a write that fails puts back the files already written. */
+export function appendTasks(root: string, tasks: { code: string; id: string; task: NewTask }[]): void {
+  const originals = new Map<string, string>();
+  try {
+    for (const { code, id, task } of tasks) {
+      const path = join(root, ROADMAP_DIR, `${code}.yaml`);
+      if (!originals.has(path)) originals.set(path, readFileSync(path, 'utf8'));
+      appendTask(root, code, id, task);
+    }
+  } catch (error) {
+    for (const [path, text] of originals) if (readFileSync(path, 'utf8') !== text) writeFileSync(path, text);
+    throw error;
+  }
 }
