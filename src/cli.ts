@@ -365,12 +365,16 @@ export function run(args: string[], io: Io): number {
       case 'free':
         free(root(), command, io.out);
         return 0;
-      case 'focus':
-        focus(root(), command, io.out);
+      case 'focus': {
+        const at = root();
+        withPlanLock(at, () => focus(at, command, io.out));
         return 0;
-      case 'close':
-        close(root(), command, io.out);
+      }
+      case 'close': {
+        const at = root();
+        withPlanLock(at, () => close(at, command, io.out));
         return 0;
+      }
       case 'check':
         return check(root(), command, io.out);
       case 'render': {
@@ -422,7 +426,8 @@ export function run(args: string[], io: Io): number {
         if (command.operands.length < 2) throw new RoadmapError('Say the block: add-block <CODE> <NAME>.');
         const at = root();
         const { file, after } = withPlanLock(at, () => {
-          const written = addBlock(at, readRoadmap(at), code, name.trim());
+          const readOthers = () => readElsewhere(at, code, listAllBranches(at));
+          const written = addBlock(at, readRoadmap(at), code, name.trim(), readOthers);
           const plan = readRoadmap(at);
           syncAfterChange(at, plan, `Started ${code}.`);
           return { file: written, after: plan };

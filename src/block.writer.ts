@@ -11,17 +11,29 @@ import {
   RoadmapError,
 } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
+import { fitBlocksList } from './block.merge.service.ts';
 import { writeInside } from './safe-write.adapter.ts';
 
 /**
  * Starts block `code` with no tasks: its file, then its code at the end of roadmap.yaml's blocks. The config is written
  * last, as it is what makes the file a block: a write that fails leaves no block half made.
  */
-export function addBlock(root: string, roadmap: Roadmap, code: string, name: string): string {
+export function addBlock(
+  root: string,
+  roadmap: Roadmap,
+  code: string,
+  name: string,
+  readOthers: () => string[],
+): string {
   if (!BLOCK_CODE.test(code)) throw new RoadmapError(`${code} is no block code: capital letters and digits, as ABC.`);
+  // On a file system that ignores case, its file would be roadmap.yaml itself.
+  if (`${code.toLowerCase()}.yaml` === CONFIG_FILE) throw new RoadmapError(`${code} is reserved: pick another code.`);
   if (roadmap.blocks.some((block) => block.code === code)) throw new RoadmapError(`The plan already has ${code}.`);
   const file = `${ROADMAP_DIR}/${code}.yaml`;
   if (existsSync(join(root, file))) throw new RoadmapError(`${file} already exists; add ${code} to roadmap.yaml.`);
+  if (readOthers().length > 0) {
+    throw new RoadmapError(`Another branch or worktree already started ${code}: pick another code, or merge it first.`);
+  }
   if (name.trim() === '') throw new RoadmapError("Say the block's name: add-block <CODE> <NAME>.");
   try {
     readBlock({ name, tasks: [] });
@@ -41,6 +53,7 @@ export function addBlock(root: string, roadmap: Roadmap, code: string, name: str
     const blocks = doc.get('blocks');
     if (!isSeq(blocks)) throw new RoadmapError(`${configName} has no blocks list to add to.`);
     blocks.items.push(doc.createNode(code));
+    fitBlocksList(blocks);
     writeInside(root, configName, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
     rmSync(join(root, file));
