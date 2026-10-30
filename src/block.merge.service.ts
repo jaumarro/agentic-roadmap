@@ -1,4 +1,4 @@
-import { isMap, isSeq, parseDocument, type Document, type Node } from 'yaml';
+import { isMap, isSeq, parseDocument, type Document, type Node, type YAMLSeq } from 'yaml';
 
 /** A merged file's text, or why it could not be merged without a person. */
 export type Merged = { text: string } | { conflict: string };
@@ -54,6 +54,14 @@ function mergeKey(ours: Document, base: Document, theirs: Document, key: string)
   return [];
 }
 
+// yaml breaks a flow list past this many characters, one item per line inside its brackets.
+const FLOW_LINE = 60;
+
+/** A blocks list too long for one line becomes a plain list, one code per line, which diffs and merges well. */
+export function fitBlocksList(blocks: YAMLSeq): void {
+  if (blocks.flow === true && JSON.stringify(blocks).length > FLOW_LINE) blocks.flow = false;
+}
+
 function readCodes(doc: Document): string[] | null {
   const blocks = doc.get('blocks');
   if (!isSeq(blocks)) return null;
@@ -77,7 +85,10 @@ function mergeConfig(base: Document, ours: Document, theirs: Document, codes: st
   const conflicts = [...keys].flatMap((key) => mergeKey(ours, base, theirs, key));
   if (conflicts.length > 0) return { conflict: `both sides changed ${conflicts.join(', ')}` };
   const blocks = ours.get('blocks');
-  if (isSeq(blocks)) blocks.items = mergeCodes(baseCodes, ourCodes, theirCodes).map((code) => ours.createNode(code));
+  if (isSeq(blocks)) {
+    blocks.items = mergeCodes(baseCodes, ourCodes, theirCodes).map((code) => ours.createNode(code));
+    fitBlocksList(blocks);
+  }
   return { text: ours.toString({ lineWidth: 0, flowCollectionPadding: false }) };
 }
 
