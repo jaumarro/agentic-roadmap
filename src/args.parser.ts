@@ -187,7 +187,8 @@ export function readCommand(args: string[], env: Record<string, string | undefin
   const [name, ...operands] = positionals;
   const arity = name === undefined ? 0 : ARITY[name];
   if (arity !== undefined && operands.length > arity && name !== undefined) {
-    throw new RoadmapError(arity === 0 ? `${name} takes no arguments.` : `${name} takes ${arity} argument.`);
+    const count = arity === 1 ? '1 argument' : `${arity} arguments`;
+    throw new RoadmapError(arity === 0 ? `${name} takes no arguments.` : `${name} takes ${count}.`);
   }
   // A flag a command ignores would read as obeyed: `check --json` printing prose breaks a script that parses it.
   const taken = name !== undefined && arity !== undefined ? [...EVERY_COMMAND, ...(FLAGS[name] ?? [])] : undefined;
