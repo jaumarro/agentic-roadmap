@@ -55,11 +55,12 @@ export function installMergeDriver(root: string): string {
   const text = existsSync(attributes) ? readFileSync(attributes, 'utf8') : '';
   const kept = text
     .split('\n')
-    .filter((line) => line !== CONFIG_AS_TEXT)
+    .filter((line) => line.trimEnd() !== CONFIG_AS_TEXT)
     .join('\n');
   // Appended to a last line with no newline, a rule would run into it and break both.
   const separator = kept === '' || kept.endsWith('\n') ? '' : '\n';
-  const added = kept.split('\n').includes(ATTRIBUTE) ? kept : `${kept}${separator}${ATTRIBUTE}\n`;
+  const present = kept.split('\n').some((line) => line.trimEnd() === ATTRIBUTE);
+  const added = present ? kept : `${kept}${separator}${ATTRIBUTE}\n`;
   if (added !== text) writeInside(root, '.gitattributes', added);
   return attributes;
 }
