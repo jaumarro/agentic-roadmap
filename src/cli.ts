@@ -32,6 +32,7 @@ import { listFree, listInProgress } from './free.service.ts';
 import { measureHealth } from './health.service.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.installer.ts';
 import { addBlock } from './block.writer.ts';
+import { readChapterOf } from './chapters.service.ts';
 import { installSkill } from './skill.installer.ts';
 import { listRows, measureProgress, sortByWave, STATES } from './query.service.ts';
 import { checkMarkdown, syncMarkdown, writeMarkdown } from './markdown.writer.ts';
@@ -322,6 +323,12 @@ function check(root: string, command: Command, out: Io['out']): number {
   return sound ? 0 : 1;
 }
 
+/** Runs `work`, which reads the plan and writes it, as one step for every session sharing the repo; outside one, none is. */
+function withPlanLock<T>(root: string, work: () => T): T {
+  const gitDir = readCommonDir(root);
+  return gitDir === null ? work() : withLock(gitDir, work);
+}
+
 /** Runs one command with `args`; the exit code it ends with. */
 export function run(args: string[], io: Io): number {
   try {
@@ -395,21 +402,24 @@ export function run(args: string[], io: Io): number {
         // A plan's path is from where the command runs, as the shell completed it, not from the roadmap.
         const from = command.from === undefined || command.from === '-' ? command.from : resolve(io.cwd, command.from);
         const at = root();
-        const gitDir = readCommonDir(at);
-        // Picking an id and writing it is one step for every session sharing the repo: outside one, nothing is shared.
-        if (gitDir === null) add(at, { ...command, from }, io.out);
-        else withLock(gitDir, () => add(at, { ...command, from }, io.out));
+        withPlanLock(at, () => add(at, { ...command, from }, io.out));
         return 0;
       }
       case 'add-block': {
         const [code = '', name = ''] = command.operands;
         if (command.operands.length < 2) throw new RoadmapError('Say the block: add-block <CODE> <NAME>.');
         const at = root();
-        const file = addBlock(at, readRoadmap(at), code, name);
-        syncMarkdown(at, readRoadmap(at));
+        const file = withPlanLock(at, () => addBlock(at, readRoadmap(at), code, name));
+        const after = readRoadmap(at);
+        syncMarkdown(at, after);
         io.out(
           `Started ${code} in ${file}. Add its tasks with add ${code} "…", then commit it as «docs: plan ${code}».\n`,
         );
+        if (readChapterOf(after)?.get(code) === null) {
+          io.out(
+            `${code} is in no chapter, so next and free leave it out: add it to one in roadmap.yaml, or focus it.\n`,
+          );
+        }
         return 0;
       }
       case 'health':

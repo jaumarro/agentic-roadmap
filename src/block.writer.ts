@@ -10,6 +10,7 @@ import {
   ROADMAP_DIR,
   RoadmapError,
 } from './roadmap.model.ts';
+import { readCode } from './roadmap.repository.ts';
 import { writeInside } from './safe-write.adapter.ts';
 
 /**
@@ -28,17 +29,26 @@ export function addBlock(root: string, roadmap: Roadmap, code: string, name: str
     if (error instanceof InvalidPlan) throw new RoadmapError(`The name ${error.message}.`);
     throw error;
   }
-  writeInside(root, file, stringify({ name, tasks: [] }));
-  const config = join(root, ROADMAP_DIR, CONFIG_FILE);
+  try {
+    writeInside(root, file, stringify({ name, tasks: [] }));
+  } catch (error) {
+    throw readWriteError(file, error);
+  }
+  const configName = `${ROADMAP_DIR}/${CONFIG_FILE}`;
+  const config = join(root, configName);
   try {
     const doc = parseDocument(readFileSync(config, 'utf8'));
     const blocks = doc.get('blocks');
-    if (!isSeq(blocks)) throw new RoadmapError(`${ROADMAP_DIR}/${CONFIG_FILE} has no blocks list to add to.`);
+    if (!isSeq(blocks)) throw new RoadmapError(`${configName} has no blocks list to add to.`);
     blocks.items.push(doc.createNode(code));
     writeFileSync(config, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
     rmSync(join(root, file));
-    throw error;
+    throw readWriteError(configName, error);
   }
   return file;
+}
+
+function readWriteError(name: string, error: unknown): RoadmapError {
+  return error instanceof RoadmapError ? error : new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
 }

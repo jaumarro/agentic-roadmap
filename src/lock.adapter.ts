@@ -20,8 +20,8 @@ function isStale(path: string): boolean {
 }
 
 /**
- * Runs `work` holding the lock in `gitDir`, the folder every worktree of the repo shares, so two sessions never pick
- * and write an id at once. A directory is the lock: making one is atomic. Waits up to `waitMs` for another holder.
+ * Runs `work` holding the lock in `gitDir`, the folder every worktree of the repo shares, so two sessions never read
+ * the plan and write it at once. A directory is the lock: making one is atomic. Waits up to `waitMs` for another holder.
  */
 export function withLock<T>(gitDir: string, work: () => T, waitMs = 5_000): T {
   const path = join(gitDir, LOCK);
