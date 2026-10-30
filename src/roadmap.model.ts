@@ -122,6 +122,13 @@ function readText(value: unknown, path: string, message = 'expected text'): stri
   return value;
 }
 
+/** Text printed as one line, so it cannot forge another line of output or a heading in the Markdown. */
+function readLine(value: unknown, path: string): string {
+  const text = readText(value, path);
+  if (/[\r\n]/.test(text)) throw new InvalidPlan(path, 'holds a line break, and it is one line');
+  return text;
+}
+
 function readMatching(value: unknown, path: string, pattern: RegExp, message: string): string {
   const text = readText(value, path, message);
   if (!pattern.test(text)) throw new InvalidPlan(path, message);
@@ -145,7 +152,7 @@ function readOptional<T>(fields: Fields, key: string, path: string, read: (value
   return value === undefined ? {} : { [key]: read(value, at(path, key)) };
 }
 
-function readTask(value: unknown, path: string): Task {
+export function readTask(value: unknown, path: string): Task {
   const fields = readFields(value, path, ['id', 'title', 'requires', 'doneWhen', 'lines', 'risky', 'commit']);
   const lines = fields.lines;
   if (lines !== 'doc' && (typeof lines !== 'number' || !Number.isInteger(lines) || lines <= 0)) {
@@ -161,12 +168,12 @@ function readTask(value: unknown, path: string): Task {
   const id = 'an id is a block code, a dot and a number, as ABC.1';
   return {
     id: readMatching(fields.id, at(path, 'id'), TASK_ID, id),
-    title: readText(fields.title, at(path, 'title')),
+    title: readLine(fields.title, at(path, 'title')),
     requires:
       fields.requires === undefined
         ? []
         : readList(fields.requires, at(path, 'requires'), (each, where) => readMatching(each, where, TASK_ID, id)),
-    doneWhen: readText(fields.doneWhen, at(path, 'doneWhen')),
+    doneWhen: readLine(fields.doneWhen, at(path, 'doneWhen')),
     lines,
     ...(risky === undefined ? {} : { risky }),
     ...(commit === undefined
@@ -179,7 +186,7 @@ function readTask(value: unknown, path: string): Task {
 export function readBlock(value: unknown): Omit<Block, 'code'> {
   const fields = readFields(value, '', ['name', 'intro', 'tasks']);
   return {
-    name: readText(fields.name, 'name'),
+    name: readLine(fields.name, 'name'),
     ...readOptional(fields, 'intro', '', (each, where) => readText(each, where)),
     tasks: readList(fields.tasks, 'tasks', readTask),
   };
@@ -188,7 +195,7 @@ export function readBlock(value: unknown): Omit<Block, 'code'> {
 function readChapter(value: unknown, path: string): Chapter {
   const fields = readFields(value, path, ['name', 'blocks']);
   return {
-    name: readText(fields.name, at(path, 'name')),
+    name: readLine(fields.name, at(path, 'name')),
     blocks: readList(fields.blocks, at(path, 'blocks'), (each, where) => readText(each, where)),
   };
 }
