@@ -47,7 +47,7 @@ export function renderHealth(health: Health): string {
 
 function readFigure(figure: Figure, health: Health): string {
   const value = figure.read(health);
-  return figure.name === 'parallelism' ? value.toFixed(1) : `${value}`;
+  return figure.key === 'parallelism' ? value.toFixed(1) : `${value}`;
 }
 
 /** One line of what a change did to the figures it moved, worse ones marked, then each problem it brought in. */
