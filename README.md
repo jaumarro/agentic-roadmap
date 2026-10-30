@@ -135,7 +135,7 @@ one nor a track's, and `check` refuses a plan that does. Once there are chapters
 **parallel track**: work that runs beside the chapters, as tooling or docs. `next` and `free` leave a track's tasks out
 unless `focus` names them, so a session gives itself to a track on purpose; `list` marks them with `track`.
 
-A Markdown copy is kept current by `add`, `close` and `focus`, and `check` fails when someone edits it by hand. Keep
+A Markdown copy is kept current by `add`, `add-block`, `close` and `focus`, and `check` fails when someone edits it by hand. Keep
 your formatter off it. Two branches closing tasks in one block will conflict on it, which is why there is none by
 default.
 

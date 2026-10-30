@@ -41,7 +41,7 @@ export type Config = {
   warnings?: Warnings;
   /** The branch tasks start from and merge back into; the remote's default branch, else main or master, unless set. */
   base?: string;
-  /** Where to keep the plan as Markdown, from the folder holding roadmap/; set, add, close and focus keep it current. */
+  /** Where to keep the plan as Markdown, from the folder holding roadmap/; set, the commands that write the plan keep it current. */
   markdown?: string;
 };
 
