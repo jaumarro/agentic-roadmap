@@ -27,23 +27,38 @@ export function compareHealth(against: string, before: Health, after: Health): C
   return { against, before, after, worse };
 }
 
-// The same problem with a new figure, as a queue at parallelism 1.2 instead of 1.1, is not a new one.
-function identifyProblem(problem: HealthProblem): string {
+function identifyRequirement(kind: string, { id, requires }: { id: string; requires: string }): string {
+  return `${kind} ${id} ${requires}`;
+}
+
+// The same problem with a new figure, as a queue at parallelism 1.2 instead of 1.1, is not a new one. A problem that
+// lists requirements is each of them, so dropping one is no new problem.
+function identifyProblem(problem: HealthProblem): string[] {
   switch (problem.kind) {
     case 'oversized':
     case 'bottleneck':
-      return `${problem.kind} ${problem.task}`;
+      return [`${problem.kind} ${problem.task}`];
     case 'queue':
-      return problem.kind;
+      return [problem.kind];
     case 'redundant':
     case 'backward':
-      return `${problem.kind} ${JSON.stringify(problem.requirements)}`;
+      return problem.requirements.map((each) => identifyRequirement(problem.kind, each));
   }
   return problem satisfies never;
 }
 
-/** The problems the plan has now that it did not have before. */
+/** The problems the plan has now that it did not have before, and of a list of requirements, only the new ones. */
 export function listNewProblems(comparison: Comparison): HealthProblem[] {
-  const known = new Set(comparison.before.problems.map(identifyProblem));
-  return comparison.after.problems.filter((problem) => !known.has(identifyProblem(problem)));
+  const known = new Set(comparison.before.problems.flatMap(identifyProblem));
+  return comparison.after.problems.flatMap((problem): HealthProblem[] => {
+    if (problem.kind === 'redundant') {
+      const requirements = problem.requirements.filter((each) => !known.has(identifyRequirement(problem.kind, each)));
+      return requirements.length === 0 ? [] : [{ ...problem, requirements }];
+    }
+    if (problem.kind === 'backward') {
+      const requirements = problem.requirements.filter((each) => !known.has(identifyRequirement(problem.kind, each)));
+      return requirements.length === 0 ? [] : [{ ...problem, requirements }];
+    }
+    return identifyProblem(problem).every((key) => known.has(key)) ? [] : [problem];
+  });
 }
