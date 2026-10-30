@@ -1,6 +1,6 @@
 {
   "name": "agentic-roadmap",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "A roadmap in YAML that people and coding agents follow from the command line: what to do next, who started what, and closing a task with its commit.",
   "keywords": [
     "agent-skill",
