@@ -47,18 +47,19 @@ function identifyProblem(problem: HealthProblem): string[] {
   return problem satisfies never;
 }
 
+function keepNewRequirements<P extends Extract<HealthProblem, { requirements: unknown }>>(
+  problem: P,
+  known: Set<string>,
+): P[] {
+  const requirements = problem.requirements.filter((each) => !known.has(identifyRequirement(problem.kind, each)));
+  return requirements.length === 0 ? [] : [{ ...problem, requirements }];
+}
+
 /** The problems the plan has now that it did not have before, and of a list of requirements, only the new ones. */
 export function listNewProblems(comparison: Comparison): HealthProblem[] {
   const known = new Set(comparison.before.problems.flatMap(identifyProblem));
   return comparison.after.problems.flatMap((problem): HealthProblem[] => {
-    if (problem.kind === 'redundant') {
-      const requirements = problem.requirements.filter((each) => !known.has(identifyRequirement(problem.kind, each)));
-      return requirements.length === 0 ? [] : [{ ...problem, requirements }];
-    }
-    if (problem.kind === 'backward') {
-      const requirements = problem.requirements.filter((each) => !known.has(identifyRequirement(problem.kind, each)));
-      return requirements.length === 0 ? [] : [{ ...problem, requirements }];
-    }
+    if (problem.kind === 'redundant' || problem.kind === 'backward') return keepNewRequirements(problem, known);
     return identifyProblem(problem).every((key) => known.has(key)) ? [] : [problem];
   });
 }
