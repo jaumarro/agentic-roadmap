@@ -167,6 +167,20 @@ describe('with the merge driver installed', () => {
     );
   });
 
+  it('reads a .gitattributes with CRLF line ends', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+    git(root, 'init', '-q', '-b', 'main');
+    initRoadmap(root);
+    writeFileSync(
+      join(root, '.gitattributes'),
+      'roadmap/*.yaml merge=agentic-roadmap\r\nroadmap/roadmap.yaml merge=text\r\n',
+    );
+
+    capture(['install-merge-driver'], root);
+
+    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe('roadmap/*.yaml merge=agentic-roadmap\r\n');
+  });
+
   it('merges two branches that each started a block', () => {
     const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
     git(root, 'init', '-q', '-b', 'main');
