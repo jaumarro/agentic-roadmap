@@ -67,6 +67,26 @@ describe('add-block', () => {
     );
   });
 
+  it('trims the name, as add trims a title', () => {
+    const root = project();
+    capture(['add-block', 'LOG', '  Login  '], root);
+
+    expect(readRoadmap(root).blocks.at(-1)?.name).toBe('Login');
+  });
+
+  it('says the block is started when only the Markdown failed, so a retry is not needed', () => {
+    const root = project();
+    const config = join(root, 'roadmap', 'roadmap.yaml');
+    writeFileSync(config, `${readFileSync(config, 'utf8')}markdown: PLAN.md\n`);
+    capture(['render'], root);
+    chmodSync(join(root, 'PLAN.md'), 0o444);
+
+    expect(capture(['add-block', 'LOG', 'Login'], root)).toEqual({
+      code: 1,
+      text: 'Started LOG. Could not write PLAN.md: EACCES. Fix that and run render; the change is made, so do not repeat it.\n',
+    });
+  });
+
   it('says how many arguments it takes', () => {
     expect(capture(['add-block', 'A', 'B', 'C'], project()).text).toBe('add-block takes 2 arguments.\n');
   });
