@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
 import { describeProblems } from './check.service.ts';
 import { ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
+import { writeInside } from './safe-write.adapter.ts';
 
 export type NewTask = { title: string; requires: string[]; doneWhen: string; lines: number | 'doc'; risky?: boolean };
 
@@ -42,24 +43,36 @@ export function appendTask(root: string, code: string, id: string, task: NewTask
     if (requires instanceof YAMLSeq) requires.flow = true;
     tasks.flow = false;
     tasks.items.push(node);
-    writeFileSync(path, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+    writeInside(root, name, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
     if (error instanceof RoadmapError) throw error;
     throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
   }
 }
 
-/** Writes every one of `tasks`, or none: a write that fails puts back the files already written. */
+/** Whether `name` holds `text` again, written back if it had changed. */
+function putBack(root: string, name: string, text: string): boolean {
+  try {
+    if (readFileSync(join(root, name), 'utf8') !== text) writeInside(root, name, text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Writes every one of `tasks`, or none: a write that fails puts back the files already written, or names those it can't. */
 export function appendTasks(root: string, tasks: { code: string; id: string; task: NewTask }[]): void {
   const originals = new Map<string, string>();
   try {
     for (const { code, id, task } of tasks) {
-      const path = join(root, ROADMAP_DIR, `${code}.yaml`);
-      if (!originals.has(path)) originals.set(path, readFileSync(path, 'utf8'));
+      const name = `${ROADMAP_DIR}/${code}.yaml`;
+      if (!originals.has(name)) originals.set(name, readFileSync(join(root, name), 'utf8'));
       appendTask(root, code, id, task);
     }
   } catch (error) {
-    for (const [path, text] of originals) if (readFileSync(path, 'utf8') !== text) writeFileSync(path, text);
-    throw error;
+    const stuck = [...originals].filter(([name, text]) => !putBack(root, name, text)).map(([name]) => name);
+    const cause = error instanceof RoadmapError ? error.message : `Could not read the plan: ${readCode(error)}.`;
+    const left = stuck.length === 0 ? '' : ` ${stuck.join(', ')} kept the rows written: restore them with git.`;
+    throw new RoadmapError(`${cause}${left}`);
   }
 }

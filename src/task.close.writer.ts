@@ -1,8 +1,9 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, Scalar } from 'yaml';
 import { readDoneIds, ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
+import { writeInside } from './safe-write.adapter.ts';
 
 /**
  * Marks task `id` done with `sha` in its block's file, keeping the file's comments and layout; the block's code. A task
@@ -30,7 +31,7 @@ export function closeTask(root: string, roadmap: Roadmap, id: string, sha: strin
     const commit = new Scalar(sha);
     commit.type = Scalar.QUOTE_SINGLE;
     node.set('commit', commit);
-    writeFileSync(path, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+    writeInside(root, name, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
     if (error instanceof RoadmapError) throw error;
     throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);

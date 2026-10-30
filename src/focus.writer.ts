@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseDocument } from 'yaml';
 import { describeProblems } from './check.service.ts';
 import { CONFIG_FILE, ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
+import { writeInside } from './safe-write.adapter.ts';
 
 /**
  * Writes `focus` into roadmap.yaml, keeping its comments; an empty focus removes the key. The plan is checked with the
@@ -24,8 +25,9 @@ export function setFocus(root: string, roadmap: Roadmap, focus: string[]): void 
       node.flow = true;
       doc.set('focus', node);
     }
-    writeFileSync(path, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+    writeInside(root, name, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
+    if (error instanceof RoadmapError) throw error;
     throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
   }
 }

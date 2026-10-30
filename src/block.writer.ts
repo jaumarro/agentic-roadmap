@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { isSeq, parseDocument, stringify } from 'yaml';
 import {
@@ -41,7 +41,7 @@ export function addBlock(root: string, roadmap: Roadmap, code: string, name: str
     const blocks = doc.get('blocks');
     if (!isSeq(blocks)) throw new RoadmapError(`${configName} has no blocks list to add to.`);
     blocks.items.push(doc.createNode(code));
-    writeFileSync(config, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+    writeInside(root, configName, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
     rmSync(join(root, file));
     throw readWriteError(configName, error);
