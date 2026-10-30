@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, Scalar } from 'yaml';
-import { ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
+import { readDoneIds, ROADMAP_DIR, RoadmapError, type Roadmap } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
 
 /**
@@ -16,9 +16,7 @@ export function closeTask(root: string, roadmap: Roadmap, id: string, sha: strin
   if (task.commit !== undefined && !again) {
     throw new RoadmapError(`${id} is already done, with ${task.commit}: pass --commit to record another.`);
   }
-  const done = new Set(
-    roadmap.blocks.flatMap((each) => each.tasks.filter((t) => t.commit !== undefined).map((t) => t.id)),
-  );
+  const done = readDoneIds(roadmap);
   const pending = task.requires.filter((required) => !done.has(required));
   if (pending.length > 0) throw new RoadmapError(`${id} still waits on ${pending.join(', ')}.`);
   const name = `${ROADMAP_DIR}/${block.code}.yaml`;
