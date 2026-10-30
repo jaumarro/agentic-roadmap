@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -53,6 +53,20 @@ describe('add --from', () => {
     expect(capture(['add', '--from', 'plan.md'], root)).toEqual({
       code: 1,
       text: 'Nothing added: a cycle: a → b → a.\n',
+    });
+    expect(readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8')).toBe(before);
+  });
+
+  it('puts back what it wrote when a later block cannot be written', () => {
+    const root = repo();
+    capture(['add-block', 'NEW', 'New'], root);
+    const before = readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8');
+    writeFileSync(join(root, 'plan.md'), plan('| a | GET | A | — | x | 5 |\n| b | NEW | B | — | x | 5 |\n'));
+    chmodSync(join(root, 'roadmap', 'NEW.yaml'), 0o444);
+
+    expect(capture(['add', '--from', 'plan.md'], root)).toEqual({
+      code: 1,
+      text: 'Could not write roadmap/NEW.yaml: EACCES.\n',
     });
     expect(readFileSync(join(root, 'roadmap', 'GET.yaml'), 'utf8')).toBe(before);
   });
