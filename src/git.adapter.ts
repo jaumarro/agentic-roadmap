@@ -17,12 +17,12 @@ export function resolveCommit(root: string, revision: string): string | null {
   return git(root, ['rev-parse', '--verify', '--quiet', '--short', '--end-of-options', `${revision}^{commit}`]);
 }
 
-/** The ones of `shas` this repo has as commits, asked of one git process: one per sha takes seconds on a big plan. */
 /** Whether `root`'s clone holds only part of its history, as `git clone --depth` makes. */
 export function isShallow(root: string): boolean {
   return git(root, ['rev-parse', '--is-shallow-repository']) === 'true';
 }
 
+/** The ones of `shas` this repo has as commits, asked of one git process: one per sha takes seconds on a big plan. */
 export function readKnownCommits(root: string, shas: string[]): Set<string> {
   const unique = [...new Set(shas)];
   if (unique.length === 0) return new Set();
