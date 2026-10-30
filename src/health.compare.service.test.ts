@@ -4,6 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
+import { compareHealth, listNewProblems } from './health.compare.service.ts';
+import { measureHealth } from './health.service.ts';
+import type { Roadmap, Task } from './roadmap.model.ts';
 import { initRoadmap } from './roadmap.repository.ts';
 
 function git(root: string, ...args: string[]): string {
@@ -33,6 +36,38 @@ function repo(folder = '.'): string {
   capture(['add', 'GET', 'Third', '--requires', 'GET.2', '--done-when', 'x', '--lines', '200'], root);
   return root;
 }
+
+function task(id: string, requires: string[] = []): Task {
+  return { id, title: id, requires, doneWhen: 'x', lines: 10 };
+}
+
+function plan(...tasks: Task[]): Roadmap {
+  return { blocks: [{ code: 'A', name: 'A', tasks }] };
+}
+
+function listNew(before: Roadmap, after: Roadmap) {
+  return listNewProblems(compareHealth('before', measureHealth(before), measureHealth(after)));
+}
+
+describe('listNewProblems', () => {
+  const chain = [task('A.1'), task('A.2', ['A.1'])];
+
+  it('finds nothing new when a redundant requirement is dropped', () => {
+    const before = plan(...chain, task('A.3', ['A.1', 'A.2']), task('A.4', ['A.1', 'A.2']));
+    const after = plan(...chain, task('A.3', ['A.2']), task('A.4', ['A.1', 'A.2']));
+
+    expect(listNew(before, after)).toEqual([]);
+  });
+
+  it('names only the requirement that was not there before', () => {
+    const before = plan(...chain, task('A.3', ['A.1', 'A.2']));
+    const after = plan(...chain, task('A.3', ['A.1', 'A.2']), task('A.4', ['A.1', 'A.2']));
+
+    expect(listNew(before, after)).toEqual([
+      { kind: 'redundant', requirements: [{ id: 'A.4', requires: 'A.1', through: 'A.2' }] },
+    ]);
+  });
+});
 
 describe('health --against', () => {
   it('shows each figure against the other branch and marks what got worse', () => {
