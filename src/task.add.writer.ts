@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
 import { describeProblems } from './check.service.ts';
-import { ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
+import { InvalidPlan, readTask, ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
 import { writeInside } from './safe-write.adapter.ts';
 
@@ -19,7 +19,18 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
   };
   const problems = describeProblems(after).filter((problem) => problem.includes(id));
   if (problems.length > 0) throw new RoadmapError(`Not added: ${problems.join('; ')}.`);
+  checkNewTask(id, task);
   appendTask(root, code, id, task);
+}
+
+/** Refuses a task the plan could not read back: written, it would stop every command until someone removed it. */
+export function checkNewTask(id: string, task: NewTask): void {
+  try {
+    readTask({ id, ...task }, '');
+  } catch (error) {
+    if (!(error instanceof InvalidPlan)) throw error;
+    throw new RoadmapError(`Not added: ${error.where} ${error.message}.`);
+  }
 }
 
 /** Writes `task` as `id` at the end of block `code`'s file, as it is: whoever calls it has checked the plan. */

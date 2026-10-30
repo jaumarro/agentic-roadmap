@@ -1,5 +1,5 @@
 import { readNextId } from './task.id.policy.ts';
-import { appendTasks } from './task.add.writer.ts';
+import { appendTasks, checkNewTask } from './task.add.writer.ts';
 import { describeProblems } from './check.service.ts';
 import type { PlanRow } from './plan-table.parser.ts';
 import { RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
@@ -63,6 +63,7 @@ export function addRows(
     );
     throw new RoadmapError(`Nothing added: ${named}.`);
   }
+  for (const each of tasks) checkNewTask(each.id, each.task);
   appendTasks(root, tasks);
   return tasks.map((each) => ({ id: each.id, title: each.task.title }));
 }
