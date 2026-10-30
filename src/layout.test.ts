@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const PURE = ['model', 'service', 'policy', 'parser', 'view'];
 const IO = ['adapter', 'repository', 'writer', 'installer', 'locator'];
 const ENTRIES = ['cli.ts', 'index.ts'];
-const IO_MODULES = ['node:fs', 'node:child_process'];
+const IO_MODULE = /^(node:)?(fs|child_process)(\/|$)/;
 
 const dir = new URL('.', import.meta.url);
 // This test is about the layout as a whole, so it is the one test named after no file.
@@ -19,9 +19,8 @@ function readKind(file: string): string | undefined {
 
 function readImports(file: string): string[] {
   const text = readFileSync(new URL(file, dir), 'utf8');
-  return [...text.matchAll(/^(?:import|export)\b[^;]*?from '([^']+)'/gms)].flatMap((match) =>
-    match[1] === undefined ? [] : [match[1]],
-  );
+  const from = /^(?:import|export)\b[^;]*?from '([^']+)'|\bimport\('([^']+)'\)/gms;
+  return [...text.matchAll(from)].flatMap((match) => match[1] ?? match[2] ?? []);
 }
 
 describe('the source layout', () => {
@@ -50,7 +49,7 @@ describe('the source layout', () => {
       .filter((file) => PURE.includes(readKind(file) ?? ''))
       .flatMap((file) =>
         readImports(file)
-          .filter((from) => IO_MODULES.includes(from) || IO.includes(readKind(from) ?? ''))
+          .filter((from) => IO_MODULE.test(from) || IO.includes(readKind(from) ?? ''))
           .map((from) => `${file} imports ${from}`),
       );
 
