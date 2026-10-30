@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -55,6 +55,31 @@ describe('add-block', () => {
     expect(capture(['add-block', 'OLD', 'Old'], root).text).toBe(
       'roadmap/OLD.yaml already exists; add OLD to roadmap.yaml.\n',
     );
+  });
+
+  it('says a new block is a track when the plan has chapters', () => {
+    const root = project();
+    const config = join(root, 'roadmap', 'roadmap.yaml');
+    writeFileSync(config, `${readFileSync(config, 'utf8')}chapters:\n  - name: One\n    blocks: [GET]\n`);
+
+    expect(capture(['add-block', 'LOG', 'Login'], root).text).toContain(
+      'LOG is in no chapter, so next and free leave it out: add it to one in roadmap.yaml, or focus it.\n',
+    );
+  });
+
+  it('says how many arguments it takes', () => {
+    expect(capture(['add-block', 'A', 'B', 'C'], project()).text).toBe('add-block takes 2 arguments.\n');
+  });
+
+  it('removes the block file and says why when roadmap.yaml cannot be written', () => {
+    const root = project();
+    chmodSync(join(root, 'roadmap', 'roadmap.yaml'), 0o444);
+
+    expect(capture(['add-block', 'LOG', 'Login'], root)).toEqual({
+      code: 1,
+      text: 'Could not write roadmap/roadmap.yaml: EACCES.\n',
+    });
+    expect(existsSync(join(root, 'roadmap', 'LOG.yaml'))).toBe(false);
   });
 
   it('refuses a name a title could not hold, and writes nothing', () => {
