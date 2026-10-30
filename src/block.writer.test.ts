@@ -1,9 +1,14 @@
+import { execFile, execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
 import { initRoadmap, readRoadmap } from './roadmap.repository.ts';
+
+const runAsync = promisify(execFile);
 
 function project(): string {
   const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
@@ -65,6 +70,21 @@ describe('add-block', () => {
     expect(capture(['add-block', 'LOG', 'Login'], root).text).toContain(
       'LOG is in no chapter, so next and free leave it out: add it to one in roadmap.yaml, or focus it.\n',
     );
+  });
+
+  it('keeps every block when sessions start them at once', async () => {
+    const root = project();
+    execFileSync('git', ['init', '-q'], { cwd: root });
+    const cli = fileURLToPath(new URL('cli.ts', import.meta.url));
+    const codes = ['AAA', 'BBB', 'CCC', 'DDD', 'EEE', 'FFF'];
+
+    await Promise.all(codes.map((code) => runAsync(process.execPath, [cli, 'add-block', code, 'Name'], { cwd: root })));
+
+    expect(
+      readRoadmap(root)
+        .blocks.map((block) => block.code)
+        .toSorted(),
+    ).toEqual(['GET', ...codes].toSorted());
   });
 
   it('trims the name, as add trims a title', () => {
