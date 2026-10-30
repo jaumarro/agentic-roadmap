@@ -3,7 +3,7 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
-## Unreleased
+## 0.3.0
 
 - `import { readRoadmap, readStates, listFree, ... } from 'agentic-roadmap'` reads a plan from code, with its types:
   each function gives what a command's `--json` gives. The library only reads, and runs no git: writing stays the
