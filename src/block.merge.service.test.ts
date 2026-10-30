@@ -24,6 +24,32 @@ function withTask(text: string, id: string): string {
   return `${text}  - id: ${id}\n    title: New ${id}\n    doneWhen: x\n    lines: 5\n`;
 }
 
+describe('mergeBlock on roadmap.yaml', () => {
+  const base = '# the blocks\nblocks: [AAA, BBB]\nfocus: [AAA]\n';
+
+  it('adds what each side added and drops what either dropped, keeping the comments', () => {
+    const merged = mergeBlock(
+      base,
+      '# the blocks\nblocks: [AAA, BBB, OUR]\nfocus: [AAA]\n',
+      'blocks: [BBB, THE]\nfocus: [AAA]\n',
+    );
+
+    expect(merged).toEqual({ text: '# the blocks\nblocks: [BBB, OUR, THE]\nfocus: [AAA]\n' });
+  });
+
+  it('takes a key only one side changed, and a key only one side removed', () => {
+    const merged = mergeBlock(base, 'blocks: [AAA, BBB]\nfocus: [AAA]\nbase: dev\n', 'blocks: [AAA, BBB]\n');
+
+    expect(merged).toEqual({ text: 'blocks: [AAA, BBB]\nbase: dev\n' });
+  });
+
+  it('leaves a key both sides changed differently to a person', () => {
+    const merged = mergeBlock(base, 'blocks: [AAA, BBB]\nfocus: [BBB]\n', 'blocks: [AAA, BBB, NEW]\nfocus: [NEW]\n');
+
+    expect(merged).toEqual({ conflict: 'both sides changed focus' });
+  });
+});
+
 describe('mergeBlock', () => {
   it('keeps the tasks both sides added, ours first, and the comments', () => {
     const merged = mergeBlock(BASE, withTask(BASE, 'GET.3'), withTask(BASE, 'GET.4'));
@@ -78,9 +104,7 @@ describe('with the merge driver installed', () => {
     capture(['install-merge-driver'], root);
     git(root, 'add', '-A');
     git(root, 'commit', '-qm', 'docs: start the roadmap');
-    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe(
-      'roadmap/*.yaml merge=agentic-roadmap\nroadmap/roadmap.yaml merge=text\n',
-    );
+    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe('roadmap/*.yaml merge=agentic-roadmap\n');
 
     git(root, 'switch', '-q', '-c', 'one');
     capture(['add', 'GET', 'From one', ...ADD], root);
@@ -123,8 +147,46 @@ describe('with the merge driver installed', () => {
     capture(['install-merge-driver'], root);
 
     expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe(
+      '*.png binary\nroadmap/*.yaml merge=agentic-roadmap\n',
+    );
+  });
+
+  it('takes out the rule that kept roadmap.yaml from the driver', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+    git(root, 'init', '-q', '-b', 'main');
+    initRoadmap(root);
+    writeFileSync(
+      join(root, '.gitattributes'),
       '*.png binary\nroadmap/*.yaml merge=agentic-roadmap\nroadmap/roadmap.yaml merge=text\n',
     );
+
+    capture(['install-merge-driver'], root);
+
+    expect(readFileSync(join(root, '.gitattributes'), 'utf8')).toBe(
+      '*.png binary\nroadmap/*.yaml merge=agentic-roadmap\n',
+    );
+  });
+
+  it('merges two branches that each started a block', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
+    git(root, 'init', '-q', '-b', 'main');
+    initRoadmap(root);
+    capture(['install-merge-driver'], root);
+    git(root, 'add', '-A');
+    git(root, 'commit', '-qm', 'docs: start the roadmap');
+    git(root, 'switch', '-q', '-c', 'one');
+    capture(['add-block', 'ONE', 'One'], root);
+    git(root, 'add', '-A');
+    git(root, 'commit', '-qm', 'docs: plan ONE');
+    git(root, 'switch', '-q', 'main');
+    git(root, 'switch', '-q', '-c', 'two');
+    capture(['add-block', 'TWO', 'Two'], root);
+    git(root, 'add', '-A');
+    git(root, 'commit', '-qm', 'docs: plan TWO');
+
+    git(root, 'merge', '-q', '--no-edit', 'one');
+
+    expect(readRoadmap(root).blocks.map((block) => block.code)).toEqual(['GET', 'TWO', 'ONE']);
   });
 
   it('leaves both sides marked when the two branches changed one task differently', () => {
