@@ -76,7 +76,7 @@ A new roadmap starts with `agentic-roadmap init`. Commit `roadmap/` on the base 
 
 Two installs make parallel work safe, each once per clone. Both change the repo's git setup, so ask the user before running them:
 
-- `agentic-roadmap install-merge-driver`: git merges `roadmap/*.yaml` task by task, so two branches that add or close tasks in one block merge without a conflict. It writes `.gitattributes`, which is committed, and the driver in `.git/config`, which every clone sets again.
+- `agentic-roadmap install-merge-driver`: git merges `roadmap/*.yaml` task by task, so two branches that add or close tasks in one block, or that each start a block, merge without a conflict. It writes `.gitattributes`, which is committed, and the driver in `.git/config`, which every clone sets again.
 - `agentic-roadmap install-hook`: a pre-commit hook runs `check --staged` when a commit touches the plan, so a broken plan never lands. When the repo already has a pre-commit hook (husky, lefthook), it leaves it alone and prints the line to add to it.
 
 Check whether they are there with `git config merge.agentic-roadmap.driver` and a look at `.git/hooks/pre-commit`.

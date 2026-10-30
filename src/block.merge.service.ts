@@ -49,8 +49,36 @@ function mergeKey(ours: Document, base: Document, theirs: Document, key: string)
   const [o, b, t]: unknown[] = [ours.get(key), base.get(key), theirs.get(key)];
   if (same(o, t) || same(t, b)) return [];
   if (!same(o, b)) return [key];
-  ours.set(key, t);
+  if (t === undefined) ours.delete(key);
+  else ours.set(key, t);
   return [];
+}
+
+function readCodes(doc: Document): string[] | null {
+  const blocks = doc.get('blocks');
+  if (!isSeq(blocks)) return null;
+  const codes: unknown = blocks.toJSON();
+  return Array.isArray(codes) ? codes.filter((code) => typeof code === 'string') : null;
+}
+
+/** The blocks both sides leave: ours's order, less what theirs dropped, then what only theirs added; theirs's if ours left them. */
+function mergeCodes(base: string[], ours: string[], theirs: string[]): string[] {
+  if (same(ours, base)) return theirs;
+  const dropped = base.filter((code) => !theirs.includes(code));
+  const added = theirs.filter((code) => !base.includes(code) && !ours.includes(code));
+  return [...ours.filter((code) => !dropped.includes(code)), ...added];
+}
+
+/** Merges roadmap.yaml: its blocks as a set, so two branches can each start one, and every other key whole. */
+function mergeConfig(base: Document, ours: Document, theirs: Document, codes: string[][]): Merged {
+  const [baseCodes = [], ourCodes = [], theirCodes = []] = codes;
+  const keys = new Set([...readKeys(readValue(ours)), ...readKeys(readValue(theirs))]);
+  keys.delete('blocks');
+  const conflicts = [...keys].flatMap((key) => mergeKey(ours, base, theirs, key));
+  if (conflicts.length > 0) return { conflict: `both sides changed ${conflicts.join(', ')}` };
+  const blocks = ours.get('blocks');
+  if (isSeq(blocks)) blocks.items = mergeCodes(baseCodes, ourCodes, theirCodes).map((code) => ours.createNode(code));
+  return { text: ours.toString({ lineWidth: 0, flowCollectionPadding: false }) };
 }
 
 function mergeWhole(base: Document, ours: Document, theirs: Document, oursText: string, theirsText: string): Merged {
@@ -62,7 +90,8 @@ function mergeWhole(base: Document, ours: Document, theirs: Document, oursText: 
 
 /**
  * Merges three versions of a block file task by task: tasks keep `ours`'s order, and tasks only `theirs` has follow in
- * theirs. Comments and layout come from ours. A file with no task list merges only when one side left it unchanged.
+ * theirs. Comments and layout come from ours. roadmap.yaml merges its blocks as a set. Any other file with no task list
+ * merges only when one side left it unchanged.
  */
 export function mergeBlock(baseText: string, oursText: string, theirsText: string): Merged {
   const base = parseDocument(baseText);
@@ -73,6 +102,8 @@ export function mergeBlock(baseText: string, oursText: string, theirsText: strin
   const ourEntries = readEntries(ours);
   const theirEntries = readEntries(theirs);
   if (baseEntries === null || ourEntries === null || theirEntries === null) {
+    const codes = [readCodes(base), readCodes(ours), readCodes(theirs)].filter((each) => each !== null);
+    if (codes.length === 3) return mergeConfig(base, ours, theirs, codes);
     return mergeWhole(base, ours, theirs, oursText, theirsText);
   }
   const baseById = indexById(baseEntries);

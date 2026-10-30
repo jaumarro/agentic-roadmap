@@ -1,14 +1,16 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readCommand } from './bin.locator.ts';
 import { readRepoPaths } from './git.adapter.ts';
 import { mergeBlock } from './block.merge.service.ts';
 import { ROADMAP_DIR, RoadmapError } from './roadmap.model.ts';
+import { writeInside } from './safe-write.adapter.ts';
 
 const DRIVER = 'agentic-roadmap';
-// The config is no block, so it merges as text; a later line wins over the earlier one for the same file.
-const ATTRIBUTES = [`${ROADMAP_DIR}/*.yaml merge=${DRIVER}`, `${ROADMAP_DIR}/roadmap.yaml merge=text`];
+const ATTRIBUTE = `${ROADMAP_DIR}/*.yaml merge=${DRIVER}`;
+// A later line wins over an earlier one for the same file, so this one would keep roadmap.yaml from the driver.
+const CONFIG_AS_TEXT = `${ROADMAP_DIR}/roadmap.yaml merge=text`;
 
 /** Writes git's own line merge over `ours`, conflict markers and both sides included, for a person to settle. */
 function markConflict(base: string, ours: string, theirs: string): void {
@@ -51,9 +53,13 @@ export function installMergeDriver(root: string): string {
   }
   const attributes = join(root, '.gitattributes');
   const text = existsSync(attributes) ? readFileSync(attributes, 'utf8') : '';
-  const missing = ATTRIBUTES.filter((attribute) => !text.split('\n').includes(attribute));
+  const kept = text
+    .split('\n')
+    .filter((line) => line !== CONFIG_AS_TEXT)
+    .join('\n');
   // Appended to a last line with no newline, a rule would run into it and break both.
-  const separator = text === '' || text.endsWith('\n') ? '' : '\n';
-  if (missing.length > 0) appendFileSync(attributes, `${separator}${missing.map((each) => `${each}\n`).join('')}`);
+  const separator = kept === '' || kept.endsWith('\n') ? '' : '\n';
+  const added = kept.split('\n').includes(ATTRIBUTE) ? kept : `${kept}${separator}${ATTRIBUTE}\n`;
+  if (added !== text) writeInside(root, '.gitattributes', added);
   return attributes;
 }
