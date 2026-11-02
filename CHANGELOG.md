@@ -3,6 +3,15 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
+## Unreleased
+
+- Reorganize the README around setup and daily use, with workflow, YAML format and library API guides included in the
+  package. Expand the CLI reference with commands, defaults and health metric definitions.
+- Rewrite the agent skill with explicit task, closing, collaboration and planning steps. Clarify that task queries do
+  not reserve work, focus is shared configuration, and remote branches must be exchanged between clones. Bulk imports
+  use `add --from`, or a one-off script only when the old plan's IDs must be kept. Run `install-skill` again to refresh a copy.
+- Clarify JSON compatibility while 0.x and the difference between a commit existing and remaining on the base branch.
+
 ## 0.3.0
 
 - `import { readRoadmap, readStates, listFree, ... } from 'agentic-roadmap'` reads a plan from code, with its types:

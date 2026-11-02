@@ -35,7 +35,10 @@
   "files": [
     "dist",
     "skill",
+    "docs/api.md",
     "docs/cli.md",
+    "docs/format.md",
+    "docs/workflow.md",
     "CHANGELOG.md"
   ],
   "type": "module",

@@ -1,11 +1,10 @@
 # agentic-roadmap
 
-Your project's plan, kept as YAML files in the repo. People and coding agents ask it what to do next, and close each
-task with the commit that did it.
+A plan in your repo that people and coding agents can follow together. Ask what to work on next, see what each task
+needs, and record the commit that finished it.
 
-## In one minute
-
-A plan is a block of tasks, each with what it requires and when it counts as done:
+The plan is YAML in `roadmap/`. Dependencies decide which tasks are ready, branch names show which have started, and
+commits show which are done. Review the plan in the same pull requests as the code. No server or database needed.
 
 ```yaml
 # roadmap/LOG.yaml
@@ -22,163 +21,141 @@ tasks:
     lines: 40
 ```
 
-Ask it what to do, do it on a branch named after the task, and close it with its commit:
-
 ```console
 $ roadmap next
 Next: LOG.1 · Sign in with email
   Done when: a user signs in and sees their page
   Start it on a branch named log-1/…
-
-$ git switch -c log-1/sign-in
-$ git commit -m "feat: sign in with email"
-$ roadmap close LOG.1
-Closed LOG.1 with d719ae2 in roadmap/LOG.yaml. Commit it as «docs: close LOG.1».
-$ git commit -am "docs: close LOG.1"
-$ git switch main && git merge log-1/sign-in
-
-$ roadmap next
-Next: LOG.2 · Remember the session
-  Done when: a reload keeps the user signed in
-  Start it on a branch named log-2/…
-
-$ roadmap status
-LOG · Login  1 / 2  50 %
-All          1 / 2  50 %
 ```
 
-- **No database, no server.** The plan is plain files in `roadmap/`, reviewed like any other code.
-- **Safe in parallel.** The tool picks ids and commits. Sessions in one clone, on its branches and worktrees, never take
-  the same id, committed or not: `add` takes a lock the worktrees share and reads all of them. Clones on other machines
-  see each other through fetched branches; an id both took before either pushed is caught when they merge. A task
-  counts as started as soon as a branch is named after it.
-- **A plan that holds.** `check` refuses cycles, unknown requirements, repeated ids and commits the repo does not have.
-  `health` measures the critical path, how many sessions the plan keeps busy, and its bottlenecks.
+## Get started
 
-## Install
-
-Needs Node 20 or later. Add it to the repo as a dev dependency, so every clone and session runs the same version:
+Requires Node 20 or later. In an existing Git repo, install it as a dev dependency:
 
 ```bash
-pnpm add -D agentic-roadmap   # or: npm install -D agentic-roadmap
+pnpm add -D agentic-roadmap
 ```
 
-It gives two commands, `agentic-roadmap` and its short name `roadmap`; run them with `pnpm exec` or `npx`. To try it
-first without installing: `npx agentic-roadmap init`. Use the short name only once it is installed: without this package,
-`npx roadmap` fetches an unrelated package of that name.
+The package provides `agentic-roadmap` and its short name, `roadmap`. These examples use `pnpm exec roadmap`.
+With npm, install with `npm install -D agentic-roadmap` and run `npx agentic-roadmap`. To try it without installing,
+use `npx agentic-roadmap init`; `npx roadmap` without this package installed fetches an unrelated package.
 
-## Start
+Create a plan, add a block and two tasks, and give that block priority:
 
 ```bash
-npx agentic-roadmap init                  # creates roadmap/ with an example block
-npx agentic-roadmap install-skill         # teaches Claude Code the workflow
-npx agentic-roadmap install-hook          # refuses commits that break the plan
-npx agentic-roadmap install-merge-driver  # merges parallel edits to the plan task by task
+pnpm exec roadmap init
+pnpm exec roadmap add-block LOG "Login"
+pnpm exec roadmap add LOG "Sign in with email" --done-when "a user signs in and sees their page" --lines 80
+pnpm exec roadmap add LOG "Remember the session" --done-when "a reload keeps the user signed in" --lines 40 --requires LOG.1
+pnpm exec roadmap focus LOG
+git add roadmap/
+git commit -m "docs: plan login"
 ```
 
-Commit `roadmap/` on your base branch before the first task. After an upgrade, run `install-skill` again so agents
-read the new workflow.
+Run this on your base branch before starting task branches. `init` also creates a small tutorial block, `GET`;
+keep it while learning the workflow, then remove its file and its entry from `roadmap.yaml` when you no longer need it.
 
-## For coding agents
+```bash
+pnpm exec roadmap next
+pnpm exec roadmap show LOG.1
+git switch -c log-1/sign-in
+```
 
-The workflow agents follow is in [`skill/SKILL.md`](skill/SKILL.md): take the next task, branch, close it with its
-commit, and plan work that ends with a table `add --from` turns into tasks.
+Implement sign-in, run your repo's checks, and commit the work. Then record that commit in the plan:
 
-- Claude Code: `roadmap install-skill` copies it to `.claude/skills/roadmap-workflow/`, and it loads whenever the repo
-  has `roadmap/`, or when you plan work in it.
-- Other agents that read `AGENTS.md` (Codex, Cursor and others): add a line pointing at it, as
-  `Plan and track work with agentic-roadmap: read node_modules/agentic-roadmap/skill/SKILL.md and follow it.`
+```bash
+pnpm exec roadmap close LOG.1
+git add roadmap/
+git commit -m "docs: close LOG.1"
+pnpm exec roadmap status
+```
 
-Every command that answers a question takes `--json`, and errors go to stderr, so an agent can parse the answer. The
-[CLI reference](docs/cli.md) has the JSON shapes, exit codes and what each command needs from git.
+Merge the branch through your usual process. **If your repo uses squash merges, merge the work first**, then close the
+task with `pnpm exec roadmap close LOG.1 --commit <squashed-sha>` on the base branch. The
+[workflow guide](docs/workflow.md) covers closing, rebasing and stacked branches.
+
+## Use it with coding agents
+
+The [workflow skill](skill/SKILL.md) tells an agent how to choose a task, work on it, close it and propose new tasks.
+
+For Claude Code:
+
+```bash
+pnpm exec roadmap install-skill
+```
+
+This copies the skill to `.claude/skills/roadmap-workflow/SKILL.md`. Run it again after upgrading the package.
+
+For agents that read `AGENTS.md`, add:
+
+```text
+Plan and track work with agentic-roadmap: read node_modules/agentic-roadmap/skill/SKILL.md and follow it.
+```
+
+Agents can submit a whole plan with `add --from plan.md`. Query commands support `--json`, so scripts and agents can
+read structured results. See the [CLI reference](docs/cli.md).
 
 ## Daily use
 
-| Step                     | Command                                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------------- |
-| What do I do now?        | `roadmap next`                                                                              |
-| Start a block            | `roadmap add-block LOG "Login"`                                                             |
-| Start the task           | a branch named after it: `log-1/sign-in`                                                    |
-| Finish it                | `roadmap close LOG.1`, then commit as `docs: close LOG.1`                                   |
-| Add a task               | `roadmap add LOG "Sign out" --done-when "the button signs out" --lines 20 --requires LOG.1` |
-| Add a whole plan         | `roadmap add --from plan.md`, from the table under `<!-- roadmap -->`                       |
-| Several sessions at once | `roadmap free 3` gives one free task per session                                            |
-| What can run in parallel | `roadmap list --by wave`, or `roadmap graph` for a Mermaid diagram                          |
-| Is the plan fine?        | `roadmap check` and `roadmap health`                                                        |
-| How far along?           | `roadmap status`                                                                            |
+| Need                                     | Command after `pnpm exec roadmap` |
+| ---------------------------------------- | --------------------------------- |
+| Choose the next task                     | `next`                            |
+| Read a task and its acceptance criterion | `show LOG.1`                      |
+| Explain what blocks a task               | `why LOG.2`                       |
+| Find work for several sessions           | `free 3`                          |
+| See dependencies and parallel work       | `list --by wave` or `graph`       |
+| Check the plan is valid                  | `check`                           |
+| Find large tasks and bottlenecks         | `health`                          |
+| Compare a plan change                    | `health --against main`           |
+| Show progress                            | `status`                          |
 
-Don't write ids or commits by hand: `add` and `close` do it. `roadmap help` lists every command, and
-`roadmap <command> --help` explains one.
+`check` finds invalid dependencies, cycles and missing commits. `health` uses task size estimates to measure the
+critical path and potential parallelism, and suggests where to split tasks or remove unnecessary dependencies.
 
-In a repo that squashes branches on merge, the commit `close` cited on the branch is gone after the merge. Close on the
-base instead, once merged: `roadmap close LOG.1 --commit <the squashed commit>`.
+## Working in parallel
 
-## Configuration
+`next` and `free` leave out tasks whose branches this clone knows about. Create a task branch promptly after choosing
+work. **These commands do not reserve tasks:** two sessions querying at once can receive the same result. Across
+machines, publish and fetch task branches so each clone can see the others' work.
 
-`roadmap/roadmap.yaml` holds the plan's settings. Only `blocks` is required:
+`add` allocates IDs under a lock shared by the clone's worktrees, checking branches and uncommitted worktree files.
+Separate clones can still allocate the same ID before exchanging branches; conflicting additions need resolution
+when merged.
 
-```yaml
-blocks: [LOG, PAY, OPS] # the blocks in the order the plan reads them, each in roadmap/<CODE>.yaml
-focus: [PAY] # blocks and tasks to take first, as `roadmap focus` writes it
-base: develop # the branch tasks start from: the remote's default branch, else main or master, unless set
-markdown: docs/roadmap.md # a Markdown copy to keep current; none unless set
-chapters: # stages of the plan, in order
-  - name: First release
-    blocks: [LOG, PAY]
-warnings: # where check warns, without failing
-  blockSize: [5, 25] # tasks in a block
-  chain: 5 # pending tasks in a row inside one block
-  blocksWaitedOn: 3 # blocks of its chapter one block waits on
+Two optional installs help keep plan changes valid and merge independent edits:
+
+```bash
+pnpm exec roadmap install-hook
+pnpm exec roadmap install-merge-driver
 ```
 
-**Chapters** split a long plan into stages. A task may require tasks of its own chapter or an earlier one, never a later
-one nor a track's, and `check` refuses a plan that does. Once there are chapters, a block in none of them (`OPS` above) is a
-**parallel track**: work that runs beside the chapters, as tooling or docs. `next` and `free` leave a track's tasks out
-unless `focus` names them, so a session gives itself to a track on purpose; `list` marks them with `track`.
-
-A Markdown copy is kept current by `add`, `add-block`, `close` and `focus`, and `check` fails when someone edits it by hand. Keep
-your formatter off it. Two branches closing tasks in one block will conflict on it, which is why there is none by
-default.
-
-## From code
-
-An app that shows the plan reads it with the package itself, so it never parses the YAML on its own. Writing stays the
-CLI's, and nothing in the library runs git: you pass the branches you read.
-
-```ts
-import { checkRoadmap, listFree, readRoadmap, readStates } from 'agentic-roadmap';
-
-const roadmap = readRoadmap(root);
-const problems = checkRoadmap(roadmap); // [{ kind: 'cycle', tasks: [...] }, ...]; describeProblem gives the words
-const states = readStates(roadmap, branches); // Map of id to 'done' | 'started' | 'ready' | 'waiting'
-const free = listFree(roadmap, branches); // in the order `next` and `free` hand them out
-```
-
-Each command's `--json` has its function, giving the same shape: `describeTask` for `show`, `explainWait` for `why`,
-`listRows` for `list`, `readGraph` for `graph`, `measureProgress` for `status`, `measureHealth` for `health` (with
-`describeHealthProblem` for its problems' words), and
-`listInProgress` for the tasks a branch started. `readRoadmapWith(read)` reads a plan from files you hold, as another
-branch's, with `read(file)` giving each file in `roadmap/` by name, or null when there is none.
+The hook checks the staged plan before commits that touch it. The merge driver merges YAML tasks by ID; conflicting
+changes to the same task still need resolution. Both installs are per clone; the driver also writes a committed
+`.gitattributes` rule. See [setup and collaboration](docs/workflow.md#setup-and-collaboration).
 
 ## How it differs from task trackers
 
 Most tools for agents' work, such as Beads or taskops, are issue trackers: a backlog agents claim work from, kept in a
-store of their own. This one is a plan: ordered, its dependencies checked, and its shape measured.
+store of their own. This one is a plan: ordered, with its dependencies checked and its shape measured.
 
 |                      | agentic-roadmap                                                  | Issue trackers for agents      |
 | -------------------- | ---------------------------------------------------------------- | ------------------------------ |
-| Where the plan lives | YAML files in `roadmap/`, read and reviewed in PRs               | their own store, as a database |
-| Who has started what | read from branch names: nothing to keep in sync                  | claims written to the store    |
+| Where the plan lives | YAML files in `roadmap/`, reviewed in pull requests              | their own store, as a database |
+| Who started what     | read from branch names, with nothing to keep in sync             | claims written to the store    |
 | What to take next    | the task the most work waits on, after your focus                | the priority or order you set  |
 | From a plan to tasks | the plan ends with a table; `add --from` adds it all, or nothing | issues created one by one      |
 
-Pick a tracker when you want a queue of issues many agents pull from across machines. Pick this when the work is a
-plan you want to read, review and keep sound while several sessions build it.
+Pick a tracker when you want a queue of issues many agents pull from across machines. Pick this when the work is a plan
+you want to read, review and keep sound while several sessions build it.
 
-## Coming from another plan
+## Documentation
 
-Ask your agent to move it in. With the skill installed, it reads your plan, whatever its shape, and builds `roadmap/`
-with `add --from`.
+- [Workflow](docs/workflow.md): choose, start and finish tasks; plan work; collaborate through Git.
+- [CLI reference](docs/cli.md): commands, flags, JSON output and exit codes.
+- [YAML format](docs/format.md): tasks, configuration, chapters and generated Markdown.
+- [Library API](docs/api.md): read and analyze a plan from TypeScript or JavaScript.
+- [Agent skill](skill/SKILL.md): the instructions installed for coding agents.
+- [Changelog](CHANGELOG.md) and [releasing](docs/releasing.md).
 
 ## License
 
