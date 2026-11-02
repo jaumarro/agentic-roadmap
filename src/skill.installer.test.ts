@@ -38,6 +38,10 @@ describe('install-skill', () => {
     expect(readFileSync(join(root, INSTALLED), 'utf8')).toBe(SKILL);
   });
 
+  it('always names the command in full, as `npx roadmap` can fetch an unrelated package', () => {
+    expect(SKILL.split('\n').filter((line) => /(^|`)roadmap [a-z<]/.test(line))).toEqual([]);
+  });
+
   it('covers taking, closing, adding and handing out tasks with the commands that do them', () => {
     for (const command of ['next', 'show', 'close', 'add', 'free', 'focus', 'check', 'health']) {
       expect(SKILL).toContain(`agentic-roadmap ${command}`);
