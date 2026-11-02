@@ -1,3 +1,29 @@
-node_modules
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+
+# What `npm pack` leaves behind
+*.tgz
+
+# Logs
+*.log
+
+# Secrets
+.env
+.env.*
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
 .DS_Store
-dist
+Thumbs.db
+
+# Local agent settings; a skill installed in .claude/skills stays shareable
+.claude/settings.local.json
+.claude/worktrees/
+
+# What a write killed halfway leaves in roadmap/
+roadmap/*.tmp
