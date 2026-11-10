@@ -65,6 +65,20 @@ describe('close', () => {
     expect(readRoadmap(root).blocks[0]?.tasks[0]?.commit).toBe(build);
   });
 
+  it('says the focus still names what it closed, and leaves the focus as written', () => {
+    const root = repo();
+    const sha = commit(root, 'feat: the work');
+    capture(['focus', 'GET.1', 'GET'], root);
+
+    const closed = capture(['close', 'GET.1', '--commit', sha], root);
+
+    expect(closed.text).toContain(
+      'The focus still names GET.1, now done: set it again with focus, or focus --clear.\n',
+    );
+    expect(readRoadmap(root).focus).toEqual(['GET.1', 'GET']);
+    expect(capture(['check'], root).text).toContain('  the focus names GET.1, which is done\n');
+  });
+
   it('refuses on a fresh task branch with no commit of its own, rather than take an earlier task’s', () => {
     const root = repo();
     git(root, 'branch', '-M', 'main');

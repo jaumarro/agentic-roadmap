@@ -53,6 +53,20 @@ describe('warnRoadmap', () => {
 
     expect(() => warnRoadmap(plan)).not.toThrow();
   });
+
+  it('warns of a focus on a done task and on a block with nothing left, not on one with work or none yet', () => {
+    const plan = {
+      warnings: { blockSize: [0, 25] satisfies [number, number] },
+      focus: ['ABC.1', 'ABC.2', 'ABC', 'DON', 'NEW'],
+      blocks: [
+        block('ABC', task('ABC.1', [], 'abc1234'), task('ABC.2')),
+        block('DON', task('DON.1', [], 'abc1234')),
+        block('NEW'),
+      ],
+    };
+
+    expect(warnRoadmap(plan)).toEqual(['the focus names ABC.1, which is done', 'the focus names DON, which is done']);
+  });
 });
 
 describe('findMissingCommits', () => {
