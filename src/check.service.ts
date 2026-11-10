@@ -1,5 +1,5 @@
 import { checkChapters, readChapterOf } from './chapters.service.ts';
-import { ROADMAP_DIR, type Block, type Roadmap, type Task } from './roadmap.model.ts';
+import { readDoneIds, ROADMAP_DIR, type Block, type Roadmap, type Task } from './roadmap.model.ts';
 
 function countBy(values: string[]): Map<string, number> {
   const counts = new Map<string, number>();
@@ -173,7 +173,23 @@ export function warnRoadmap(roadmap: Roadmap): string[] {
     const chain = readChain(id, byId, chains);
     return chain > maxChain ? [`${id} ends a chain of ${chain} pending tasks in its block`] : [];
   });
-  return [...perBlock, ...longChains];
+  const doneFocus = listDoneFocus(roadmap).map((entry) => `the focus names ${entry}, which is done`);
+  return [...perBlock, ...longChains, ...doneFocus];
+}
+
+/**
+ * The focus entries with no work left: a done task, or a block whose tasks are all done. The focus is kept as written,
+ * since a close that rewrote it would make two branches closing focused tasks conflict on roadmap.yaml.
+ */
+export function listDoneFocus(roadmap: Roadmap): string[] {
+  const done = readDoneIds(roadmap);
+  const blocks = readBlocksOnce(roadmap);
+  return (roadmap.focus ?? []).filter((entry) => {
+    const block = blocks.find((each) => each.code === entry);
+    // A block with no tasks yet is focused for the tasks to come.
+    if (block !== undefined) return block.tasks.length > 0 && block.tasks.every((task) => done.has(task.id));
+    return done.has(entry);
+  });
 }
 
 /** The done tasks whose commit `hasCommit` does not find. */

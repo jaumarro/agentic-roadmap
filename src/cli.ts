@@ -7,7 +7,14 @@ import { addTask } from './task.add.writer.ts';
 import { type Command, readCommand, readHelp, USAGE } from './args.parser.ts';
 import { readPlanTable } from './plan-table.parser.ts';
 import { addRows } from './task.batch.writer.ts';
-import { checkRoadmap, describeProblem, describeProblems, findMissingCommits, warnRoadmap } from './check.service.ts';
+import {
+  checkRoadmap,
+  describeProblem,
+  describeProblems,
+  findMissingCommits,
+  listDoneFocus,
+  warnRoadmap,
+} from './check.service.ts';
 import { renderComparison, renderDelta, renderHealth } from './health.view.ts';
 import { compareHealth } from './health.compare.service.ts';
 import { closeTask } from './task.close.writer.ts';
@@ -301,11 +308,16 @@ function close(root: string, command: Command, out: Io['out']): void {
   const sha = resolveCommit(root, revision);
   if (sha === null) throw new RoadmapError(`This repo has no commit ${revision}.`);
   const code = closeTask(root, roadmap, id, sha, command.commit !== undefined);
-  syncAfterChange(root, readRoadmap(root), `Closed ${id} with ${sha}.`);
+  const after = readRoadmap(root);
+  syncAfterChange(root, after, `Closed ${id} with ${sha}.`);
   if (task?.commit === undefined) {
     out(`Closed ${id} with ${sha} in roadmap/${code}.yaml. Commit it as «docs: close ${id}».\n`);
   } else {
     out(`${id} was done with ${task.commit}; it is now done with ${sha} in roadmap/${code}.yaml.\n`);
+  }
+  const finished = listDoneFocus(after).filter((entry) => entry === id || entry === code);
+  if (finished.length > 0) {
+    out(`The focus still names ${finished.join(' and ')}, now done: set it again with focus, or focus --clear.\n`);
   }
 }
 
