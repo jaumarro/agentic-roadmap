@@ -37,7 +37,8 @@ warnings:
 Block codes start with an upper-case letter and contain upper-case letters or digits. They need not have three
 letters. `ROADMAP` is reserved because its file would collide with the config on case-insensitive file systems.
 
-Warning thresholds affect `check`, not `health`. `blockSize` counts all tasks in a block; `chain` counts pending tasks
+`check` also warns when `focus` names a done task or a block whose tasks are all done. Warning thresholds affect
+`check`, not `health`. `blockSize` counts all tasks in a block; `chain` counts pending tasks
 in a dependency chain within one block; `blocksWaitedOn` counts distinct other blocks its pending tasks require within
 its chapter, or across the plan when there are no chapters.
 

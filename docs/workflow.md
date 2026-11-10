@@ -105,6 +105,9 @@ proves the plan is sound and that every cited commit exists.
 **Focus is saved in `roadmap.yaml`**, so it is shared by sessions in that checkout and by branches that receive the
 change. Commit it as a plan change when it should be shared.
 
+Finishing focused work does not change the focus. An entry for a done task, or for a block whose tasks are all done,
+no longer affects the order; `close` mentions it and `check` warns until you set the focus again or clear it.
+
 Ready tasks are ordered by focus, then the heaviest remaining dependency chain starting at the task. Equal candidates
 prefer a non-risky task, then the plan's order. This uses size estimates, not just the number of dependent tasks.
 

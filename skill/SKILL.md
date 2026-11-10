@@ -72,7 +72,9 @@ unfinished tasks marked started.
 3. Non-risky tasks before risky tasks on a tie, then the plan's order.
 
 `agentic-roadmap focus <CODE|ID>...` writes `roadmap.yaml`; it is shared configuration, not a private session preference.
-`focus --clear` removes it. Commit an intentional shared focus as a plan change.
+`focus --clear` removes it. Commit an intentional shared focus as a plan change. Closing focused work leaves the focus
+as written: when `close` or `check` says the focus names something done, tell the user, and set or clear it only if
+they ask.
 
 With chapters configured, blocks outside them are parallel tracks. `next` and `free` omit their tasks unless focus
 names the task or block. To take a track task explicitly, verify its state with `show` or `why`. Chapters constrain

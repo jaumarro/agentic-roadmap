@@ -3,6 +3,11 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
+## Unreleased
+
+- `check` warns when the focus names a done task or a block whose tasks are all done, and `close` says so when it
+  finishes one. The focus itself is left as written.
+
 ## 0.3.1
 
 - Reorganize the README around setup and daily use, with workflow, YAML format and library API guides included in the
