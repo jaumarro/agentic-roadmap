@@ -3,6 +3,12 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
+## Unreleased
+
+- A bottleneck within the size cap is no longer told "split it": its problem points at the dependency questions when
+  one asks about it. In `health --json` its `large` is now true only over the cap, where it was over half of it, and
+  `asked` says whether a question names the task.
+
 ## 0.6.0
 
 - `requires <ID> --add ID,ID --drop ID,ID` adds and drops requirements of a task, keeping the file's comments. It
