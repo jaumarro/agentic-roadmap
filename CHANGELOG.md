@@ -7,6 +7,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 - `list --by wave` shows each task's slack, the lines of work it can slip by without the plan taking longer, and
   `list --json` gives it as `slack`.
+- `health` says what dropping each requirement on the critical path would save, the three largest in the text and all
+  of them as `savings` in `health --json`. It edits nothing, and they are not problems.
 
 ## 0.4.0
 

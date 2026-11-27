@@ -181,6 +181,7 @@ exits 1 when `sound` is false.
   "crossBlockShare": 0,
   "backward": [],
   "oversized": [],
+  "savings": [],
   "problems": []
 }
 ```
@@ -240,7 +241,13 @@ weighs 20. Completed tasks are excluded from remaining-work figures. Started tas
 | `crossBlockShare` | Fraction of all requirements crossing block boundaries, including completed tasks                                                                     |
 | `backward`        | Requirements on later blocks in config order, as `{ id, requires }`, including completed tasks                                                        |
 | `oversized`       | Pending numeric tasks over `warnings.taskSize` lines, 150 unless set, as `{ id, lines }`; its problem also carries the `cap`                          |
+| `savings`         | For each requirement between two critical tasks, the lines the critical path loses without it, as `{ id, requires, saves }`, largest first            |
 | `problems`        | Ranked findings: oversized tasks, queue, waiting bottlenecks, redundant and backward requirements                                                     |
+
+`savings` are not problems and never fail `--strict`. The tool cannot know whether a task needs a requirement: each
+saving says where a second look pays most, and what dropping that one requirement alone would gain. The text shows the
+three largest, each as a question: "Does LOG.4 need LOG.3?". A requirement another route still reaches, or one on a
+path that ties with another, saves nothing, so it is left out.
 
 A queue finding requires more than two pending tasks and parallelism below 1.5. Bottleneck findings use the returned
 top three bottlenecks whose share is at least 0.4 and whose requirements are not yet done. `readyNow` and `width`
