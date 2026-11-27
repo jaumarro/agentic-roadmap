@@ -58,6 +58,17 @@ describe('health', () => {
     );
   });
 
+  it('asks the five largest questions and says how many it left out', () => {
+    const chain = Array.from({ length: 8 }, (_, at) => {
+      const requires = at === 0 ? '' : `    requires: [GET.${at}]\n`;
+      return `  - id: GET.${at + 1}\n    title: t\n${requires}    doneWhen: x\n    lines: ${(at + 1) * 10}\n`;
+    });
+    const text = capture(['health'], roadmap(`name: G\ntasks:\n${chain.join('')}`)).text;
+
+    expect(text.match(/Does GET/g)).toHaveLength(5);
+    expect(text).toContain('? Without it, ~60 lines shorter.\n  … and 2 more: health --json lists every one\n\n');
+  });
+
   it('stops asking about a requirement the task lists as confirmed', () => {
     const confirmed = QUEUE.replace('    requires: [GET.1]\n', '    requires: [GET.1]\n    confirmed: [GET.1]\n');
     const text = capture(['health'], roadmap(confirmed)).text;
