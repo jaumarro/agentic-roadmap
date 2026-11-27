@@ -15,6 +15,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   `large`.
 - `check` warns by default only of an empty block or one over 25 tasks; a small block no longer warns. Set
   `warnings.blockSize: [5, 25]` for the old limits.
+- `health` no longer prints "Across blocks": the figure gave nothing to act on. `health --json` keeps
+  `crossBlockShare`.
 
 ## 0.4.0
 
