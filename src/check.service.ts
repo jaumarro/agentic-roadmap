@@ -116,7 +116,8 @@ export function describeProblems(roadmap: Roadmap): string[] {
   return checkRoadmap(roadmap).map(describeProblem);
 }
 
-const BLOCK_SIZE: [number, number] = [5, 25];
+// A small block is normal, so only an empty one or one too big to read warns unless roadmap.yaml says otherwise.
+const BLOCK_SIZE: [number, number] = [1, 25];
 
 function countTasks(count: number): string {
   return count === 1 ? '1 task' : `${count} tasks`;
