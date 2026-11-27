@@ -5,6 +5,7 @@ const SIZE_CAP = 150;
 // Below this, sessions run in parallel mostly wait on each other.
 const QUEUE_PARALLELISM = 1.5;
 const BOTTLENECK_SHARE = 0.4;
+const BOTTLENECKS_SHOWN = 3;
 // Slack under this share of the critical path is as good as none: one slip and the task is critical.
 const NEAR_CRITICAL = 0.1;
 
@@ -108,7 +109,12 @@ function readPercent(share: number): string {
   return `${Math.round(share * 100)} %`;
 }
 
-function rankProblems(health: Omit<Health, 'problems'>, cap: number, sizes: Map<string, number>): HealthProblem[] {
+function rankProblems(
+  health: Omit<Health, 'problems'>,
+  cap: number,
+  sizes: Map<string, number>,
+  candidates: Health['bottlenecks'],
+): HealthProblem[] {
   const oversized = health.oversized.map(({ id, lines }): HealthProblem => ({
     kind: 'oversized',
     task: id,
@@ -122,8 +128,10 @@ function rankProblems(health: Omit<Health, 'problems'>, cap: number, sizes: Map<
   // One that can be taken now is a first step, and taking it first is what happens anyway: only a waiting one is a risk.
   // And only with little slack: a small base task off the critical path is normal, and delays nothing.
   const tight = health.criticalPath.lines * NEAR_CRITICAL;
-  const bottlenecks = health.bottlenecks
+  // From every candidate, not the few `bottlenecks` lists: ones this filter drops would use up their places.
+  const bottlenecks = candidates
     .filter((each) => each.share >= BOTTLENECK_SHARE && !each.ready && each.slack <= tight)
+    .slice(0, BOTTLENECKS_SHOWN)
     .map((each): HealthProblem => ({
       kind: 'bottleneck',
       task: each.id,
@@ -197,7 +205,7 @@ export function measureHealth(roadmap: Roadmap): Health {
   const workLeft = shape.work;
   const criticalPath = { lines: shape.span, tasks: readCriticalPath(shape) };
   const done = readDoneIds(roadmap);
-  const bottlenecks = pending
+  const candidates = pending
     .map((task) => {
       const blocks = pending
         .filter((other) => pendingAncestors.get(other.id)?.has(task.id) === true)
@@ -208,8 +216,7 @@ export function measureHealth(roadmap: Roadmap): Health {
       return { id: task.id, blocks, share: rest === 0 ? 0 : blocks / rest, ready, slack };
     })
     .filter((each) => each.blocks > 0)
-    .toSorted((a, b) => b.blocks - a.blocks)
-    .slice(0, 3);
+    .toSorted((a, b) => b.blocks - a.blocks);
   const edges = tasks.flatMap((task) => task.requires.map((required) => [task.id, required] as const));
   const crossing = edges.filter(([id, required]) => blockOf.get(id) !== blockOf.get(required)).length;
   const position = new Map(roadmap.blocks.map((block, at) => [block.code, at]));
@@ -224,7 +231,7 @@ export function measureHealth(roadmap: Roadmap): Health {
     parallelism: criticalPath.lines === 0 ? 0 : workLeft / criticalPath.lines,
     width: measureWidth(pending, pendingAncestors),
     readyNow: pending.filter((task) => isUnblocked(task, done)).length,
-    bottlenecks,
+    bottlenecks: candidates.slice(0, BOTTLENECKS_SHOWN),
     redundant: findRedundant(tasks, ancestors),
     crossBlockShare: edges.length === 0 ? 0 : crossing / edges.length,
     backward,
@@ -235,5 +242,5 @@ export function measureHealth(roadmap: Roadmap): Health {
   };
   // A document has no size in lines to split by.
   const sizes = new Map(pending.map((task) => [task.id, task.lines === 'doc' ? 0 : task.lines]));
-  return { ...measured, problems: rankProblems(measured, cap, sizes) };
+  return { ...measured, problems: rankProblems(measured, cap, sizes, candidates) };
 }
