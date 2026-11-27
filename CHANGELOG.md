@@ -3,7 +3,7 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
-## Unreleased
+## 0.7.1
 
 - A bottleneck within the size cap reads shorter, as "LOG.4 blocks 60 % of the rest of the work while it waits, within
   the size cap: see the questions above".
