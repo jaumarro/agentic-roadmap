@@ -18,6 +18,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 - `health` no longer prints "Across blocks": the figure gave nothing to act on. `health --json` keeps
   `crossBlockShare`.
 - The health problem for a requirement on a later block says that `check` does not fail on it.
+- A task's `ref` is a link in the Markdown copy when it is an `http(s)` address or a path from the folder holding
+  `roadmap/`, rewritten to open from where the copy sits. A plan with refs and a Markdown copy needs `render` once.
 
 ## 0.4.0
 

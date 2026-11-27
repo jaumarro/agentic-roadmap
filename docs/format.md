@@ -79,7 +79,12 @@ A block has a one-line `name`, optional Markdown `intro`, and a `tasks` list, wh
 | `commit`   | Quoted hexadecimal SHA, 7–40 digits, written by `close`; its presence means done |
 | `ref`      | Optional one-line pointer to where the task is specified: a link or a section    |
 
-`ref` is shown by `show` and in the generated Markdown, as text. The tool never opens or fetches it.
+`ref` is shown by `show` and in the generated Markdown. The tool never opens or fetches it. In the Markdown it is a
+link when it is an `http(s)` address or a path: write a path from the folder holding `roadmap/`, as
+`docs/login-spec.md#sessions`, and the copy links to it from wherever it sits, so it opens in GitHub and in a local
+viewer alike. Anything else, as `section 3 of the spec`, stays text.
+
+A block's `intro` is copied as written, so a link in it is read from the Markdown copy's folder, not from `roadmap/`.
 
 Use `risky: true` for work involving code execution, credentials, persistence, pushes or untrusted input. It is a
 review signal and a selection tie-breaker; the CLI does not enforce a review or run acceptance checks.
