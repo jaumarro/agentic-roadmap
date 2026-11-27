@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -22,7 +22,9 @@ tasks:
     ref: docs/spec.md#two
   - id: GET.3
     title: Three
-    requires: [GET.2, GET.1]
+    requires:
+      - GET.2 # the whole of it
+      - GET.1
     confirmed: [GET.2]
     doneWhen: three works
     lines: 30
@@ -66,7 +68,7 @@ describe('split', () => {
     const { code, text } = capture(['split', 'GET.2', ...SECOND], root);
 
     expect(code).toBe(0);
-    expect(text).toContain('Split GET.2: it keeps ~120 lines, and GET.4 · Two, the rest takes the rest, after it.\n');
+    expect(text).toContain('Split GET.2: it keeps ~120 lines, and GET.4 · Two, the rest, after it, is ~80 lines.\n');
     expect(text).toContain('What waited on GET.2 now waits on GET.4: GET.3, MOR.1.\n');
     expect(text).toContain("Review GET.2's «Done when» in roadmap/GET.yaml, then commit it as «docs: plan GET.2».\n");
     expect(text).toContain('Health: ');
@@ -82,9 +84,12 @@ describe('split', () => {
       risky: true,
       ref: 'docs/spec.md#two',
     });
-    expect(get?.tasks[3]).toMatchObject({ requires: ['GET.4', 'GET.1'], confirmed: ['GET.4'] });
+    expect(get?.tasks[3]?.requires).toEqual(['GET.4', 'GET.1']);
+    // Confirmed for the whole of GET.2, not for its second part: health asks again.
+    expect(get?.tasks[3]?.confirmed).toBeUndefined();
     expect(more?.tasks[0]?.requires).toEqual(['GET.4']);
     expect(readFiles(root)).toContain('  # the big one\n  - id: GET.2\n');
+    expect(readFiles(root)).toContain('    requires:\n      - GET.4 # the whole of it\n      - GET.1\n');
     expect(capture(['check'], root).text).not.toContain('requires');
   });
 
@@ -97,6 +102,24 @@ describe('split', () => {
     });
     capture(['split', 'GET.2', 'All of it', '--done-when', 'x', '--lines', '200', '--keep', '50'], root);
     expect(readRoadmap(root).blocks[0]?.tasks[1]?.lines).toBe(50);
+  });
+
+  it('says the size of each part when the second takes nothing from the first', () => {
+    const text = capture(['split', 'GET.2', 'Write it up', '--done-when', 'x', '--lines', 'doc'], plan()).text;
+
+    expect(text).toContain('Split GET.2: it keeps ~200 lines, and GET.4 · Write it up, after it, is a document.\n');
+  });
+
+  it('changes no block file when one of them cannot be written', () => {
+    const root = plan();
+    const before = readFiles(root);
+    chmodSync(join(root, 'roadmap', 'MOR.yaml'), 0o444);
+
+    expect(capture(['split', 'GET.2', ...SECOND], root)).toEqual({
+      code: 1,
+      text: 'Could not write roadmap/MOR.yaml: EACCES.\n',
+    });
+    expect(readFiles(root)).toBe(before);
   });
 
   it('refuses a done task, a task the plan lacks, and a second part with no title or done when', () => {

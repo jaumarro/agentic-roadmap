@@ -69,6 +69,16 @@ describe('requires', () => {
     expect(readBlock(root)).toBe(BLOCK.replace('    requires: [GET.1]\n    confirmed: [GET.1]\n', ''));
   });
 
+  it('keeps a list written one per line, and the comment on a requirement that stays', () => {
+    const root = plan();
+    const listed = BLOCK.replace('    requires: [GET.1]\n', '    requires:\n      - GET.1 # needs the base\n');
+    writeFileSync(join(root, 'roadmap', 'GET.yaml'), listed);
+
+    capture(['requires', 'GET.2', '--add', 'GET.3'], root);
+
+    expect(readBlock(root)).toContain('    requires:\n      - GET.1 # needs the base\n      - GET.3\n');
+  });
+
   it('adds and drops in one go', () => {
     const root = plan();
 
