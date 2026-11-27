@@ -12,3 +12,7 @@ tasks:
     doneWhen: 'with no markdown: in roadmap.yaml, add, close and focus write no Markdown and check ignores one; render still writes docs/roadmap.md on demand; with markdown: set, it is kept and checked as before; this repo commits none'
     lines: 20
     commit: 'a619672'
+  - id: DOC.3
+    title: Render a task's ref as a link in the Markdown
+    doneWhen: a ref that is an http(s) URL or a path in the repo renders as a link in the Markdown copy, any other as text, and no ref can inject Markdown
+    lines: 40

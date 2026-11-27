@@ -1,0 +1,11 @@
+name: Change the plan from the command line
+tasks:
+  - id: EDT.1
+    title: Add and drop a requirement from the command line
+    doneWhen: one command adds or drops a requirement of a task, keeps the file's comments, refuses a change that leaves the plan unsound and ends with the health delta
+    lines: 80
+  - id: EDT.2
+    title: Split a task in two, keeping its id and moving what waits on it
+    requires: [EDT.1]
+    doneWhen: split ABC.4 leaves ABC.4 as the first part and a new task as the second, which requires it, and every task that required ABC.4 now requires the second
+    lines: 120
