@@ -27,8 +27,8 @@ function countTasks(count: number): string {
   return `${count} ${noun}`;
 }
 
-// The largest ones are where to look first; --json keeps every one.
-const SAVINGS_SHOWN = 3;
+// The largest saving is not the likeliest no, so past these the reader is told there are more; --json keeps every one.
+const SAVINGS_SHOWN = 5;
 
 // Asked, not told: only a person knows whether a task uses what it requires, and a figure alone invites cutting.
 function readSavings(savings: Health['savings']): string {
@@ -36,8 +36,10 @@ function readSavings(savings: Health['savings']): string {
   const lines = savings
     .slice(0, SAVINGS_SHOWN)
     .map((each) => `  Does ${each.id} need ${each.requires}? Without it, ~${each.saves} lines shorter.\n`);
+  const left = savings.length - lines.length;
+  const more = left > 0 ? `  … and ${left} more: health --json lists every one\n` : '';
   const how = "a yes goes under the task's confirmed: and is not asked again";
-  return `Worth asking, as a no shortens the critical path; ${how}:\n${lines.join('')}\n`;
+  return `Worth asking, as a no shortens the critical path; ${how}:\n${lines.join('')}${more}\n`;
 }
 
 function readSimulation(health: Health, simulation: Simulation | undefined): string {
