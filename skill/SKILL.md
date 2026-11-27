@@ -160,6 +160,7 @@ Do not repeat the original write command.
 | Include completed tasks in the graph  | `agentic-roadmap graph --all`                           |
 | How far along is each block?          | `agentic-roadmap status --json`                         |
 | Did a plan change worsen the figures? | `agentic-roadmap health --against main --json`          |
+| How many sessions are worth running?  | `agentic-roadmap health --sessions 3 --json`            |
 
 Prefer JSON over parsing prose. `check`, `next`, `free`, `show`, `why`, `list`, `graph`, `status` and `health` support it.
 An invalid input or failed command can produce no JSON; check the exit code and stderr. `check` can return JSON with

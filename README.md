@@ -107,6 +107,7 @@ read structured results. See the [CLI reference](docs/cli.md).
 | Check the plan is valid                  | `check`                           |
 | Find large tasks and bottlenecks         | `health`                          |
 | Compare a plan change                    | `health --against main`           |
+| See how long N sessions take             | `health --sessions 3`             |
 | Show progress                            | `status`                          |
 
 `check` finds invalid dependencies, cycles and missing commits. `health` uses task size estimates to measure the

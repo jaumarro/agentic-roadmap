@@ -45,10 +45,11 @@ This can read a plan from an archive, Git snapshot or in-memory files without a 
 | `measureProgress(roadmap)`            | Block progress, as `status --json`                                        |
 | `measureHealth(roadmap)`              | Health figures and problems, as `health --json`                           |
 | `describeHealthProblem(problem)`      | One health problem in words, with a suggested action                      |
+| `simulateSessions(roadmap, count)`    | How long `count` sessions take, as `sessions` in `health --sessions`      |
 
 The package exports the associated types, including `Roadmap`, `Block`, `Task`, `Chapter`, `Warnings`, `Problem`,
-`TaskState`, `ShownTask`, `Wait`, `FreeTask`, `InProgress`, `Row`, `Graph`, `Progress`, `Health`, `HealthProblem` and
-`ReadFile`.
+`TaskState`, `ShownTask`, `Wait`, `FreeTask`, `InProgress`, `Row`, `Graph`, `Progress`, `Health`, `HealthProblem`,
+`Simulation` and `ReadFile`.
 
 The library does not verify that recorded commits exist or that generated Markdown matches: those are CLI `check`
 checks that need Git or disk access. It also does not sort rows into the CLI's wave display or limit `listFree` to N

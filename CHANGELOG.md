@@ -9,6 +9,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   refuses a change that leaves the plan unsound and ends with the health delta.
 - `split <ID> <TITLE> --done-when TEXT --lines N|doc` splits a pending task in two. The ID stays with the first part,
   the second comes after it with a new ID, and every task that required the original now requires the second.
+- `health --sessions N` adds how long N sessions take to work the plan and how much of that time they sit idle, as a
+  line of text and as `sessions` in `--json`. The library exports it as `simulateSessions`.
 
 ## 0.5.0
 
