@@ -43,7 +43,6 @@ export function renderHealth(health: Health): string {
   if (health.tasksLeft === 0) return 'Everything is done: there is no plan left to measure.\n';
   const { criticalPath } = health;
   const chain = shortenChain(criticalPath.tasks);
-  const crossing = Math.round(health.crossBlockShare * 100);
   const left = countTasks(health.tasksLeft);
   const onPath = countTasks(criticalPath.tasks.length);
   return [
@@ -51,7 +50,6 @@ export function renderHealth(health: Health): string {
     `  Critical path   ~${criticalPath.lines} lines over ${onPath}: ${chain}\n`,
     `  Parallelism     ${health.parallelism.toFixed(1)} sessions busy on average (work left ÷ critical path)\n`,
     `  Width           ${health.width} tasks at most at once · ${health.readyNow} ready now\n`,
-    `  Across blocks   ${crossing} % of requirements\n`,
     '\n',
     readSavings(health.savings),
     readProblems(health.problems),
