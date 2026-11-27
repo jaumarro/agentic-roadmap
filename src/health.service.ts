@@ -179,13 +179,16 @@ function dropRequirement(roadmap: Roadmap, id: string, required: string): Roadma
 
 /**
  * Each requirement between two critical tasks, with the lines the critical path loses without it. Only those can
- * shorten it, and one on a path that ties with another saves nothing, so it is left out.
+ * shorten it, and one on a path that ties with another saves nothing, so it is left out. So is one the task lists as
+ * confirmed: the question was answered.
  */
 function findSavings(roadmap: Roadmap, shape: Shape): Saving[] {
   const isCritical = (id: string) => shape.tasks.get(id)?.float === 0;
+  const listOpen = (task: Task) =>
+    task.requires.filter((required) => isCritical(required) && task.confirmed?.includes(required) !== true);
   return shape.order
     .filter((task) => isCritical(task.id))
-    .flatMap((task) => task.requires.filter(isCritical).map((required) => ({ id: task.id, requires: required })))
+    .flatMap((task) => listOpen(task).map((required) => ({ id: task.id, requires: required })))
     .map((edge) => ({ ...edge, saves: shape.span - analyze(dropRequirement(roadmap, edge.id, edge.requires)).span }))
     .filter((saving) => saving.saves > 0)
     .toSorted((a, b) => b.saves - a.saves);

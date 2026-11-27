@@ -42,6 +42,7 @@ export type Problem =
   | { kind: 'outside-block'; task: string; block: string }
   | { kind: 'repeated-id'; id: string; count: number }
   | { kind: 'unknown-requirement'; task: string; requires: string }
+  | { kind: 'confirmed-not-required'; task: string; confirmed: string }
   | { kind: 'unknown-chapter-block'; block: string }
   | { kind: 'block-in-chapters'; block: string }
   | { kind: 'later-requirement'; task: string; requires: string; from: 'chapter' | 'track' }
@@ -62,6 +63,8 @@ export function describeProblem(problem: Problem): string {
       return `${problem.id} is given to ${problem.count} tasks`;
     case 'unknown-requirement':
       return `${problem.task} requires ${problem.requires}, which no task has`;
+    case 'confirmed-not-required':
+      return `${problem.task} confirms ${problem.confirmed}, which it does not require`;
     case 'unknown-chapter-block':
       return `a chapter names block ${problem.block}, which the plan does not list`;
     case 'block-in-chapters':
@@ -95,6 +98,12 @@ export function checkRoadmap(roadmap: Roadmap): Problem[] {
       .filter((id) => !ids.has(id))
       .map((id): Problem => ({ kind: 'unknown-requirement', task: task.id, requires: id })),
   );
+  // A requirement dropped later would leave its confirmation behind, to hide the question if it came back.
+  const stray = tasks.flatMap((task) =>
+    (task.confirmed ?? [])
+      .filter((id) => !task.requires.includes(id))
+      .map((id): Problem => ({ kind: 'confirmed-not-required', task: task.id, confirmed: id })),
+  );
   const codes = new Set(blocks.map((block) => block.code));
   const unfocused = (roadmap.focus ?? []).filter((entry) => !codes.has(entry) && !ids.has(entry));
   return [
@@ -106,6 +115,7 @@ export function checkRoadmap(roadmap: Roadmap): Problem[] {
     ...outside,
     ...readRepeated(tasks.map((task) => task.id)).map(([id, count]): Problem => ({ kind: 'repeated-id', id, count })),
     ...unknown,
+    ...stray,
     ...checkChapters(roadmap, tasks),
     ...findCycles(tasks).map((cycle): Problem => ({ kind: 'cycle', tasks: cycle })),
   ];

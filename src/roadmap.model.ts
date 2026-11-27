@@ -15,6 +15,8 @@ export type Task = {
   commit?: string;
   /** Where the task is specified, as a link or a section of a document; shown, never opened. */
   ref?: string;
+  /** The requirements someone checked the task really uses, so health stops asking whether it needs them. */
+  confirmed?: string[];
 };
 
 export type Block = {
@@ -155,7 +157,8 @@ function readOptional<T>(fields: Fields, key: string, path: string, read: (value
 }
 
 export function readTask(value: unknown, path: string): Task {
-  const fields = readFields(value, path, ['id', 'title', 'requires', 'doneWhen', 'lines', 'risky', 'commit', 'ref']);
+  const known = ['id', 'title', 'requires', 'doneWhen', 'lines', 'risky', 'commit', 'ref', 'confirmed'];
+  const fields = readFields(value, path, known);
   const lines = fields.lines;
   if (lines !== 'doc' && (typeof lines !== 'number' || !Number.isInteger(lines) || lines <= 0)) {
     throw new InvalidPlan(at(path, 'lines'), 'lines is a positive whole number, or doc');
@@ -182,6 +185,9 @@ export function readTask(value: unknown, path: string): Task {
       ? {}
       : { commit: readMatching(commit, at(path, 'commit'), SHA, 'a commit is 7 to 40 hexadecimal digits') }),
     ...readOptional(fields, 'ref', path, readLine),
+    ...readOptional(fields, 'confirmed', path, (list, where) =>
+      readList(list, where, (each, inList) => readMatching(each, inList, TASK_ID, id)),
+    ),
   };
 }
 

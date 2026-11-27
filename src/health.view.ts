@@ -35,7 +35,8 @@ function readSavings(savings: Health['savings']): string {
   const lines = savings
     .slice(0, SAVINGS_SHOWN)
     .map((each) => `  Does ${each.id} need ${each.requires}? Without it, ~${each.saves} lines shorter.\n`);
-  return `Worth asking, as a no shortens the critical path:\n${lines.join('')}\n`;
+  const how = "a yes goes under the task's confirmed: and is not asked again";
+  return `Worth asking, as a no shortens the critical path; ${how}:\n${lines.join('')}\n`;
 }
 
 /** The plan's health as a person reads it: its shape in a few figures, then what to fix first. */
