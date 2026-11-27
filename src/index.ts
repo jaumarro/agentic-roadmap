@@ -21,3 +21,5 @@ export type { Progress } from './query.service.ts';
 export { measureProgress } from './query.service.ts';
 export type { Health, HealthProblem } from './health.service.ts';
 export { describeHealthProblem, measureHealth } from './health.service.ts';
+export type { Simulation } from './health.sessions.service.ts';
+export { simulateSessions } from './health.sessions.service.ts';

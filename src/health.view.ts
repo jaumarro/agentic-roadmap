@@ -1,5 +1,6 @@
 import { type Comparison, type Figure, FIGURES, listNewProblems } from './health.compare.service.ts';
 import { describeHealthProblem, type Health, type HealthProblem } from './health.service.ts';
+import type { Simulation } from './health.sessions.service.ts';
 
 // The rest is noise until these are fixed; --json keeps every problem.
 const PROBLEMS_SHOWN = 5;
@@ -39,8 +40,19 @@ function readSavings(savings: Health['savings']): string {
   return `Worth asking, as a no shortens the critical path; ${how}:\n${lines.join('')}\n`;
 }
 
-/** The plan's health as a person reads it: its shape in a few figures, then what to fix first. */
-export function renderHealth(health: Health): string {
+function readSimulation(health: Health, simulation: Simulation | undefined): string {
+  if (simulation === undefined) return '';
+  const over = simulation.span - health.criticalPath.lines;
+  const idle = Math.round(simulation.idle * 100);
+  const sessions = simulation.count === 1 ? '1 session takes' : `${simulation.count} sessions take`;
+  return `  Sessions        ${sessions} ~${simulation.span} lines end to end, ~${over} over the critical path · idle ${idle} % of the time\n`;
+}
+
+/**
+ * The plan's health as a person reads it: its shape in a few figures, then what to fix first. With `simulation`, also
+ * how long that many sessions take.
+ */
+export function renderHealth(health: Health, simulation?: Simulation): string {
   if (health.tasksLeft === 0) return 'Everything is done: there is no plan left to measure.\n';
   const { criticalPath } = health;
   const chain = shortenChain(criticalPath.tasks);
@@ -51,6 +63,7 @@ export function renderHealth(health: Health): string {
     `  Critical path   ~${criticalPath.lines} lines over ${onPath}: ${chain}\n`,
     `  Parallelism     ${health.parallelism.toFixed(1)} sessions busy on average (work left ÷ critical path)\n`,
     `  Width           ${health.width} tasks at most at once · ${health.readyNow} ready now\n`,
+    readSimulation(health, simulation),
     '\n',
     readSavings(health.savings),
     readProblems(health.problems),

@@ -25,10 +25,11 @@ Commands:
   graph [--mermaid|--json] [--all]
                              the tasks left and what each requires, as a Mermaid flowchart unless --json; --all
                              shows the done ones too
-  health [--json] [--strict] [--against BRANCH]
+  health [--json] [--strict] [--against BRANCH | --sessions N]
                              the plan's shape (critical path, parallelism, width) and its worst problems; with
                              --against, each figure against that branch's plan and what got worse; --strict fails
-                             on any problem, or with --against on anything worse
+                             on any problem, or with --against on anything worse; --sessions adds how long N
+                             sessions take to work the plan and how much of that time they sit idle
   add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID] [--ref TEXT] | --from FILE|-
                              --ref says where the task is specified, as a link or a section of a document
                              --from adds every row of the table under <!-- roadmap --> in a Markdown plan
@@ -84,6 +85,7 @@ const OPTIONS = {
   add: { type: 'string' },
   drop: { type: 'string' },
   keep: { type: 'string' },
+  sessions: { type: 'string' },
   against: { type: 'string' },
   clear: { type: 'boolean' },
   mermaid: { type: 'boolean' },
@@ -105,7 +107,7 @@ const FLAGS: Record<string, string[]> = {
   why: ['json'],
   list: ['block', 'state', 'by', 'json'],
   graph: ['mermaid', 'json', 'all'],
-  health: ['json', 'strict', 'against'],
+  health: ['json', 'strict', 'against', 'sessions'],
   add: ['requires', 'done-when', 'lines', 'ref', 'from'],
   requires: ['add', 'drop'],
   split: ['done-when', 'lines', 'keep'],
@@ -157,6 +159,7 @@ export type Command = {
   add: string | undefined;
   drop: string | undefined;
   keep: string | undefined;
+  sessions: string | undefined;
   against: string | undefined;
   clear: boolean;
   mermaid: boolean;
@@ -235,6 +238,7 @@ export function readCommand(args: string[], env: Record<string, string | undefin
     add: values.add,
     drop: values.drop,
     keep: values.keep,
+    sessions: values.sessions,
     against: values.against,
     clear: values.clear === true,
     mermaid: values.mermaid === true,

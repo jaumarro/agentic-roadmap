@@ -39,6 +39,7 @@ import { withLock } from './lock.adapter.ts';
 import { setFocus } from './focus.writer.ts';
 import { listFree, listInProgress } from './free.service.ts';
 import { measureHealth } from './health.service.ts';
+import { simulateSessions } from './health.sessions.service.ts';
 import { installMergeDriver, runMergeDriver } from './merge-driver.installer.ts';
 import { addBlock } from './block.writer.ts';
 import { readChapterOf } from './chapters.service.ts';
@@ -209,7 +210,20 @@ function split(root: string, command: Command, out: Io['out']): void {
 
 /** The plan's health; with `--strict`, a plan with any problem fails, for a check to gate on. */
 function health(root: string, command: Command, out: Io['out']): number {
-  const measured = measureHealth(readSoundRoadmap(root));
+  if (command.sessions !== undefined && command.against !== undefined) {
+    throw new RoadmapError('health takes --sessions or --against, not both.');
+  }
+  const count = command.sessions === undefined ? undefined : Number(command.sessions);
+  if (count !== undefined && (!Number.isInteger(count) || count <= 0)) {
+    throw new RoadmapError('--sessions is a positive whole number of sessions.');
+  }
+  const roadmap = readSoundRoadmap(root);
+  const measured = measureHealth(roadmap);
+  if (count !== undefined) {
+    const sessions = simulateSessions(roadmap, count);
+    out(command.json ? `${JSON.stringify({ ...measured, sessions }, null, 2)}\n` : renderHealth(measured, sessions));
+    return command.strict && measured.problems.length > 0 ? 1 : 0;
+  }
   if (command.against !== undefined) {
     const before = measureHealth(readRoadmapAt(root, command.against));
     const comparison = compareHealth(command.against, before, measured);
