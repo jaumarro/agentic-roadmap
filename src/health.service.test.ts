@@ -260,11 +260,26 @@ describe('a health problem in words', () => {
       'ABC.1 is ~400 lines, over the cap of 150 (warnings.taskSize): split it into slices',
       'The plan is a queue: parallelism 1.0, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need',
       'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
-      'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so look at its chain, which the questions ask about',
+      'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so look at its chain: the questions ask about it, and --json lists every one',
       'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so take what it requires first',
       'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
       'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml if you can; check does not fail on this',
     ]);
+  });
+
+  it('leaves out, on a queue, the bottlenecks within the cap that the questions already ask about', () => {
+    const chain = Array.from({ length: 6 }, (_, at) => task(`ABC.${at + 1}`, at === 0 ? [] : [`ABC.${at}`], 100));
+
+    expect(measureHealth(plan(...chain)).problems.map((problem) => problem.kind)).toEqual(['queue']);
+  });
+
+  it('never says fewer sessions reach the critical path than the number that fell short', () => {
+    const health = measureHealth(plan(task('ABC.1', [], 100), task('ABC.2', [], 100)));
+    const text = renderHealth(health, { count: 5, span: 140, idle: 0.2, enough: 4 });
+
+    expect(text).toContain(
+      '5 sessions take ~140 lines end to end, ~40 over the critical path · idle 20 % · ~6 reach it',
+    );
   });
 
   it('shows the first five and says how many it left out', () => {

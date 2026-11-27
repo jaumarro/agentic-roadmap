@@ -77,7 +77,8 @@ describe('health --against', () => {
     expect(text).toContain('Plan health here against main:');
     expect(text).toContain('Critical path   ~40 → ~240 lines  (worse)');
     expect(text).toContain('Parallelism     1.0 → 1.0\n');
-    expect(text).toContain('Problems        0 → 3  (worse)');
+    // Oversized and a queue; the bottleneck within the cap is the queue's to cover.
+    expect(text).toContain('Problems        0 → 2  (worse)');
     expect(text).toContain('New problems:\n  1. GET.3 is ~200 lines, over the cap of 150');
   });
 
