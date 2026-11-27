@@ -29,13 +29,15 @@ const FILE_NAME = /\.[A-Za-z]\w*$/;
  * what could start a link or a tag escaped.
  */
 function renderRef(ref: string, from: string): string {
-  if (WEB_LINK.test(ref)) return `[${ref}](${ref})`;
+  // The label goes in backticks, which neither pattern lets in, so `__init__.py` is not read as bold.
+  if (WEB_LINK.test(ref)) return `[\`${ref}\`](${ref})`;
   const [path = '', anchor] = ref.split('#');
-  // `v1.2` or `LOG-3` name no file: a path has a folder, or ends as a file name does.
-  const isPath = REPO_PATH.test(ref) && (path.includes('/') || FILE_NAME.test(path)) && !path.split('/').includes('..');
-  if (!isPath) return ref.replaceAll(/[[\]<>`\\]/g, (mark) => `\\${mark}`);
+  // A path ends as a file name does: `owner/repo#12`, `github.com/org/repo/issues/3` and `v1.2` name no file here.
+  const isPath = REPO_PATH.test(ref) && FILE_NAME.test(path) && !path.split('/').includes('..');
+  const target = isPath ? posix.relative(from, path) : '';
+  if (target === '') return ref.replaceAll(/[[\]<>`\\]/g, (mark) => `\\${mark}`);
   const section = anchor === undefined ? '' : `#${anchor}`;
-  return `[${ref}](${posix.relative(from, path)}${section})`;
+  return `[\`${ref}\`](${target}${section})`;
 }
 
 function renderRow(task: Task, withRef: boolean, from: string): string {
