@@ -18,13 +18,14 @@ function escapeCell(text: string): string {
   return text.replaceAll('|', '\\|');
 }
 
-function renderRow(task: Task): string {
+function renderRow(task: Task, withRef: boolean): string {
   const done = task.commit === undefined ? '' : DONE_MARK;
   const risky = task.risky === true ? RISKY_MARK : '';
   const requires = task.requires.length === 0 ? '—' : task.requires.join(', ');
   const doneWhen = task.commit === undefined ? task.doneWhen : `${task.commit}: ${task.doneWhen}`;
   const lines = task.lines === 'doc' ? 'doc' : `~${task.lines}`;
-  const cells = [`${done}${task.id}${risky}`, task.title, requires, doneWhen, lines].map(escapeCell);
+  const ref = withRef ? [task.ref ?? '—'] : [];
+  const cells = [`${done}${task.id}${risky}`, task.title, requires, doneWhen, lines, ...ref].map(escapeCell);
   return `| ${cells.join(' | ')} |\n`;
 }
 
@@ -32,8 +33,12 @@ function renderBlock(block: Block): string {
   const intro = block.intro === undefined || block.intro === '' ? '' : `${block.intro.trim()}\n\n`;
   const heading = `## ${block.code} · ${block.name}\n\n${intro}`;
   if (block.tasks.length === 0) return `${heading}No tasks yet.\n`;
-  const table = '| Id | Task | Requires | Done when | Lines |\n| - | - | - | - | - |\n';
-  return heading + table + block.tasks.map(renderRow).join('');
+  // Only a block that uses refs gets the column, so a plan without them renders as it always did.
+  const withRef = block.tasks.some((task) => task.ref !== undefined);
+  const table = withRef
+    ? '| Id | Task | Requires | Done when | Lines | Ref |\n| - | - | - | - | - | - |\n'
+    : '| Id | Task | Requires | Done when | Lines |\n| - | - | - | - | - |\n';
+  return heading + table + block.tasks.map((task) => renderRow(task, withRef)).join('');
 }
 
 /**

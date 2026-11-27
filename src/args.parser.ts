@@ -29,9 +29,10 @@ Commands:
                              the plan's shape (critical path, parallelism, width) and its worst problems; with
                              --against, each figure against that branch's plan and what got worse; --strict fails
                              on any problem, or with --against on anything worse
-  add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID] | --from FILE|-
+  add <BLOCK> <TITLE> --done-when TEXT --lines N|doc [--requires ID,ID] [--ref TEXT] | --from FILE|-
+                             --ref says where the task is specified, as a link or a section of a document
                              --from adds every row of the table under <!-- roadmap --> in a Markdown plan
-                             (Key | Block | Task | Requires | Done when | Lines), all of them or none
+                             (Key | Block | Task | Requires | Done when | Lines, and Ref if wanted), all or none
                              add a task with the next free id, here and on every local branch
   add-block <CODE> <NAME>    start a block with no tasks, after the others in roadmap.yaml
   install-hook               a pre-commit hook that runs check --staged when a commit touches the plan
@@ -71,6 +72,7 @@ const OPTIONS = {
   requires: { type: 'string' },
   'done-when': { type: 'string' },
   lines: { type: 'string' },
+  ref: { type: 'string' },
   against: { type: 'string' },
   clear: { type: 'boolean' },
   mermaid: { type: 'boolean' },
@@ -93,7 +95,7 @@ const FLAGS: Record<string, string[]> = {
   list: ['block', 'state', 'by', 'json'],
   graph: ['mermaid', 'json', 'all'],
   health: ['json', 'strict', 'against'],
-  add: ['requires', 'done-when', 'lines', 'from'],
+  add: ['requires', 'done-when', 'lines', 'ref', 'from'],
 };
 const EVERY_COMMAND = ['root', 'help', 'version'];
 
@@ -136,6 +138,7 @@ export type Command = {
   requires: string | undefined;
   doneWhen: string | undefined;
   lines: string | undefined;
+  ref: string | undefined;
   against: string | undefined;
   clear: boolean;
   mermaid: boolean;
@@ -210,6 +213,7 @@ export function readCommand(args: string[], env: Record<string, string | undefin
     requires: values.requires,
     doneWhen: values['done-when'],
     lines: values.lines,
+    ref: values.ref,
     against: values.against,
     clear: values.clear === true,
     mermaid: values.mermaid === true,

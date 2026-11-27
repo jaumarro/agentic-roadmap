@@ -40,6 +40,7 @@ export function addRows(
       doneWhen: row.doneWhen,
       lines: row.lines,
       ...(row.risky ? { risky: true } : {}),
+      ...(row.ref === undefined ? {} : { ref: row.ref }),
     },
   }));
   const byId = new Map(tasks.map((each) => [each.id, each.task]));

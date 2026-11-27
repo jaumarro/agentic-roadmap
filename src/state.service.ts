@@ -25,6 +25,7 @@ export type ShownTask = TaskRef & {
   lines: number | 'doc';
   risky: boolean;
   commit: string | null;
+  ref: string | null;
   branches: string[];
   requires: TaskRef[];
   unblocks: TaskRef[];
@@ -46,6 +47,7 @@ export function describeTask(roadmap: Roadmap, branches: string[], id: string): 
     lines: task.lines,
     risky: task.risky === true,
     commit: task.commit ?? null,
+    ref: task.ref ?? null,
     branches: branches.filter((branch) => namesTask(branch, id)),
     requires: tasks.filter((each) => task.requires.includes(each.id)).map(refer),
     unblocks: tasks.filter((each) => each.requires.includes(id)).map(refer),

@@ -6,7 +6,14 @@ import { InvalidPlan, readTask, ROADMAP_DIR, RoadmapError, type Roadmap, type Ta
 import { readCode } from './roadmap.repository.ts';
 import { writeInside } from './safe-write.adapter.ts';
 
-export type NewTask = { title: string; requires: string[]; doneWhen: string; lines: number | 'doc'; risky?: boolean };
+export type NewTask = {
+  title: string;
+  requires: string[];
+  doneWhen: string;
+  lines: number | 'doc';
+  risky?: boolean;
+  ref?: string;
+};
 
 /** Appends `task` as `id` to block `code`'s file, after checking the plan stays sound with it. */
 export function addTask(root: string, roadmap: Roadmap, code: string, id: string, task: NewTask): void {
@@ -48,6 +55,7 @@ export function appendTask(root: string, code: string, id: string, task: NewTask
       doneWhen: task.doneWhen,
       lines: task.lines,
       ...(task.risky === true ? { risky: true } : {}),
+      ...(task.ref === undefined ? {} : { ref: task.ref }),
     });
     // Requirements read best on one line, as the rest of the plan writes them.
     const requires = isMap(node) ? node.get('requires', true) : undefined;

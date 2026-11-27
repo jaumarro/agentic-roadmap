@@ -143,9 +143,12 @@ function add(root: string, command: Command, out: Io['out']): void {
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
+  if (command.ref?.trim() === '') throw new RoadmapError('--ref needs text: a link, or a section of a document.');
+  const ref = command.ref === undefined ? {} : { ref: command.ref.trim() };
   const roadmap = readSoundRoadmap(root);
   const id = readNextId(roadmap, code, readElsewhere(root, code, listAllBranches(root)));
-  addTask(root, roadmap, code, id, { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines });
+  const task = { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines, ...ref };
+  addTask(root, roadmap, code, id, task);
   const added = readRoadmap(root);
   syncAfterChange(root, added, `Added ${id}.`);
   out(`Added ${id} · ${title.trim()} to ${ROADMAP_DIR}/${code}.yaml.\n`);

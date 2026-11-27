@@ -84,10 +84,12 @@ function listRefs(title: string, refs: ShownTask['requires']): string {
 export function renderShown(shown: ShownTask): string {
   const mark = shown.risky ? RISKY_MARK : '';
   const review = shown.risky ? '  Risky: it gets a full review.\n' : '';
+  const ref = shown.ref === null ? '' : `  Ref: ${shown.ref}\n`;
   return [
     `${shown.id} · ${shown.title}${mark}\n`,
     `  Block: ${shown.block} · ${shown.blockName}\n`,
     `  Done when: ${shown.doneWhen}\n`,
+    ref,
     `  Size: ${readLines(shown.lines)}\n`,
     review,
     `  ${readPlace(shown)}\n`,

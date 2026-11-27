@@ -13,6 +13,8 @@ export type Task = {
   risky?: boolean;
   /** The commit that closed it; a task with one is done. */
   commit?: string;
+  /** Where the task is specified, as a link or a section of a document; shown, never opened. */
+  ref?: string;
 };
 
 export type Block = {
@@ -25,8 +27,8 @@ export type Block = {
 
 export type Chapter = { name: string; blocks: string[] };
 
-/** Where check warns that the plan is getting harder to work in parallel. */
-export type Warnings = { blockSize?: [number, number]; chain?: number; blocksWaitedOn?: number };
+/** Where check warns that the plan is getting harder to work in parallel, and the size health calls a task too big at. */
+export type Warnings = { blockSize?: [number, number]; chain?: number; blocksWaitedOn?: number; taskSize?: number };
 
 export type Config = {
   /** The blocks, by code, in the order the plan reads them; each lives in `roadmap/<CODE>.yaml`. */
@@ -153,7 +155,7 @@ function readOptional<T>(fields: Fields, key: string, path: string, read: (value
 }
 
 export function readTask(value: unknown, path: string): Task {
-  const fields = readFields(value, path, ['id', 'title', 'requires', 'doneWhen', 'lines', 'risky', 'commit']);
+  const fields = readFields(value, path, ['id', 'title', 'requires', 'doneWhen', 'lines', 'risky', 'commit', 'ref']);
   const lines = fields.lines;
   if (lines !== 'doc' && (typeof lines !== 'number' || !Number.isInteger(lines) || lines <= 0)) {
     throw new InvalidPlan(at(path, 'lines'), 'lines is a positive whole number, or doc');
@@ -179,6 +181,7 @@ export function readTask(value: unknown, path: string): Task {
     ...(commit === undefined
       ? {}
       : { commit: readMatching(commit, at(path, 'commit'), SHA, 'a commit is 7 to 40 hexadecimal digits') }),
+    ...readOptional(fields, 'ref', path, readLine),
   };
 }
 
@@ -201,7 +204,7 @@ function readChapter(value: unknown, path: string): Chapter {
 }
 
 function readWarnings(value: unknown, path: string): Warnings {
-  const fields = readFields(value, path, ['blockSize', 'chain', 'blocksWaitedOn']);
+  const fields = readFields(value, path, ['blockSize', 'chain', 'blocksWaitedOn', 'taskSize']);
   const size = fields.blockSize;
   const blockSize = (): [number, number] => {
     if (!Array.isArray(size) || size.length !== 2) throw new InvalidPlan(at(path, 'blockSize'), 'expected [min, max]');
@@ -211,6 +214,7 @@ function readWarnings(value: unknown, path: string): Warnings {
     ...(size === undefined ? {} : { blockSize: blockSize() }),
     ...readOptional(fields, 'chain', path, (each, where) => readWhole(each, where, 1)),
     ...readOptional(fields, 'blocksWaitedOn', path, (each, where) => readWhole(each, where, 0)),
+    ...readOptional(fields, 'taskSize', path, (each, where) => readWhole(each, where, 1)),
   };
 }
 
