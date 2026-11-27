@@ -45,6 +45,7 @@ tasks:
     title: Show each task's slack in list --by wave
     doneWhen: list --by wave prints each task's slack in lines, none for a critical one, and --json gives it as slack
     lines: 30
+    commit: '739e5cf'
   - id: ANL.11
     title: Say that a requirement on a later block does not fail check
     doneWhen: the health problem for a requirement on a later block says check does not fail on it, beside reordering the blocks
