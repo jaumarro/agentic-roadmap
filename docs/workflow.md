@@ -79,9 +79,11 @@ block writes. To link each task to its spec, add a seventh column, `Ref`, with a
 leaves a row without one.
 
 Use small tasks with an observable result. Estimate lines of logic, excluding tests, or use `doc` for documentation.
-`health` flags tasks over 150 lines, or over `warnings.taskSize` when `roadmap.yaml` sets it. Require only results the task uses; an unnecessary dependency prevents parallel
-work. Edit titles, acceptance criteria, estimates, requirements and risk flags in the block YAML when needed. Keep IDs
-stable and let `close` write commits.
+`health` flags tasks over 150 lines, or over `warnings.taskSize` when `roadmap.yaml` sets it. Require only results the
+task uses; an unnecessary dependency prevents parallel work. Change a task's requirements with
+`roadmap requires LOG.4 --add LOG.2 --drop LOG.3`, which refuses a change that breaks the plan. Edit titles,
+acceptance criteria, estimates and risk flags in the block YAML when needed. Keep IDs stable and let `close` write
+commits.
 
 Run `roadmap check` and `roadmap health` after editing. Resolve validity errors. Review health suggestions and explain
 any you intentionally keep. `roadmap health --against main` compares the current plan with a committed version;

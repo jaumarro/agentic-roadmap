@@ -126,7 +126,9 @@ tell the user and, with their yes, keep them. Write `roadmap/roadmap.yaml` and t
 as a quoted SHA, using a one-off script kept outside the repo. Then `check` must pass, which also proves every cited
 commit exists.
 
-To change a title, criterion, estimate, requirements or `risky`, edit the block YAML. Keep IDs stable. A new block is
+To change a task's requirements, run `agentic-roadmap requires <ID> --add ID,ID --drop ID,ID`: it checks the plan
+first and reports the health delta. To change a title, criterion, estimate or `risky`, edit the block YAML. Keep IDs
+stable. A new block is
 appended to `blocks`; reorder the list when needed. With chapters configured, place it in a chapter unless it should
 remain a parallel track.
 

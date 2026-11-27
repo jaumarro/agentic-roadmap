@@ -128,7 +128,7 @@ in the next chapter can start.
 Set `markdown: docs/roadmap.md` to keep a readable copy. The path must be relative and stay inside the repo;
 absolute paths and `..` segments are refused. Writes refuse symlinks in the target path.
 
-`add`, `add-block`, `close` and `focus` refresh the configured copy. After editing YAML yourself, run `roadmap render`.
+Every command that writes the plan refreshes the configured copy. After editing YAML yourself, run `roadmap render`.
 `check` fails if the copy is missing or no longer matches. Commit it with the YAML and exclude it from formatters.
 
 Without `markdown:`, `render` explicitly writes `docs/roadmap.md`, but subsequent commands do not maintain or check it.
