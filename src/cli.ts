@@ -18,6 +18,7 @@ import {
 import { renderComparison, renderDelta, renderHealth } from './health.view.ts';
 import { compareHealth } from './health.compare.service.ts';
 import { closeTask } from './task.close.writer.ts';
+import { changeRequires } from './task.requires.writer.ts';
 import {
   listAllBranches,
   isShallow,
@@ -139,20 +140,41 @@ function add(root: string, command: Command, out: Io['out']): void {
     throw new RoadmapError('Say when it is done: --done-when TEXT, checkable by a command, a test or a screen.');
   }
   const lines = readLines(command.lines);
-  const requires = (command.requires ?? '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean);
+  const required = readIds(command.requires);
   if (command.ref?.trim() === '') throw new RoadmapError('--ref needs text: a link, or a section of a document.');
   const ref = command.ref === undefined ? {} : { ref: command.ref.trim() };
   const roadmap = readSoundRoadmap(root);
   const id = readNextId(roadmap, code, readElsewhere(root, code, listAllBranches(root)));
-  const task = { title: title.trim(), requires, doneWhen: command.doneWhen.trim(), lines, ...ref };
+  const task = { title: title.trim(), requires: required, doneWhen: command.doneWhen.trim(), lines, ...ref };
   addTask(root, roadmap, code, id, task);
   const added = readRoadmap(root);
   syncAfterChange(root, added, `Added ${id}.`);
   out(`Added ${id} · ${title.trim()} to ${ROADMAP_DIR}/${code}.yaml.\n`);
   out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(added))));
+}
+
+function readIds(given: string | undefined): string[] {
+  return (given ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+/** Adds and drops requirements of a task; the plan is checked with the change before anything is written. */
+function requires(root: string, command: Command, out: Io['out']): void {
+  const id = readTaskId(command);
+  const added = readIds(command.add);
+  const dropped = readIds(command.drop);
+  if (added.length === 0 && dropped.length === 0) {
+    throw new RoadmapError('Say what changes: requires <ID> --add ID,ID, --drop ID,ID, or both.');
+  }
+  const roadmap = readSoundRoadmap(root);
+  const left = changeRequires(root, roadmap, id, added, dropped);
+  const after = readRoadmap(root);
+  const shown = left.length === 0 ? 'nothing' : left.join(', ');
+  syncAfterChange(root, after, `${id} now requires ${shown}.`);
+  out(`${id} now requires ${shown}. Commit it as «docs: plan ${id}».\n`);
+  out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
 }
 
 /** The plan's health; with `--strict`, a plan with any problem fails, for a check to gate on. */
@@ -455,6 +477,11 @@ export function run(args: string[], io: Io): number {
             `${code} is in no chapter, so next and free leave it out: add it to one in roadmap.yaml, or focus it.\n`,
           );
         }
+        return 0;
+      }
+      case 'requires': {
+        const at = root();
+        withPlanLock(at, () => requires(at, command, io.out));
         return 0;
       }
       case 'health':

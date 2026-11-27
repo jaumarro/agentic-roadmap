@@ -35,6 +35,9 @@ Commands:
                              (Key | Block | Task | Requires | Done when | Lines, and Ref if wanted), all or none
                              add a task with the next free id, here and on every local branch
   add-block <CODE> <NAME>    start a block with no tasks, after the others in roadmap.yaml
+  requires <ID> [--add ID,ID] [--drop ID,ID]
+                             add requirements to a task and drop others, refusing what would leave the plan
+                             unsound; it ends with what the change did to the plan's health
   install-hook               a pre-commit hook that runs check --staged when a commit touches the plan
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
   install-skill              copy the agents' workflow into .claude/skills, next to roadmap/; again to update it
@@ -73,6 +76,8 @@ const OPTIONS = {
   'done-when': { type: 'string' },
   lines: { type: 'string' },
   ref: { type: 'string' },
+  add: { type: 'string' },
+  drop: { type: 'string' },
   against: { type: 'string' },
   clear: { type: 'boolean' },
   mermaid: { type: 'boolean' },
@@ -96,6 +101,7 @@ const FLAGS: Record<string, string[]> = {
   graph: ['mermaid', 'json', 'all'],
   health: ['json', 'strict', 'against'],
   add: ['requires', 'done-when', 'lines', 'ref', 'from'],
+  requires: ['add', 'drop'],
 };
 const EVERY_COMMAND = ['root', 'help', 'version'];
 
@@ -116,6 +122,7 @@ const ARITY: Record<string, number> = {
   health: 0,
   add: 2,
   'add-block': 2,
+  requires: 1,
   'install-hook': 0,
   'install-merge-driver': 0,
   'install-skill': 0,
@@ -139,6 +146,8 @@ export type Command = {
   doneWhen: string | undefined;
   lines: string | undefined;
   ref: string | undefined;
+  add: string | undefined;
+  drop: string | undefined;
   against: string | undefined;
   clear: boolean;
   mermaid: boolean;
@@ -214,6 +223,8 @@ export function readCommand(args: string[], env: Record<string, string | undefin
     doneWhen: values['done-when'],
     lines: values.lines,
     ref: values.ref,
+    add: values.add,
+    drop: values.drop,
     against: values.against,
     clear: values.clear === true,
     mermaid: values.mermaid === true,
