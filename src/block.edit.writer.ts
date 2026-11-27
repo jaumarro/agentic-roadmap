@@ -28,13 +28,29 @@ export function findTaskNode(block: OpenBlock, id: string): YAMLMap {
   return node;
 }
 
+/** Renames `from` to `to` where a task's list under `key` holds it, keeping the entry and any comment on it. */
+export function renameId(node: YAMLMap, key: string, from: string, to: string): void {
+  const list = node.get(key, true);
+  if (!isSeq(list)) return;
+  for (const item of list.items) if (isScalar(item) && item.value === from) item.value = to;
+}
+
 /**
- * Sets a task's list of ids under `key`, on one line as the plan writes them, or removes the key when the list is
- * empty. A key the task lacked goes right after its title, where a reader looks for it.
+ * Sets a task's list of ids under `key`, or removes the key when the list is empty. A list already there keeps its
+ * layout, and each id that stays keeps its entry, so a comment written on a requirement survives. A new list goes on
+ * one line, as the plan writes them, right after the task's title, where a reader looks for it.
  */
 export function setIdList(block: OpenBlock, node: YAMLMap, key: string, ids: string[]): void {
   if (ids.length === 0) {
     node.delete(key);
+    return;
+  }
+  const current = node.get(key, true);
+  if (isSeq(current)) {
+    const entries = current.items;
+    current.items = ids.map(
+      (id) => entries.find((item) => isScalar(item) && item.value === id) ?? block.doc.createNode(id),
+    );
     return;
   }
   const list = block.doc.createNode(ids);
@@ -57,6 +73,15 @@ export function putBack(root: string, name: string, text: string): boolean {
   }
 }
 
+function writeBlock(root: string, name: string, text: string): void {
+  try {
+    writeInside(root, name, text);
+  } catch (error) {
+    if (error instanceof RoadmapError) throw error;
+    throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
+  }
+}
+
 /**
  * Opens the files of blocks `codes`, lets `edit` change them in memory, then writes every one or none: a write that
  * fails puts back the files already written, or names those it can't.
@@ -69,7 +94,7 @@ export function editBlocks(root: string, codes: string[], edit: (blocks: Map<str
     for (const { code, text, open } of opened) {
       const name = readName(code);
       originals.set(name, text);
-      writeInside(root, name, open.doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
+      writeBlock(root, name, open.doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
     }
   } catch (error) {
     const stuck = [...originals].filter(([name, text]) => !putBack(root, name, text)).map(([name]) => name);
