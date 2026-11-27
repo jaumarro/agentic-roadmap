@@ -34,14 +34,16 @@ tests, or `doc`. `add` also takes `--ref TEXT`, a link or a section of a documen
 no `--risky` flag: use the table's ⚠︎ marker or edit the task's YAML. See the
 [table format](workflow.md#plan-new-work) and [YAML fields](format.md).
 
-`requires` keeps the block file's comments, checks the plan with the change before writing, and ends with the health
-delta, as `add` does. A dropped requirement also leaves the task's `confirmed` list.
+`requires` keeps the block file's comments and the layout of a list already there, checks the plan with the change
+before writing, and ends with the health delta, as `add` does. A dropped requirement also leaves the task's
+`confirmed` list.
 
 `split` keeps the task's ID, title and acceptance criterion for the first part and takes the title, `--done-when` and
 `--lines` given for the second, which is written right after it with the next free ID. The first part keeps its size
 less the second's, or what `--keep` says. Every task that required the original now requires the second part, in any
-block, and all the files change or none does. The second part inherits `risky` and `ref`. The first part's acceptance
-criterion is left as written, so edit it in the YAML to describe only that part.
+block, and all the files change or none does. A task that had the original under `confirmed` loses that entry: it
+confirmed the whole, so `health` asks again about the second part. The second part inherits `risky` and `ref`. The
+first part's acceptance criterion is left as written, so edit it in the YAML to describe only that part.
 
 `--from` paths are relative to the current working directory, even with `--root`. Blocks must already exist. Import
 validates all rows together; failed later block writes roll back earlier ones. When a write reports that the YAML
@@ -49,17 +51,17 @@ changed but Markdown could not be updated, repair the target and run `render` ra
 
 ### Query a plan
 
-| Command                                                           | Options and defaults                                                   |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `next [--json]`                                                   | Next available task, remaining candidates and known tasks in progress  |
-| `free [N] [--json]`                                               | Up to N available tasks; default 3; N must be positive                 |
-| `show <ID> [--json]`                                              | Task details, state, requirements and direct dependents                |
-| `why <ID> [--json]`                                               | Unfinished requirements, expanded recursively                          |
-| `list [--block CODE] [--state STATE] [--by block\|wave] [--json]` | All tasks by default; block order unless `--by wave`                   |
-| `graph [--mermaid\|--json] [--all]`                               | Mermaid by default; pending tasks unless `--all`                       |
-| `status [--json]`                                                 | Completed and total task counts per block                              |
-| `check [--staged] [--json]`                                       | Validates dependencies, IDs, chapters, commits and configured Markdown |
-| `health [--json] [--strict] [--against REF]`                      | Measures the plan; optionally compares with a Git revision             |
+| Command                                                           | Options and defaults                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `next [--json]`                                                   | Next available task, remaining candidates and known tasks in progress    |
+| `free [N] [--json]`                                               | Up to N available tasks; default 3; N must be positive                   |
+| `show <ID> [--json]`                                              | Task details, state, requirements and direct dependents                  |
+| `why <ID> [--json]`                                               | Unfinished requirements, expanded recursively                            |
+| `list [--block CODE] [--state STATE] [--by block\|wave] [--json]` | All tasks by default; block order unless `--by wave`                     |
+| `graph [--mermaid\|--json] [--all]`                               | Mermaid by default; pending tasks unless `--all`                         |
+| `status [--json]`                                                 | Completed and total task counts per block                                |
+| `check [--staged] [--json]`                                       | Validates dependencies, IDs, chapters, commits and configured Markdown   |
+| `health [--json] [--strict] [--against REF \| --sessions N]`      | Measures the plan; compares with a Git revision, or simulates N sessions |
 
 States are `done`, `started`, `ready` or `waiting`. `list --by wave` omits done tasks and orders pending rows by track,
 wave and focus. Graph edges go from prerequisites to dependents. `--mermaid` and `--json` cannot be combined.
@@ -218,7 +220,8 @@ while 0.x, or a major release from 1.0. Consumers should allow unknown fields.
 | Command                                | Without a git repo            | With one                                                          |
 | -------------------------------------- | ----------------------------- | ----------------------------------------------------------------- |
 | `next`, `free`, `list`, `show`, `why`  | works; no task shows started  | a local or fetched branch named after a task marks it started     |
-| `add`                                  | works                         | ids also skip those on every branch and every worktree            |
+| `add`, `split`                         | works                         | ids also skip those on every branch and every worktree            |
+| `requires`                             | works                         | no difference                                                     |
 | `close`                                | refuses: commits are git's    | without `--commit`, takes the task's newest work commit (below)   |
 | `check`                                | every cited commit is missing | also checks every cited commit exists; `--staged` reads the index |
 | `install-hook`, `install-merge-driver` | refuses                       | writes the hook, or the driver into `.git/config`                 |
