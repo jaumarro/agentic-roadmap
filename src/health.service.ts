@@ -5,6 +5,8 @@ const SIZE_CAP = 150;
 // Below this, sessions run in parallel mostly wait on each other.
 const QUEUE_PARALLELISM = 1.5;
 const BOTTLENECK_SHARE = 0.4;
+// Slack under this share of the critical path is as good as none: one slip and the task is critical.
+const NEAR_CRITICAL = 0.1;
 
 type Redundant = { id: string; requires: string; through: string };
 type Backward = { id: string; requires: string };
@@ -14,7 +16,7 @@ type Saving = { id: string; requires: string; saves: number };
 export type HealthProblem =
   | { kind: 'oversized'; task: string; lines: number; cap: number }
   | { kind: 'queue'; parallelism: number }
-  | { kind: 'bottleneck'; task: string; share: number }
+  | { kind: 'bottleneck'; task: string; share: number; large: boolean }
   | { kind: 'redundant'; requirements: Redundant[] }
   | { kind: 'backward'; requirements: Backward[] };
 
@@ -29,8 +31,11 @@ export type Health = {
   /** The most tasks not done that could run at once: none of them needs another. */
   width: number;
   readyNow: number;
-  /** The tasks not done most of the rest waits on, worst first; `ready` when it can be taken now. */
-  bottlenecks: { id: string; blocks: number; share: number; ready: boolean }[];
+  /**
+   * The tasks not done most of the rest waits on, worst first; `ready` when it can be taken now, and `slack` the lines
+   * of work it can slip by without the plan taking longer.
+   */
+  bottlenecks: { id: string; blocks: number; share: number; ready: boolean; slack: number }[];
   /** Requirements a longer path already implies. */
   redundant: Redundant[];
   /** Of every requirement, the share that crosses into another block. */
@@ -103,7 +108,7 @@ function readPercent(share: number): string {
   return `${Math.round(share * 100)} %`;
 }
 
-function rankProblems(health: Omit<Health, 'problems'>, cap: number): HealthProblem[] {
+function rankProblems(health: Omit<Health, 'problems'>, cap: number, sizes: Map<string, number>): HealthProblem[] {
   const oversized = health.oversized.map(({ id, lines }): HealthProblem => ({
     kind: 'oversized',
     task: id,
@@ -115,9 +120,16 @@ function rankProblems(health: Omit<Health, 'problems'>, cap: number): HealthProb
       ? [{ kind: 'queue', parallelism: health.parallelism }]
       : [];
   // One that can be taken now is a first step, and taking it first is what happens anyway: only a waiting one is a risk.
+  // And only with little slack: a small base task off the critical path is normal, and delays nothing.
+  const tight = health.criticalPath.lines * NEAR_CRITICAL;
   const bottlenecks = health.bottlenecks
-    .filter((each) => each.share >= BOTTLENECK_SHARE && !each.ready)
-    .map((each): HealthProblem => ({ kind: 'bottleneck', task: each.id, share: each.share }));
+    .filter((each) => each.share >= BOTTLENECK_SHARE && !each.ready && each.slack <= tight)
+    .map((each): HealthProblem => ({
+      kind: 'bottleneck',
+      task: each.id,
+      share: each.share,
+      large: (sizes.get(each.id) ?? 0) > cap / 2,
+    }));
   // All in one problem, so one pass drops them all instead of one per run.
   const redundant: HealthProblem[] =
     health.redundant.length === 0 ? [] : [{ kind: 'redundant', requirements: health.redundant }];
@@ -133,8 +145,11 @@ export function describeHealthProblem(problem: HealthProblem): string {
       return `${problem.task} is ~${problem.lines} lines, over the cap of ${problem.cap} (warnings.taskSize): split it into slices`;
     case 'queue':
       return `The plan is a queue: parallelism ${problem.parallelism.toFixed(1)}, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need`;
-    case 'bottleneck':
-      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits: split it`;
+    case 'bottleneck': {
+      // Splitting a small task gains nothing: what helps is reaching it sooner.
+      const advice = problem.large ? 'split it' : 'it is small, so take what it requires first';
+      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits: ${advice}`;
+    }
     case 'redundant': {
       const pairs = problem.requirements.map((each) => `${each.id} → ${each.requires} (via ${each.through})`);
       return `Requirements another one already implies: ${pairs.join(', ')}: drop them`;
@@ -188,7 +203,8 @@ export function measureHealth(roadmap: Roadmap): Health {
         .reduce((sum, other) => sum + weigh(other), 0);
       const rest = workLeft - weigh(task);
       const ready = isUnblocked(task, done);
-      return { id: task.id, blocks, share: rest === 0 ? 0 : blocks / rest, ready };
+      const slack = shape.tasks.get(task.id)?.float ?? 0;
+      return { id: task.id, blocks, share: rest === 0 ? 0 : blocks / rest, ready, slack };
     })
     .filter((each) => each.blocks > 0)
     .toSorted((a, b) => b.blocks - a.blocks)
@@ -216,5 +232,7 @@ export function measureHealth(roadmap: Roadmap): Health {
     ),
     savings: findSavings(roadmap, shape),
   };
-  return { ...measured, problems: rankProblems(measured, cap) };
+  // A document has no size in lines to split by.
+  const sizes = new Map(pending.map((task) => [task.id, task.lines === 'doc' ? 0 : task.lines]));
+  return { ...measured, problems: rankProblems(measured, cap, sizes) };
 }
