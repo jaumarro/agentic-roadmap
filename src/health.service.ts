@@ -1,4 +1,4 @@
-import { analyze, readCriticalPath, weigh } from './roadmap.analysis.service.ts';
+import { analyze, readCriticalPath, type Shape, weigh } from './roadmap.analysis.service.ts';
 import { isUnblocked, readDoneIds, type Roadmap, type Task } from './roadmap.model.ts';
 
 const SIZE_CAP = 150;
@@ -8,6 +8,7 @@ const BOTTLENECK_SHARE = 0.4;
 
 type Redundant = { id: string; requires: string; through: string };
 type Backward = { id: string; requires: string };
+type Saving = { id: string; requires: string; saves: number };
 
 /** A problem in the plan's shape, as data; `describeHealthProblem` gives it in words, with what to do. */
 export type HealthProblem =
@@ -37,6 +38,11 @@ export type Health = {
   /** Requirements on a block listed after the task's own: the blocks' order says the opposite of the plan. */
   backward: Backward[];
   oversized: { id: string; lines: number }[];
+  /**
+   * What dropping one requirement would take off the critical path, largest first. Whether the task needs it is for a
+   * person to say: these are where to look, not problems.
+   */
+  savings: Saving[];
   /** Every problem, worst first. */
   problems: HealthProblem[];
 };
@@ -141,6 +147,26 @@ export function describeHealthProblem(problem: HealthProblem): string {
   return problem satisfies never;
 }
 
+function dropRequirement(roadmap: Roadmap, id: string, required: string): Roadmap {
+  const drop = (task: Task) =>
+    task.id === id ? { ...task, requires: task.requires.filter((each) => each !== required) } : task;
+  return { ...roadmap, blocks: roadmap.blocks.map((block) => ({ ...block, tasks: block.tasks.map(drop) })) };
+}
+
+/**
+ * Each requirement between two critical tasks, with the lines the critical path loses without it. Only those can
+ * shorten it, and one on a path that ties with another saves nothing, so it is left out.
+ */
+function findSavings(roadmap: Roadmap, shape: Shape): Saving[] {
+  const isCritical = (id: string) => shape.tasks.get(id)?.float === 0;
+  return shape.order
+    .filter((task) => isCritical(task.id))
+    .flatMap((task) => task.requires.filter(isCritical).map((required) => ({ id: task.id, requires: required })))
+    .map((edge) => ({ ...edge, saves: shape.span - analyze(dropRequirement(roadmap, edge.id, edge.requires)).span }))
+    .filter((saving) => saving.saves > 0)
+    .toSorted((a, b) => b.saves - a.saves);
+}
+
 /** How healthy the plan left to do is: its shape as a graph of tasks, and the worst problems with what to do. */
 export function measureHealth(roadmap: Roadmap): Health {
   const cap = roadmap.warnings?.taskSize ?? SIZE_CAP;
@@ -188,6 +214,7 @@ export function measureHealth(roadmap: Roadmap): Health {
     oversized: pending.flatMap((task) =>
       task.lines !== 'doc' && task.lines > cap ? [{ id: task.id, lines: task.lines }] : [],
     ),
+    savings: findSavings(roadmap, shape),
   };
   return { ...measured, problems: rankProblems(measured, cap) };
 }

@@ -26,6 +26,18 @@ function countTasks(count: number): string {
   return `${count} ${noun}`;
 }
 
+// The largest ones are where to look first; --json keeps every one.
+const SAVINGS_SHOWN = 3;
+
+// Asked, not told: only a person knows whether a task uses what it requires, and a figure alone invites cutting.
+function readSavings(savings: Health['savings']): string {
+  if (savings.length === 0) return '';
+  const lines = savings
+    .slice(0, SAVINGS_SHOWN)
+    .map((each) => `  Does ${each.id} need ${each.requires}? Without it, ~${each.saves} lines shorter.\n`);
+  return `Worth asking, as a no shortens the critical path:\n${lines.join('')}\n`;
+}
+
 /** The plan's health as a person reads it: its shape in a few figures, then what to fix first. */
 export function renderHealth(health: Health): string {
   if (health.tasksLeft === 0) return 'Everything is done: there is no plan left to measure.\n';
@@ -41,6 +53,7 @@ export function renderHealth(health: Health): string {
     `  Width           ${health.width} tasks at most at once · ${health.readyNow} ready now\n`,
     `  Across blocks   ${crossing} % of requirements\n`,
     '\n',
+    readSavings(health.savings),
     readProblems(health.problems),
   ].join('');
 }
