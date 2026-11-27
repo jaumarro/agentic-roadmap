@@ -247,7 +247,8 @@ weighs 20. Completed tasks are excluded from remaining-work figures. Started tas
 `savings` are not problems and never fail `--strict`. The tool cannot know whether a task needs a requirement: each
 saving says where a second look pays most, and what dropping that one requirement alone would gain. The text shows the
 three largest, each as a question: "Does LOG.4 need LOG.3?". A requirement another route still reaches, or one on a
-path that ties with another, saves nothing, so it is left out.
+path that ties with another, saves nothing, so it is left out. So is one the task lists under `confirmed:` in its
+YAML, which is how to answer "yes" for good.
 
 A queue finding requires more than two pending tasks and parallelism below 1.5. Bottleneck findings are up
 to three tasks, of all those that block work, whose share is at least 0.4, whose requirements are not yet done, and

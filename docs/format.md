@@ -68,16 +68,21 @@ tasks:
 
 A block has a one-line `name`, optional Markdown `intro`, and a `tasks` list, which may be empty.
 
-| Task field | Meaning                                                                          |
-| ---------- | -------------------------------------------------------------------------------- |
-| `id`       | Stable `<BLOCK>.<number>` assigned by `add`                                      |
-| `title`    | Required, non-empty, one-line task title                                         |
-| `doneWhen` | Required, non-empty, one-line acceptance criterion                               |
-| `lines`    | Required positive whole number estimating logic, excluding tests; or `doc`       |
-| `requires` | Task IDs whose results this task needs; defaults to `[]`                         |
-| `risky`    | Optional boolean; defaults to false                                              |
-| `commit`   | Quoted hexadecimal SHA, 7–40 digits, written by `close`; its presence means done |
-| `ref`      | Optional one-line pointer to where the task is specified: a link or a section    |
+| Task field  | Meaning                                                                          |
+| ----------- | -------------------------------------------------------------------------------- |
+| `id`        | Stable `<BLOCK>.<number>` assigned by `add`                                      |
+| `title`     | Required, non-empty, one-line task title                                         |
+| `doneWhen`  | Required, non-empty, one-line acceptance criterion                               |
+| `lines`     | Required positive whole number estimating logic, excluding tests; or `doc`       |
+| `requires`  | Task IDs whose results this task needs; defaults to `[]`                         |
+| `risky`     | Optional boolean; defaults to false                                              |
+| `commit`    | Quoted hexadecimal SHA, 7–40 digits, written by `close`; its presence means done |
+| `ref`       | Optional one-line pointer to where the task is specified: a link or a section    |
+| `confirmed` | Optional list of this task's requirements that someone checked it really uses    |
+
+`health` asks whether a task needs each requirement on the critical path. Once you have checked one and the answer is
+yes, list it under `confirmed`, as `confirmed: [LOG.1]`, and `health` stops asking about it. `check` fails on a
+confirmed ID the task does not require, so a dropped requirement does not leave its confirmation behind.
 
 `ref` is shown by `show` and in the generated Markdown. The tool never opens or fetches it. In the Markdown it is a
 link when it is an `http(s)` address or a path to a file: write the path from the folder holding `roadmap/`, as

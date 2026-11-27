@@ -135,8 +135,9 @@ After plan changes:
 1. Run `agentic-roadmap check --json`. Resolve validity problems; warnings do not fail the command.
 2. Run `agentic-roadmap health --json`. Review oversized tasks, queues, bottlenecks, redundant requirements and requirements on
    later blocks. Fix them or explain the reason to keep them. Estimates describe dependency structure, not elapsed time.
-   Then read `savings`: for each requirement listed, check whether the task uses that result. Drop the ones it does not;
-   keep the rest, as a saving is where to look, not a fault.
+   Then read `savings`: for each requirement listed, check whether the task uses that result. Drop the ones it does not.
+   For one it does use, add it to the task's `confirmed:` list in the block YAML, so it is not asked about again. Confirm
+   only what you verified; when unsure, leave it and say so.
 3. If `markdown:` is configured, run `agentic-roadmap render` after hand edits and commit the generated copy with the YAML.
    Do not edit or format that copy yourself.
 4. Commit the plan as `docs:`, separately from implementation work.

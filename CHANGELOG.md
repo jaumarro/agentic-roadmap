@@ -5,11 +5,12 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 ## Unreleased
 
-- `list --by wave` shows each task's slack, as `(slack ~70 lines)`: the lines of work it can slip by without the plan taking longer, and
-  `list --json` gives it as `slack`.
+- `list --by wave` shows each task's slack, as `(slack ~70 lines)`: the lines of work it can slip by without the plan
+  taking longer. `list --json` gives it as `slack`.
 - `health` asks about the requirements whose absence would shorten the critical path, as "Does LOG.4 need LOG.3?", the
   three largest in the text and all of them as `savings` in `health --json`. It edits nothing, and they are not
-  problems.
+  problems. A task's new `confirmed:` list answers yes for good: `health` stops asking about a requirement in it, and
+  `check` fails on a confirmed ID the task does not require.
 - `health` reports a waiting bottleneck only on the critical path or with slack under a tenth of it, and advises a
   split only for a task over half the size cap. Each bottleneck carries its `slack`, and the problem says whether it is
   `large`.
