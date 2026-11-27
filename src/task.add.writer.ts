@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type Document, isMap, isSeq, type Node, parseDocument, YAMLSeq } from 'yaml';
+import { putBack } from './block.edit.writer.ts';
 import { describeProblems } from './check.service.ts';
 import { InvalidPlan, readTask, ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
@@ -31,12 +32,12 @@ export function addTask(root: string, roadmap: Roadmap, code: string, id: string
 }
 
 /** Refuses a task the plan could not read back: written, it would stop every command until someone removed it. */
-export function checkNewTask(id: string, task: NewTask): void {
+export function checkNewTask(id: string, task: NewTask, refusal = 'Not added'): void {
   try {
     readTask({ id, ...task }, '');
   } catch (error) {
     if (!(error instanceof InvalidPlan)) throw error;
-    throw new RoadmapError(`Not added: ${error.where} ${error.message}.`);
+    throw new RoadmapError(`${refusal}: ${error.where} ${error.message}.`);
   }
 }
 
@@ -71,16 +72,6 @@ export function appendTask(root: string, code: string, id: string, task: NewTask
   } catch (error) {
     if (error instanceof RoadmapError) throw error;
     throw new RoadmapError(`Could not write ${name}: ${readCode(error)}.`);
-  }
-}
-
-/** Whether `name` holds `text` again, written back if it had changed. */
-function putBack(root: string, name: string, text: string): boolean {
-  try {
-    if (readFileSync(join(root, name), 'utf8') !== text) writeInside(root, name, text);
-    return true;
-  } catch {
-    return false;
   }
 }
 

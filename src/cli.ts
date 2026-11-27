@@ -195,7 +195,9 @@ function split(root: string, command: Command, out: Io['out']): void {
   const part = { title: title.trim(), doneWhen: command.doneWhen.trim(), lines: readLines(command.lines) };
   const keep = command.keep === undefined ? undefined : readLines(command.keep, '--keep');
   const roadmap = readSoundRoadmap(root);
-  const code = id.split('.')[0] ?? id;
+  // The block comes from the plan, not from the id as typed, which names the files read for the next free id.
+  const code = roadmap.blocks.find((block) => block.tasks.some((task) => task.id === id))?.code;
+  if (code === undefined) throw new RoadmapError(`No task ${id} in this roadmap.`);
   const secondId = readNextId(roadmap, code, readElsewhere(root, code, listAllBranches(root)));
   const done = splitTask(root, roadmap, id, secondId, part, keep);
   const after = readRoadmap(root);

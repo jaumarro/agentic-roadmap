@@ -62,7 +62,7 @@ export function splitTask(
     ...(task.risky === true ? { risky: true } : {}),
     ...(task.ref === undefined ? {} : { ref: task.ref }),
   };
-  checkNewTask(secondId, added);
+  checkNewTask(secondId, added, 'Not split');
   const first: Task = { ...task, lines: readKept(task, part, keep) };
   const second: Task = { id: secondId, ...added };
   const after = planSplit(roadmap, first, second);
