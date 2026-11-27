@@ -147,6 +147,16 @@ describe('the problems it ranks', () => {
     expect(readBottlenecks(85)).toMatchObject([{ task: 'ABC.2', large: false }]);
   });
 
+  it('calls a bottleneck large only over the size cap, and says when a question asks about it', () => {
+    // CRT.2 is 100 lines: over half the cap of 150, but within it. It waits on the critical path, in a chain.
+    const fan = Array.from({ length: 6 }, (_, at) => task(`FAN.${at + 1}`, ['CRT.2'], 40));
+    const health = measureHealth(plan(task('CRT.1', [], 100), task('CRT.2', ['CRT.1'], 100), ...fan));
+
+    expect(health.problems.filter((each) => each.kind === 'bottleneck')).toMatchObject([
+      { task: 'CRT.2', large: false, asked: true },
+    ]);
+  });
+
   it('reports a large critical bottleneck that tasks blocking more, but with slack, would hide', () => {
     // XYZ.1 to XYZ.3 block a little more than CRT.2 and have slack to spare; CRT.2 waits on the critical path.
     const fan = Array.from({ length: 6 }, (_, at) => task(`FAN.${at + 1}`, ['XYZ.3', 'CRT.2'], 40));
@@ -236,8 +246,9 @@ describe('a health problem in words', () => {
     const words = [
       describeHealthProblem({ kind: 'oversized', task: 'ABC.1', lines: 400, cap: 150 }),
       describeHealthProblem({ kind: 'queue', parallelism: 1.04 }),
-      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: true }),
-      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: false }),
+      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: true, asked: true }),
+      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: false, asked: true }),
+      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: false, asked: false }),
       describeHealthProblem({
         kind: 'redundant',
         requirements: [{ id: 'ABC.3', requires: 'ABC.1', through: 'ABC.2' }],
@@ -249,7 +260,8 @@ describe('a health problem in words', () => {
       'ABC.1 is ~400 lines, over the cap of 150 (warnings.taskSize): split it into slices',
       'The plan is a queue: parallelism 1.0, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need',
       'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
-      'ABC.2 blocks 50 % of the rest of the work while it waits: it is small, so take what it requires first',
+      'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so look at its chain, which the questions ask about',
+      'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so take what it requires first',
       'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
       'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml if you can; check does not fail on this',
     ]);
