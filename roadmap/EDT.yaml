@@ -7,5 +7,7 @@ tasks:
   - id: EDT.2
     title: Split a task in two, keeping its id and moving what waits on it
     requires: [EDT.1]
+    # A split moves requirements from one task to another with the code EDT.1 writes.
+    confirmed: [EDT.1]
     doneWhen: split ABC.4 leaves ABC.4 as the first part and a new task as the second, which requires it, and every task that required ABC.4 now requires the second
     lines: 120
