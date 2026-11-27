@@ -43,6 +43,7 @@ tasks:
     title: Leave Across blocks out of health's text
     doneWhen: health prints no Across blocks line and health --json still gives crossBlockShare
     lines: 10
+    commit: 'e6300ec'
   - id: ANL.10
     title: Show each task's slack in list --by wave
     doneWhen: list --by wave prints each task's slack in lines, none for a critical one, and --json gives it as slack
