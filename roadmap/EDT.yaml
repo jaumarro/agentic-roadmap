@@ -4,6 +4,7 @@ tasks:
     title: Add and drop a requirement from the command line
     doneWhen: one command adds or drops a requirement of a task, keeps the file's comments, refuses a change that leaves the plan unsound and ends with the health delta
     lines: 80
+    commit: '31dd943'
   - id: EDT.2
     title: Split a task in two, keeping its id and moving what waits on it
     requires: [EDT.1]
