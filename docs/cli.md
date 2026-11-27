@@ -28,7 +28,8 @@ accept it. Writes produce human-readable output.
 | `render`                                                                 | Writes the Markdown copy; uses `docs/roadmap.md` if no `markdown:` is configured |
 
 Names and titles containing spaces need shell quotes. `--lines` is a positive whole number estimating logic, excluding
-tests, or `doc`. `add` has no `--risky` flag: use the table's ⚠︎ marker or edit the task's YAML. See the
+tests, or `doc`. `add` also takes `--ref TEXT`, a link or a section of a document where the task is specified. `add` has
+no `--risky` flag: use the table's ⚠︎ marker or edit the task's YAML. See the
 [table format](workflow.md#plan-new-work) and [YAML fields](format.md).
 
 `--from` paths are relative to the current working directory, even with `--root`. Blocks must already exist. Import
@@ -112,6 +113,7 @@ shaped as the `next` task object, one per session. When no task is available, `n
   "lines": 40,
   "risky": false,
   "commit": null,
+  "ref": "docs/login-spec.md#sessions",
   "branches": [],
   "requires": [{ "id": "LOG.1", "title": "Sign in with email", "state": "done" }],
   "unblocks": []
@@ -119,7 +121,7 @@ shaped as the `next` task object, one per session. When no task is available, `n
 ```
 
 `state` is one of `done`, `started` (a branch is named after it), `ready` (all it requires is done) or `waiting`.
-`lines` is a number or `"doc"`.
+`lines` is a number or `"doc"`. `ref` is the task's `ref`, or `null` when it has none.
 
 `list --json` is an array of rows. `list --by wave --json` returns the pending rows in wave display order. Each row is:
 
@@ -234,7 +236,7 @@ weighs 20. Completed tasks are excluded from remaining-work figures. Started tas
 | `redundant`       | Requirements already implied through another direct requirement, as `{ id, requires, through }`                                                       |
 | `crossBlockShare` | Fraction of all requirements crossing block boundaries, including completed tasks                                                                     |
 | `backward`        | Requirements on later blocks in config order, as `{ id, requires }`, including completed tasks                                                        |
-| `oversized`       | Pending numeric tasks over 150 lines, as `{ id, lines }`                                                                                              |
+| `oversized`       | Pending numeric tasks over `warnings.taskSize` lines, 150 unless set, as `{ id, lines }`; its problem also carries the `cap`                          |
 | `problems`        | Ranked findings: oversized tasks, queue, waiting bottlenecks, redundant and backward requirements                                                     |
 
 A queue finding requires more than two pending tasks and parallelism below 1.5. Bottleneck findings use the returned
@@ -243,5 +245,5 @@ describe dependency structure; neither is a count of unclaimed tasks available f
 
 `health --strict` exits 1 for any problem. With `--against REF`, it instead exits 1 when a compared figure worsens:
 critical-path weight or problem count increases, or parallelism or width decreases. Comparison uses figures rounded
-to one decimal place. REF is a committed Git revision; the current side is read from the working tree. The
-`warnings:` configuration affects `check` warnings, not these health thresholds.
+to one decimal place. REF is a committed Git revision; the current side is read from the working tree. Of the
+`warnings:` configuration, only `taskSize` affects health; the queue and bottleneck thresholds are fixed.

@@ -75,10 +75,11 @@ Start a block with `roadmap add-block LOG "Login"`. Add individual tasks with `a
 Save the table in `plan.md`, then run `roadmap add --from plan.md`. Create its blocks first. Keys refer to other rows;
 requirements can also name existing IDs. The tool assigns IDs and replaces keys with them. A ⚠︎ suffix marks a risky
 task. `--from -` reads stdin. All rows are validated before writing; a failed later block write rolls back earlier
-block writes.
+block writes. To link each task to its spec, add a seventh column, `Ref`, with a link or a section of a document; `—`
+leaves a row without one.
 
 Use small tasks with an observable result. Estimate lines of logic, excluding tests, or use `doc` for documentation.
-`health` flags tasks over 150 lines. Require only results the task uses; an unnecessary dependency prevents parallel
+`health` flags tasks over 150 lines, or over `warnings.taskSize` when `roadmap.yaml` sets it. Require only results the task uses; an unnecessary dependency prevents parallel
 work. Edit titles, acceptance criteria, estimates, requirements and risk flags in the block YAML when needed. Keep IDs
 stable and let `close` write commits.
 

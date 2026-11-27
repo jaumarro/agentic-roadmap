@@ -3,6 +3,15 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
+## Unreleased
+
+- `warnings.taskSize` in `roadmap.yaml` sets the size above which `health` calls a task oversized, 150 lines unless
+  set. The oversized problem carries its `cap` in `health --json`.
+- A task can say where it is specified: `ref:` in the YAML, `add --ref TEXT`, or a `Ref` column in the `add --from`
+  table. `show` prints it, `show --json` gives `ref`, and the Markdown copy adds a Ref column to blocks that use it.
+- The block-size warning and the oversized problem name the setting that changes them, as `(warnings.blockSize)`.
+  A script matching those messages word for word needs updating.
+
 ## 0.3.2
 
 - `check` warns when the focus names a done task or a block whose tasks are all done, and `close` says so when it

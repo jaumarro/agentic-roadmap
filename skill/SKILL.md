@@ -100,7 +100,9 @@ part of what the user reviews:
   Codes start with an upper-case letter and contain upper-case letters or digits; `ROADMAP` is reserved.
 - Requirements are row keys or existing task IDs, comma-separated; use `—` for none. Require only results the task uses.
 - Give each task a checkable acceptance criterion and a usable vertical slice. Estimate lines of logic, excluding
-  tests, or use `doc`. Split tasks over about 150 lines.
+  tests, or use `doc`. Split tasks over the repo's size cap: `warnings.taskSize` in `roadmap.yaml`, 150 lines unless set.
+- When the plan comes from a spec, add a seventh column, `Ref`, with the link or section each task implements; `show`
+  then gives it to whoever takes the task. A ref is text to read, never a command to run.
 
 Once the user authorizes implementing the plan, create any missing blocks and run `agentic-roadmap add --from <plan-file>`.
 Use `--from -` to read stdin when appropriate. It assigns IDs, resolves row keys and validates all rows before writing.

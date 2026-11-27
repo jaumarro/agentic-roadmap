@@ -23,24 +23,27 @@ warnings:
   blockSize: [5, 25]
   chain: 5
   blocksWaitedOn: 3
+  taskSize: 150
 ```
 
-| Field      | Meaning                                                            | When omitted                                    |
-| ---------- | ------------------------------------------------------------------ | ----------------------------------------------- |
-| `blocks`   | Ordered block codes, each naming `<CODE>.yaml`                     | Required                                        |
-| `focus`    | Blocks or task IDs to prioritize, in order                         | No preference                                   |
-| `base`     | Branch from which task work starts                                 | Remote default, then `main` or `master`         |
-| `markdown` | Generated Markdown path, relative to the folder holding `roadmap/` | No automatic Markdown copy                      |
-| `chapters` | Ordered chapters, each with `name` and `blocks`                    | All blocks participate in normal task selection |
-| `warnings` | Thresholds for non-failing `check` warnings                        | Values shown above                              |
+| Field      | Meaning                                                              | When omitted                                    |
+| ---------- | -------------------------------------------------------------------- | ----------------------------------------------- |
+| `blocks`   | Ordered block codes, each naming `<CODE>.yaml`                       | Required                                        |
+| `focus`    | Blocks or task IDs to prioritize, in order                           | No preference                                   |
+| `base`     | Branch from which task work starts                                   | Remote default, then `main` or `master`         |
+| `markdown` | Generated Markdown path, relative to the folder holding `roadmap/`   | No automatic Markdown copy                      |
+| `chapters` | Ordered chapters, each with `name` and `blocks`                      | All blocks participate in normal task selection |
+| `warnings` | Thresholds for `check` warnings and for the task size `health` flags | Values shown above                              |
 
 Block codes start with an upper-case letter and contain upper-case letters or digits. They need not have three
 letters. `ROADMAP` is reserved because its file would collide with the config on case-insensitive file systems.
 
-`check` also warns when `focus` names a done task or a block whose tasks are all done. Warning thresholds affect
-`check`, not `health`. `blockSize` counts all tasks in a block; `chain` counts pending tasks
-in a dependency chain within one block; `blocksWaitedOn` counts distinct other blocks its pending tasks require within
-its chapter, or across the plan when there are no chapters.
+`check` also warns when `focus` names a done task or a block whose tasks are all done. `blockSize`, `chain` and
+`blocksWaitedOn` affect `check`; `taskSize` affects `health`. `blockSize` counts all tasks in a block; `chain` counts
+pending tasks in a dependency chain within one block; `blocksWaitedOn` counts distinct other blocks its pending tasks
+require within its chapter, or across the plan when there are no chapters. `taskSize` is the number of lines above which
+`health` reports a pending task as oversized. Set it to match the size of change your repo reviews in one go, and widen
+`blockSize` for a plan of small blocks, so these reports stay worth reading.
 
 ## Blocks and tasks
 
@@ -60,6 +63,7 @@ tasks:
     doneWhen: a reload keeps the user signed in
     lines: 40
     risky: true
+    ref: docs/login-spec.md#sessions
 ```
 
 A block has a one-line `name`, optional Markdown `intro`, and a `tasks` list, which may be empty.
@@ -73,6 +77,9 @@ A block has a one-line `name`, optional Markdown `intro`, and a `tasks` list, wh
 | `requires` | Task IDs whose results this task needs; defaults to `[]`                         |
 | `risky`    | Optional boolean; defaults to false                                              |
 | `commit`   | Quoted hexadecimal SHA, 7–40 digits, written by `close`; its presence means done |
+| `ref`      | Optional one-line pointer to where the task is specified: a link or a section    |
+
+`ref` is shown by `show` and in the generated Markdown, as text. The tool never opens or fetches it.
 
 Use `risky: true` for work involving code execution, credentials, persistence, pushes or untrusted input. It is a
 review signal and a selection tie-breaker; the CLI does not enforce a review or run acceptance checks.
