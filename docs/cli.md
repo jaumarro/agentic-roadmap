@@ -278,8 +278,9 @@ to three tasks, of all those that block work, whose share is at least 0.4, whose
 whose slack is at most a
 tenth of the critical path: a small base task with room to slip is normal and is not reported. The finding's `large`
 says whether the task is over the size cap; only then is the advice to split it. Its `asked` says whether one of the
-`savings` names the task: then the advice points at those questions, since the chain is what holds the plan up. `readyNow` and `width`
-describe dependency structure; neither is a count of unclaimed tasks available from `free`.
+`savings` names the task: then the advice points at those questions, since the chain is what holds the plan up. With
+a queue finding, a bottleneck within the cap that is asked about is left out, as the queue finding covers it.
+`readyNow` and `width` describe dependency structure; neither is a count of unclaimed tasks available from `free`.
 
 `health --strict` exits 1 for any problem. With `--against REF`, it instead exits 1 when a compared figure worsens:
 critical-path weight or problem count increases, or parallelism or width decreases. Comparison uses figures rounded

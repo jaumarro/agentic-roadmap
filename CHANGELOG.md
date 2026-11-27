@@ -5,9 +5,10 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 ## Unreleased
 
-- A bottleneck within the size cap is no longer told "split it": its problem points at the dependency questions when
-  one asks about it. In `health --json` its `large` is now true only over the cap, where it was over half of it, and
-  `asked` says whether a question names the task.
+- Breaking: in `health --json`, a bottleneck's `large` is true only over the size cap, where it was over half of it.
+  A bottleneck within the cap is no longer told "split it": its problem points at the dependency questions when one
+  asks about it, which `asked` says. When the plan is a queue, such a bottleneck is not reported, as the queue problem
+  already covers it.
 - `health` shows up to five dependency questions, where it showed three, and says how many more `--json` lists.
 - `health --sessions N` says about how many sessions reach the critical path, as "~6 reach it" or "~4 are enough", and
   `--json` gives it as `enough`. Its line is reworded, and idle reads the same in both forms, as "idle 20 %".
