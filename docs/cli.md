@@ -266,7 +266,8 @@ weighs 20. Completed tasks are excluded from remaining-work figures. Started tas
 
 `savings` are not problems and never fail `--strict`. The tool cannot know whether a task needs a requirement: each
 saving says where a second look pays most, and what dropping that one requirement alone would gain. The text shows the
-three largest, each as a question: "Does LOG.4 need LOG.3?". A requirement another route still reaches, or one on a
+five largest, each as a question: "Does LOG.4 need LOG.3?", and says how many more there are. The largest saving is not
+the likeliest "no", so read them all before choosing. A requirement another route still reaches, or one on a
 path that ties with another, saves nothing, so it is left out. So is one the task lists under `confirmed:` in its
 YAML, which is how to answer "yes" for good.
 
