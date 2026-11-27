@@ -59,7 +59,13 @@ describe('show', () => {
   it('gives the same as JSON', () => {
     const shown: unknown = JSON.parse(capture(['show', 'GET.1', '--json'], plan()).text);
 
-    expect(shown).toMatchObject({ id: 'GET.1', state: 'done', commit: 'abc1234', unblocks: [{ id: 'GET.2' }] });
+    expect(shown).toMatchObject({
+      id: 'GET.1',
+      state: 'done',
+      commit: 'abc1234',
+      ref: null,
+      unblocks: [{ id: 'GET.2' }],
+    });
   });
 
   it('fails on a task the plan does not have', () => {

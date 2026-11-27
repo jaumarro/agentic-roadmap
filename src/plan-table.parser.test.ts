@@ -19,6 +19,13 @@ describe('readPlanTable', () => {
     ]);
   });
 
+  it('reads a Ref column when the table has one, and no ref from an empty cell', () => {
+    const table = `<!-- roadmap -->\n${HEADER.replaceAll('|\n', '| Ref |\n').replace('|---| Ref |', '|---|---|')}`;
+    const rows = readPlanTable(`${table}| a | GET | A | — | x | 5 | spec.md#a |\n| b | GET | B | — | x | 5 | — |\n`);
+
+    expect(rows.map((row) => row.ref)).toEqual(['spec.md#a', undefined]);
+  });
+
   it('refuses a plan with no mark, other columns, a key twice or a size it cannot read', () => {
     expect(() => readPlanTable('# No table\n')).toThrow('No <!-- roadmap --> table');
     expect(() => readPlanTable('<!-- roadmap -->\n| Id | Task |\n|-|-|\n| a | b |\n')).toThrow('columns are Key');

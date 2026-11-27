@@ -101,6 +101,20 @@ describe('render', () => {
     expect(readRendered(root)).toContain('Focus: GET.4');
   });
 
+  it('adds a Ref column only to a block whose tasks have one', () => {
+    const root = kept();
+    capture(['render'], root);
+    expect(readRendered(root)).not.toContain('| Ref |');
+
+    capture(['add', 'GET', 'Fourth', '--done-when', 'x', '--lines', '5', '--ref', 'spec.md#4'], root);
+
+    expect(readRendered(root)).toContain(
+      '| Id | Task | Requires | Done when | Lines | Ref |\n| - | - | - | - | - | - |\n',
+    );
+    expect(readRendered(root)).toContain('| GET.4 | Fourth | — | x | ~5 | spec.md#4 |\n');
+    expect(capture(['check'], root).text).not.toContain('docs/roadmap.md');
+  });
+
   it('keeps it current when a task is closed', () => {
     const root = kept();
     execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: root });

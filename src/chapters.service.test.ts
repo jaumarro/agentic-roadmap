@@ -61,7 +61,7 @@ describe('chapters', () => {
 
     expect(capture(['check'], root).text).toBe(
       'The plan has problems:\n  a chapter names block NOPE, which the plan does not list\n  block ONE is in more than one chapter\n' +
-        'Warnings, which do not fail it:\n  ONE has 1 task, outside 5 to 25\n',
+        'Warnings, which do not fail it:\n  ONE has 1 task, outside 5 to 25 (warnings.blockSize)\n',
     );
   });
 
@@ -84,7 +84,7 @@ describe('warnings', () => {
     expect(capture(['check'], root)).toEqual({
       code: 0,
       text:
-        'The plan is sound.\nWarnings, which do not fail it:\n  TWO has 1 task, outside 5 to 25\n' +
+        'The plan is sound.\nWarnings, which do not fail it:\n  TWO has 1 task, outside 5 to 25 (warnings.blockSize)\n' +
         '  ONE.6 ends a chain of 6 pending tasks in its block\n',
     });
   });

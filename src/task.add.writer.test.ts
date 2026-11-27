@@ -86,7 +86,21 @@ describe('add, on the plan health', () => {
     expect(text).toContain(
       'Health: critical path 40 → 300 (worse) · parallelism 1.0 → 1.1 · width 1 → 2 · problems 0 → 2 (worse)\n',
     );
-    expect(text).toContain('  New problem: GET.3 is ~300 lines, over the cap of 150: split it into slices\n');
+    expect(text).toContain(
+      '  New problem: GET.3 is ~300 lines, over the cap of 150 (warnings.taskSize): split it into slices\n',
+    );
+  });
+
+  it('writes where the task is specified, and refuses an empty --ref', () => {
+    const root = repo();
+
+    capture(['add', 'GET', 'Third', ...ADD, '--ref', ' docs/spec.md#slice-3 '], root);
+
+    expect(readRoadmap(root).blocks[0]?.tasks.at(-1)?.ref).toBe('docs/spec.md#slice-3');
+    expect(capture(['show', 'GET.3'], root).text).toContain('  Ref: docs/spec.md#slice-3\n');
+    expect(capture(['add', 'GET', 'Fourth', ...ADD, '--ref', ' '], root).text).toBe(
+      '--ref needs text: a link, or a section of a document.\n',
+    );
   });
 
   it('does not call a problem new when only its figure moved', () => {

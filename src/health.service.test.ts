@@ -167,12 +167,20 @@ describe('the problems it ranks', () => {
 
     expect(measureHealth(plan(...big)).problems).toHaveLength(7);
   });
+
+  it('calls a task too big at the size roadmap.yaml sets, 150 lines unless told', () => {
+    const tasks = [task('ABC.1', [], 200), task('ABC.2', [], 600)];
+
+    expect(measureHealth(plan(...tasks)).oversized.map((each) => each.id)).toEqual(['ABC.1', 'ABC.2']);
+    const health = measureHealth({ ...plan(...tasks), warnings: { taskSize: 500 } });
+    expect(health.problems).toEqual([{ kind: 'oversized', task: 'ABC.2', lines: 600, cap: 500 }]);
+  });
 });
 
 describe('a health problem in words', () => {
   it('says what is wrong and what to do', () => {
     const words = [
-      describeHealthProblem({ kind: 'oversized', task: 'ABC.1', lines: 400 }),
+      describeHealthProblem({ kind: 'oversized', task: 'ABC.1', lines: 400, cap: 150 }),
       describeHealthProblem({ kind: 'queue', parallelism: 1.04 }),
       describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5 }),
       describeHealthProblem({
@@ -183,7 +191,7 @@ describe('a health problem in words', () => {
     ];
 
     expect(words).toEqual([
-      'ABC.1 is ~400 lines, over the cap of 150: split it into slices',
+      'ABC.1 is ~400 lines, over the cap of 150 (warnings.taskSize): split it into slices',
       'The plan is a queue: parallelism 1.0, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need',
       'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
       'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
