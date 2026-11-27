@@ -3,6 +3,11 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
+## Unreleased
+
+- `list --by wave` shows each task's slack, the lines of work it can slip by without the plan taking longer, and
+  `list --json` gives it as `slack`.
+
 ## 0.4.0
 
 - `warnings.taskSize` in `roadmap.yaml` sets the size above which `health` calls a task oversized, 150 lines unless

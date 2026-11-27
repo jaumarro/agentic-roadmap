@@ -134,12 +134,15 @@ shaped as the `next` task object, one per session. When no task is available, `n
   "risky": false,
   "wave": 1,
   "critical": true,
+  "slack": 0,
   "track": false
 }
 ```
 
 `wave` is `null` for a done task. `critical` marks the tasks the plan's length depends on; `track`, a task on a parallel
-track (a block in no chapter, once there are chapters).
+track (a block in no chapter, once there are chapters). `slack` is how many lines of work a task can slip by without
+the plan taking longer: 0 for a critical one, `null` once done. A wave is a dependency layer, not a unit of time: its
+tasks can start together but differ in size, and slack says which of them can wait. `list --by wave` prints it.
 
 `graph --json`: the same rows as `nodes`, and each requirement as an edge from the task required to the one requiring
 it: `{ "nodes": [...], "edges": [{ "from": "LOG.1", "to": "LOG.2" }] }`. Without `--all`, done tasks are left out.
