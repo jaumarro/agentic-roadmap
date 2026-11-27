@@ -123,13 +123,13 @@ describe('list --by wave', () => {
       [
         'Wave 1 · 2 tasks',
         '  GET.2  ready    Do GET.2 (critical)',
-        '  GET.3  ready    Do GET.3 (slack ~70)',
+        '  GET.3  ready    Do GET.3 (slack ~70 lines)',
         'Wave 2 · 1 task',
         '  GET.4  waiting  Do GET.4 (critical)',
         '',
         'Parallel tracks',
         'Wave 1 · 1 task',
-        '  SID.1  ready    Do SID.1 (slack ~70)',
+        '  SID.1  ready    Do SID.1 (slack ~70 lines)',
         '',
       ].join('\n'),
     );

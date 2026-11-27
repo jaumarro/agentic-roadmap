@@ -112,20 +112,24 @@ describe('render', () => {
     expect(readRendered(root)).toContain(
       '| Id | Task | Requires | Done when | Lines | Ref |\n| - | - | - | - | - | - |\n',
     );
-    expect(readRendered(root)).toContain('| GET.4 | Fourth | — | x | ~5 | [spec.md#4](../spec.md#4) |\n');
+    expect(readRendered(root)).toContain('| GET.4 | Fourth | — | x | ~5 | [`spec.md#4`](../spec.md#4) |\n');
     expect(capture(['check'], root).text).not.toContain('docs/roadmap.md');
   });
 
   it.each([
-    ['a path in the repo, from where the copy sits', 'docs/spec.md#login', '[docs/spec.md#login](spec.md#login)'],
-    ['a path in another folder', 'src/cli.ts', '[src/cli.ts](../src/cli.ts)'],
+    ['a path in the repo, from where the copy sits', 'docs/spec.md#login', '[`docs/spec.md#login`](spec.md#login)'],
+    ['a path in another folder', 'src/cli.ts', '[`src/cli.ts`](../src/cli.ts)'],
+    ['a file whose name Markdown would style', 'src/__init__.py', '[`src/__init__.py`](../src/__init__.py)'],
     [
       'a web address',
       'https://example.com/spec?id=3',
-      '[https://example.com/spec?id=3](https://example.com/spec?id=3)',
+      '[`https://example.com/spec?id=3`](https://example.com/spec?id=3)',
     ],
     ['plain words as text', 'section 3 of the spec', 'section 3 of the spec'],
     ['a version as text, as it names no file', 'v1.2', 'v1.2'],
+    ['an issue in another repo as text', 'owner/repo#12', 'owner/repo#12'],
+    ['an address with no scheme as text', 'github.com/org/repo/issues/3', 'github.com/org/repo/issues/3'],
+    ['a folder as text', 'docs/specs', 'docs/specs'],
     ['a path that climbs out as text', '../secrets.md', '../secrets.md'],
     ['text that tries to be a link as text', '[x](javascript:alert(1))', '\\[x\\](javascript:alert(1))'],
     ['a tag as text', '<img src=x>', '\\<img src=x\\>'],
@@ -140,7 +144,7 @@ describe('render', () => {
     const task = { id: 'GET.1', title: 'T', requires: [], doneWhen: 'x', lines: 5, ref: 'docs/spec.md' };
     const roadmap = { markdown: 'PLAN.md', blocks: [{ code: 'GET', name: 'G', tasks: [task] }] };
 
-    expect(renderMarkdown(roadmap)).toContain('| [docs/spec.md](docs/spec.md) |\n');
+    expect(renderMarkdown(roadmap)).toContain('| [`docs/spec.md`](docs/spec.md) |\n');
   });
 
   it('keeps it current when a task is closed', () => {

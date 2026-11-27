@@ -147,6 +147,18 @@ describe('the problems it ranks', () => {
     expect(readBottlenecks(85)).toMatchObject([{ task: 'ABC.2', large: false }]);
   });
 
+  it('reports a large critical bottleneck that tasks blocking more, but with slack, would hide', () => {
+    // XYZ.1 to XYZ.3 block a little more than CRT.2 and have slack to spare; CRT.2 waits on the critical path.
+    const fan = Array.from({ length: 6 }, (_, at) => task(`FAN.${at + 1}`, ['XYZ.3', 'CRT.2'], 40));
+    const small = [task('XYZ.1', [], 5), task('XYZ.2', ['XYZ.1'], 5), task('XYZ.3', ['XYZ.2'], 5)];
+    const health = measureHealth(plan(...small, task('CRT.1', [], 200), task('CRT.2', ['CRT.1'], 200), ...fan));
+
+    expect(health.bottlenecks.map((each) => each.id)).not.toContain('CRT.2');
+    expect(health.problems.filter((each) => each.kind === 'bottleneck')).toMatchObject([
+      { task: 'CRT.2', large: true },
+    ]);
+  });
+
   it('gives every redundant requirement in one problem', () => {
     const health = measureHealth(
       plan(
