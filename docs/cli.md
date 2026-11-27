@@ -203,11 +203,13 @@ exits 1 when `sound` is false.
 `health --json`, and `worse` names the figures that got worse by their keys: `criticalPath`, `parallelism`, `width` or
 `problems`.
 
-`health --sessions N --json`: `health --json` with `"sessions": { "count", "span", "idle" }`. `span` is how long N
-sessions take to work the plan, in lines of work done end to end, and `idle` the share of that time, over all N, in
-which a session had no task to take. In the simulation each session takes the ready task the most work waits on, as
-`next` orders them, and a task takes time in proportion to its `lines`; focus, tracks and started tasks play no part.
-`span` never goes under the critical path: compare a few values of N to see where more sessions stop helping.
+`health --sessions N --json`: `health --json` with `"sessions": { "count", "span", "idle", "enough" }`. `span` is how
+long N sessions take to work the plan, in lines of work done end to end, and `idle` the share of that time, over all N,
+in which a session had no task to take. `enough` is about how many sessions reach the critical path, whatever N was
+asked about: past it, more sessions only sit idle. In the simulation each session takes the ready task the most work
+waits on, as `next` orders them, and a task takes time in proportion to its `lines`; focus, tracks and started tasks
+play no part. `span` never goes under the critical path. `enough` comes from that way of handing out tasks, so it is a
+reference figure and not a proven minimum; the text writes it as `~6`.
 
 A command refuses an option it does not take, so `--json` on a command without JSON output is an error, not prose.
 

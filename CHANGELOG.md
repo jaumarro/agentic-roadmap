@@ -9,6 +9,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
   one asks about it. In `health --json` its `large` is now true only over the cap, where it was over half of it, and
   `asked` says whether a question names the task.
 - `health` shows up to five dependency questions, where it showed three, and says how many more `--json` lists.
+- `health --sessions N` says about how many sessions reach the critical path, as "~6 reach it" or "~4 are enough", and
+  `--json` gives it as `enough`. Its line is reworded, and idle reads the same in both forms, as "idle 20 %".
 
 ## 0.6.0
 
