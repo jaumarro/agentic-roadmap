@@ -74,6 +74,7 @@ describe('list', () => {
         risky: false,
         wave: 2,
         critical: true,
+        slack: 0,
         track: false,
       },
     ]);
@@ -122,13 +123,13 @@ describe('list --by wave', () => {
       [
         'Wave 1 · 2 tasks',
         '  GET.2  ready    Do GET.2 (critical)',
-        '  GET.3  ready    Do GET.3',
+        '  GET.3  ready    Do GET.3 (slack ~70)',
         'Wave 2 · 1 task',
         '  GET.4  waiting  Do GET.4 (critical)',
         '',
         'Parallel tracks',
         'Wave 1 · 1 task',
-        '  SID.1  ready    Do SID.1',
+        '  SID.1  ready    Do SID.1 (slack ~70)',
         '',
       ].join('\n'),
     );
@@ -145,8 +146,8 @@ describe('list --by wave', () => {
     const rows: unknown = JSON.parse(capture(['list', '--by', 'wave', '--json'], root).text);
 
     expect(rows).toMatchObject([
-      { id: 'GET.2', wave: 1 },
-      { id: 'GET.3', wave: 1 },
+      { id: 'GET.2', wave: 1, slack: 0 },
+      { id: 'GET.3', wave: 1, slack: 70 },
       { id: 'GET.4', wave: 2 },
       { id: 'SID.1' },
     ]);
