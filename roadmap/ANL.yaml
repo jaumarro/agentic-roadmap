@@ -68,3 +68,4 @@ tasks:
     title: Mark a requirement as confirmed, so health stops asking about it
     doneWhen: a requirement listed under a task's confirmed is left out of health's questions and of savings, and one that names no requirement of the task fails check
     lines: 50
+    commit: '8ae7637'
