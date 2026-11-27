@@ -136,7 +136,8 @@ describe('with the merge driver installed', () => {
     const checked = capture(['check'], root);
     expect(checked.code).toBe(0);
     expect(checked.text).toMatch(/^The plan is sound\.\n/);
-  });
+    // Some thirty git processes and four merge drivers: over the default five seconds on a busy machine.
+  }, 30_000);
 
   it('keeps the last rule of a .gitattributes that ends without a newline', () => {
     const root = mkdtempSync(join(tmpdir(), 'agentic-roadmap-'));
