@@ -6,8 +6,15 @@ import type { ShownTask, Wait } from './state.service.ts';
 const RISKY_MARK = ' ⚠︎';
 const CRITICAL_MARK = ' (critical)';
 
+// Tasks of one wave start together but differ in size: slack says which can wait, and for how much work.
+function readSlackMark(row: Row): string {
+  if (row.critical) return CRITICAL_MARK;
+  return row.slack === null ? '' : ` (slack ~${row.slack})`;
+}
+
 function renderRow(row: Row, idWidth: number, stateWidth: number): string {
-  const marks = `${row.critical ? CRITICAL_MARK : ''}${row.risky ? RISKY_MARK : ''}`;
+  const risky = row.risky ? RISKY_MARK : '';
+  const marks = `${readSlackMark(row)}${risky}`;
   return `  ${row.id.padEnd(idWidth)}  ${row.state.padEnd(stateWidth)}  ${row.title}${marks}\n`;
 }
 

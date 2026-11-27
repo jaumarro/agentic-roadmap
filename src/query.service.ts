@@ -15,6 +15,8 @@ export type Row = {
   wave: number | null;
   /** On the heaviest chain of work left: a delay to it delays the plan. */
   critical: boolean;
+  /** How many lines of work it can slip by without the plan taking longer: 0 when critical, null once done. */
+  slack: number | null;
   /** On a parallel track, which next and free leave to its own sessions. */
   track: boolean;
 };
@@ -35,6 +37,7 @@ export function listRows(roadmap: Roadmap, branches: string[], filter: { block?:
         risky: task.risky === true,
         wave: shape.get(task.id)?.wave ?? null,
         critical: shape.get(task.id)?.float === 0,
+        slack: shape.get(task.id)?.float ?? null,
         track: isOnTrack(chapterOf, task),
       })),
     )
