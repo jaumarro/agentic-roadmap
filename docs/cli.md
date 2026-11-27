@@ -228,21 +228,21 @@ commit at the time of closing. `close` does not verify the task's acceptance cri
 Health is a structural estimate, not a prediction of elapsed time. Numeric `lines` are task weights; a `doc` task
 weighs 20. Completed tasks are excluded from remaining-work figures. Started tasks still count as pending.
 
-| Field             | Meaning                                                                                                                                               |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tasksLeft`       | Number of tasks without a commit                                                                                                                      |
-| `workLeft`        | Sum of pending task weights                                                                                                                           |
-| `criticalPath`    | One heaviest dependency chain among pending tasks, with its total weight and IDs                                                                      |
-| `parallelism`     | `workLeft / criticalPath.lines`, or 0 when no work remains                                                                                            |
-| `width`           | Largest set of pending tasks with no dependency path between any pair                                                                                 |
-| `readyNow`        | Pending tasks whose requirements are done, including started tasks and unfocused tracks                                                               |
-| `bottlenecks`     | Up to three tasks blocking the most pending weight; `blocks` is that weight, `share` its fraction of other pending work, `ready` dependency readiness |
-| `redundant`       | Requirements already implied through another direct requirement, as `{ id, requires, through }`                                                       |
-| `crossBlockShare` | Fraction of all requirements crossing block boundaries, including completed tasks                                                                     |
-| `backward`        | Requirements on later blocks in config order, as `{ id, requires }`, including completed tasks                                                        |
-| `oversized`       | Pending numeric tasks over `warnings.taskSize` lines, 150 unless set, as `{ id, lines }`; its problem also carries the `cap`                          |
-| `savings`         | For each requirement between two critical tasks, the lines the critical path loses without it, as `{ id, requires, saves }`, largest first            |
-| `problems`        | Ranked findings: oversized tasks, queue, waiting bottlenecks, redundant and backward requirements                                                     |
+| Field             | Meaning                                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tasksLeft`       | Number of tasks without a commit                                                                                                                                                        |
+| `workLeft`        | Sum of pending task weights                                                                                                                                                             |
+| `criticalPath`    | One heaviest dependency chain among pending tasks, with its total weight and IDs                                                                                                        |
+| `parallelism`     | `workLeft / criticalPath.lines`, or 0 when no work remains                                                                                                                              |
+| `width`           | Largest set of pending tasks with no dependency path between any pair                                                                                                                   |
+| `readyNow`        | Pending tasks whose requirements are done, including started tasks and unfocused tracks                                                                                                 |
+| `bottlenecks`     | Up to three tasks blocking the most pending weight; `blocks` is that weight, `share` its fraction of other pending work, `ready` dependency readiness, `slack` the lines it can slip by |
+| `redundant`       | Requirements already implied through another direct requirement, as `{ id, requires, through }`                                                                                         |
+| `crossBlockShare` | Fraction of all requirements crossing block boundaries, including completed tasks                                                                                                       |
+| `backward`        | Requirements on later blocks in config order, as `{ id, requires }`, including completed tasks                                                                                          |
+| `oversized`       | Pending numeric tasks over `warnings.taskSize` lines, 150 unless set, as `{ id, lines }`; its problem also carries the `cap`                                                            |
+| `savings`         | For each requirement between two critical tasks, the lines the critical path loses without it, as `{ id, requires, saves }`, largest first                                              |
+| `problems`        | Ranked findings: oversized tasks, queue, waiting bottlenecks, redundant and backward requirements                                                                                       |
 
 `savings` are not problems and never fail `--strict`. The tool cannot know whether a task needs a requirement: each
 saving says where a second look pays most, and what dropping that one requirement alone would gain. The text shows the
@@ -250,7 +250,9 @@ three largest, each as a question: "Does LOG.4 need LOG.3?". A requirement anoth
 path that ties with another, saves nothing, so it is left out.
 
 A queue finding requires more than two pending tasks and parallelism below 1.5. Bottleneck findings use the returned
-top three bottlenecks whose share is at least 0.4 and whose requirements are not yet done. `readyNow` and `width`
+top three bottlenecks whose share is at least 0.4, whose requirements are not yet done, and whose slack is at most a
+tenth of the critical path: a small base task with room to slip is normal and is not reported. The finding's `large`
+says whether the task is over half the size cap; only then is the advice to split it. `readyNow` and `width`
 describe dependency structure; neither is a count of unclaimed tasks available from `free`.
 
 `health --strict` exits 1 for any problem. With `--against REF`, it instead exits 1 when a compared figure worsens:
