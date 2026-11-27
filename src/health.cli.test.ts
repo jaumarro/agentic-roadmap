@@ -82,6 +82,23 @@ describe('health', () => {
     expect(health).toMatchObject({ width: 1, workLeft: 120 });
   });
 
+  it('adds how long N sessions take, as text and as JSON, and refuses a number that is none', () => {
+    const root = roadmap(QUEUE);
+
+    expect(capture(['health', '--sessions', '2'], root).text).toContain(
+      '  Sessions        2 sessions take ~120 lines end to end, ~0 over the critical path · idle 50 % of the time\n',
+    );
+    const health: unknown = JSON.parse(capture(['health', '--sessions', '2', '--json'], root).text);
+    expect(health).toMatchObject({ workLeft: 120, sessions: { count: 2, span: 120, idle: 0.5 } });
+    expect(capture(['health', '--sessions', 'many'], root)).toEqual({
+      code: 1,
+      text: '--sessions is a positive whole number of sessions.\n',
+    });
+    expect(capture(['health', '--sessions', '2', '--against', 'main'], root).text).toBe(
+      'health takes --sessions or --against, not both.\n',
+    );
+  });
+
   it('says there is nothing to measure once everything is done', () => {
     const done = "name: G\ntasks:\n  - id: GET.1\n    title: a\n    doneWhen: x\n    lines: 1\n    commit: 'abc1234'\n";
 
