@@ -17,7 +17,7 @@ type Saving = { id: string; requires: string; saves: number };
 export type HealthProblem =
   | { kind: 'oversized'; task: string; lines: number; cap: number }
   | { kind: 'queue'; parallelism: number }
-  | { kind: 'bottleneck'; task: string; share: number; large: boolean }
+  | { kind: 'bottleneck'; task: string; share: number; large: boolean; asked: boolean }
   | { kind: 'redundant'; requirements: Redundant[] }
   | { kind: 'backward'; requirements: Backward[] };
 
@@ -136,7 +136,8 @@ function rankProblems(
       kind: 'bottleneck',
       task: each.id,
       share: each.share,
-      large: (sizes.get(each.id) ?? 0) > cap / 2,
+      large: (sizes.get(each.id) ?? 0) > cap,
+      asked: health.savings.some((saving) => saving.id === each.id || saving.requires === each.id),
     }));
   // All in one problem, so one pass drops them all instead of one per run.
   const redundant: HealthProblem[] =
@@ -146,6 +147,16 @@ function rankProblems(
   return [...oversized, ...queue, ...bottlenecks, ...redundant, ...backward];
 }
 
+/**
+ * A task within the size cap gains nothing from a split: what holds the plan up is the chain it sits on, which the
+ * questions already ask about, so the advice sends the reader there instead of saying it twice.
+ */
+function adviseOnBottleneck(problem: { large: boolean; asked: boolean }): string {
+  if (problem.large) return 'split it';
+  if (problem.asked) return 'it is within the size cap, so look at its chain, which the questions ask about';
+  return 'it is within the size cap, so take what it requires first';
+}
+
 /** A health problem in words, with what to do. */
 export function describeHealthProblem(problem: HealthProblem): string {
   switch (problem.kind) {
@@ -153,11 +164,8 @@ export function describeHealthProblem(problem: HealthProblem): string {
       return `${problem.task} is ~${problem.lines} lines, over the cap of ${problem.cap} (warnings.taskSize): split it into slices`;
     case 'queue':
       return `The plan is a queue: parallelism ${problem.parallelism.toFixed(1)}, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need`;
-    case 'bottleneck': {
-      // Splitting a small task gains nothing: what helps is reaching it sooner.
-      const advice = problem.large ? 'split it' : 'it is small, so take what it requires first';
-      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits: ${advice}`;
-    }
+    case 'bottleneck':
+      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits: ${adviseOnBottleneck(problem)}`;
     case 'redundant': {
       const pairs = problem.requirements.map((each) => `${each.id} → ${each.requires} (via ${each.through})`);
       return `Requirements another one already implies: ${pairs.join(', ')}: drop them`;
