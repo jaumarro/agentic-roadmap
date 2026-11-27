@@ -1,4 +1,4 @@
-import { editBlocks, findTaskNode, setIdList } from './block.edit.writer.ts';
+import { editBlocks, findTaskNode, renameId, setIdList } from './block.edit.writer.ts';
 import { describeProblems } from './check.service.ts';
 import { RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 import { checkNewTask, createTaskNode, type NewTask } from './task.add.writer.ts';
@@ -24,8 +24,13 @@ function readKept(task: Task, second: SecondPart, keep: number | 'doc' | undefin
   return left;
 }
 
-function swap(ids: string[] | undefined, from: string, to: string): string[] {
-  return (ids ?? []).map((id) => (id === from ? to : id));
+function swap(ids: string[], from: string, to: string): string[] {
+  return ids.map((id) => (id === from ? to : id));
+}
+
+// Someone confirmed the task needs the whole: whether it needs the second part is a new question for health to ask.
+function dropId(ids: string[], gone: string): string[] {
+  return ids.filter((id) => id !== gone);
 }
 
 /** The plan with `id` split: its first part, the second after it, and what waited on `id` waiting on the second. */
@@ -33,7 +38,7 @@ function planSplit(roadmap: Roadmap, first: Task, second: Task): Roadmap {
   const move = (task: Task): Task[] => {
     if (task.id === first.id) return [first, second];
     if (!task.requires.includes(first.id)) return [task];
-    const confirmed = task.confirmed === undefined ? {} : { confirmed: swap(task.confirmed, first.id, second.id) };
+    const confirmed = task.confirmed === undefined ? {} : { confirmed: dropId(task.confirmed, first.id) };
     return [{ ...task, requires: swap(task.requires, first.id, second.id), ...confirmed }];
   };
   return { ...roadmap, blocks: roadmap.blocks.map((block) => ({ ...block, tasks: block.tasks.flatMap(move) })) };
@@ -80,8 +85,8 @@ export function splitTask(
       const open = blocks.get(readBlockCode(each.id));
       if (open === undefined) continue;
       const moved = findTaskNode(open, each.id);
-      setIdList(open, moved, 'requires', swap(each.requires, id, secondId));
-      if (each.confirmed !== undefined) setIdList(open, moved, 'confirmed', swap(each.confirmed, id, secondId));
+      renameId(moved, 'requires', id, secondId);
+      if (each.confirmed !== undefined) setIdList(open, moved, 'confirmed', dropId(each.confirmed, id));
     }
   });
   return { first, second, moved: waiting.map((each) => each.id) };

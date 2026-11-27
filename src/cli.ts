@@ -202,9 +202,8 @@ function split(root: string, command: Command, out: Io['out']): void {
   const done = splitTask(root, roadmap, id, secondId, part, keep);
   const after = readRoadmap(root);
   syncAfterChange(root, after, `Split ${id} into ${id} and ${secondId}.`);
-  out(
-    `Split ${id}: it keeps ${readSize(done.first.lines)}, and ${secondId} · ${part.title} takes the rest, after it.\n`,
-  );
+  const kept = readSize(done.first.lines);
+  out(`Split ${id}: it keeps ${kept}, and ${secondId} · ${part.title}, after it, is ${readSize(part.lines)}.\n`);
   if (done.moved.length > 0) out(`What waited on ${id} now waits on ${secondId}: ${done.moved.join(', ')}.\n`);
   out(`Review ${id}'s «Done when» in ${ROADMAP_DIR}/${code}.yaml, then commit it as «docs: plan ${id}».\n`);
   out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
