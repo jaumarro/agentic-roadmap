@@ -30,29 +30,40 @@ function start(root: string, ...args: string[]) {
   return runAsync(process.execPath, [CLI, ...args], { cwd: root });
 }
 
+// Five node processes at once, each waiting its turn on the lock: over the default five seconds on a busy machine.
+const SLOW = 30_000;
+
 describe('sessions changing one checkout at once', () => {
-  it('keeps every close and every add', async () => {
-    const root = repo();
-    const sha = git(root, 'rev-parse', '--short', 'HEAD');
-    const adds = ['A', 'B', 'C', 'D'].map((title) =>
-      start(root, 'add', 'GET', title, '--done-when', 'x', '--lines', '5'),
-    );
+  it(
+    'keeps every close and every add',
+    async () => {
+      const root = repo();
+      const sha = git(root, 'rev-parse', '--short', 'HEAD');
+      const adds = ['A', 'B', 'C', 'D'].map((title) =>
+        start(root, 'add', 'GET', title, '--done-when', 'x', '--lines', '5'),
+      );
 
-    await Promise.all([start(root, 'close', 'GET.1', '--commit', sha), ...adds]);
+      await Promise.all([start(root, 'close', 'GET.1', '--commit', sha), ...adds]);
 
-    const tasks = readRoadmap(root).blocks[0]?.tasks ?? [];
-    expect(tasks).toHaveLength(6);
-    expect(tasks.find((task) => task.id === 'GET.1')?.commit).toBe(sha);
-  });
+      const tasks = readRoadmap(root).blocks[0]?.tasks ?? [];
+      expect(tasks).toHaveLength(6);
+      expect(tasks.find((task) => task.id === 'GET.1')?.commit).toBe(sha);
+    },
+    SLOW,
+  );
 
-  it('keeps the focus and every block', async () => {
-    const root = repo();
-    const codes = ['AAA', 'BBB', 'CCC', 'DDD'];
+  it(
+    'keeps the focus and every block',
+    async () => {
+      const root = repo();
+      const codes = ['AAA', 'BBB', 'CCC', 'DDD'];
 
-    await Promise.all([start(root, 'focus', 'GET'), ...codes.map((code) => start(root, 'add-block', code, 'Name'))]);
+      await Promise.all([start(root, 'focus', 'GET'), ...codes.map((code) => start(root, 'add-block', code, 'Name'))]);
 
-    const roadmap = readRoadmap(root);
-    expect(roadmap.focus).toEqual(['GET']);
-    expect(roadmap.blocks.map((block) => block.code).toSorted()).toEqual(['GET', ...codes].toSorted());
-  });
+      const roadmap = readRoadmap(root);
+      expect(roadmap.focus).toEqual(['GET']);
+      expect(roadmap.blocks.map((block) => block.code).toSorted()).toEqual(['GET', ...codes].toSorted());
+    },
+    SLOW,
+  );
 });

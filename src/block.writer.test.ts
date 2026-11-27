@@ -85,7 +85,8 @@ describe('add-block', () => {
         .blocks.map((block) => block.code)
         .toSorted(),
     ).toEqual(['GET', ...codes].toSorted());
-  });
+    // Six node processes at once, each waiting its turn on the lock.
+  }, 30_000);
 
   it('refuses a code another branch started', () => {
     const root = project();
