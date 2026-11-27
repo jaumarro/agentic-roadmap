@@ -165,7 +165,9 @@ export function warnRoadmap(roadmap: Roadmap): string[] {
     const size = block.tasks.length;
     const waitedOn = readBlocksWaitedOn(block, chapterOf);
     return [
-      ...(size < min || size > max ? [`${block.code} has ${countTasks(size)}, outside ${min} to ${max}`] : []),
+      ...(size < min || size > max
+        ? [`${block.code} has ${countTasks(size)}, outside ${min} to ${max} (warnings.blockSize)`]
+        : []),
       ...(waitedOn.length > maxWaitedOn ? [`${block.code} waits on ${waitedOn.join(', ')}`] : []),
     ];
   });

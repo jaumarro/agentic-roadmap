@@ -11,7 +11,7 @@ type Backward = { id: string; requires: string };
 
 /** A problem in the plan's shape, as data; `describeHealthProblem` gives it in words, with what to do. */
 export type HealthProblem =
-  | { kind: 'oversized'; task: string; lines: number }
+  | { kind: 'oversized'; task: string; lines: number; cap: number }
   | { kind: 'queue'; parallelism: number }
   | { kind: 'bottleneck'; task: string; share: number }
   | { kind: 'redundant'; requirements: Redundant[] }
@@ -97,8 +97,13 @@ function readPercent(share: number): string {
   return `${Math.round(share * 100)} %`;
 }
 
-function rankProblems(health: Omit<Health, 'problems'>): HealthProblem[] {
-  const oversized = health.oversized.map(({ id, lines }): HealthProblem => ({ kind: 'oversized', task: id, lines }));
+function rankProblems(health: Omit<Health, 'problems'>, cap: number): HealthProblem[] {
+  const oversized = health.oversized.map(({ id, lines }): HealthProblem => ({
+    kind: 'oversized',
+    task: id,
+    lines,
+    cap,
+  }));
   const queue: HealthProblem[] =
     health.tasksLeft > 2 && health.parallelism < QUEUE_PARALLELISM
       ? [{ kind: 'queue', parallelism: health.parallelism }]
@@ -119,7 +124,7 @@ function rankProblems(health: Omit<Health, 'problems'>): HealthProblem[] {
 export function describeHealthProblem(problem: HealthProblem): string {
   switch (problem.kind) {
     case 'oversized':
-      return `${problem.task} is ~${problem.lines} lines, over the cap of ${SIZE_CAP}: split it into slices`;
+      return `${problem.task} is ~${problem.lines} lines, over the cap of ${problem.cap} (warnings.taskSize): split it into slices`;
     case 'queue':
       return `The plan is a queue: parallelism ${problem.parallelism.toFixed(1)}, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need`;
     case 'bottleneck':
@@ -138,6 +143,7 @@ export function describeHealthProblem(problem: HealthProblem): string {
 
 /** How healthy the plan left to do is: its shape as a graph of tasks, and the worst problems with what to do. */
 export function measureHealth(roadmap: Roadmap): Health {
+  const cap = roadmap.warnings?.taskSize ?? SIZE_CAP;
   const tasks = roadmap.blocks.flatMap((block) => block.tasks);
   const blockOf = new Map(roadmap.blocks.flatMap((block) => block.tasks.map((task) => [task.id, block.code])));
   const byId = new Map(tasks.map((task) => [task.id, task]));
@@ -180,8 +186,8 @@ export function measureHealth(roadmap: Roadmap): Health {
     crossBlockShare: edges.length === 0 ? 0 : crossing / edges.length,
     backward,
     oversized: pending.flatMap((task) =>
-      task.lines !== 'doc' && task.lines > SIZE_CAP ? [{ id: task.id, lines: task.lines }] : [],
+      task.lines !== 'doc' && task.lines > cap ? [{ id: task.id, lines: task.lines }] : [],
     ),
   };
-  return { ...measured, problems: rankProblems(measured) };
+  return { ...measured, problems: rankProblems(measured, cap) };
 }
