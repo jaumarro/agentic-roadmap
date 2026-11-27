@@ -84,3 +84,4 @@ tasks:
     title: Say about how many sessions reach the critical path
     doneWhen: health --sessions N ends by saying about how many sessions reach the critical path, in both of its wordings, and --json gives it as enough
     lines: 50
+    commit: 'cdc1330'
