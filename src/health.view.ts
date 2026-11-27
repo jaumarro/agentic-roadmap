@@ -42,12 +42,34 @@ function readSavings(savings: Health['savings']): string {
   return `Worth asking, as a no shortens the critical path; ${how}:\n${lines.join('')}${more}\n`;
 }
 
+function countSessions(count: number, one: string, many: string): string {
+  return count === 1 ? `1 session ${one}` : `${count} sessions ${many}`;
+}
+
+function readEnough(enough: number): string {
+  return enough === 1 ? '~1 is enough' : `~${enough} are enough`;
+}
+
+/**
+ * What `count` sessions do. Short of the critical path, it ends in about how many reach it, which is what answers how
+ * many to start. `enough` is a reference from the simulation, so it is always written as about.
+ */
+function describeSimulation(health: Health, simulation: Simulation): string {
+  const { count, span, enough } = simulation;
+  const idle = `idle ${Math.round(simulation.idle * 100)} %`;
+  const over = span - health.criticalPath.lines;
+  if (over > 0) {
+    const took = countSessions(count, 'takes', 'take');
+    return `${took} ~${span} lines end to end, ~${over} over the critical path · ${idle} · ~${enough} reach it`;
+  }
+  const reached = countSessions(count, 'reaches', 'reach');
+  const spare = count > enough ? readEnough(enough) : "more don't shorten it";
+  return `${reached} the critical path, ~${span} lines: ${spare} · ${idle}`;
+}
+
 function readSimulation(health: Health, simulation: Simulation | undefined): string {
   if (simulation === undefined) return '';
-  const over = simulation.span - health.criticalPath.lines;
-  const idle = Math.round(simulation.idle * 100);
-  const sessions = simulation.count === 1 ? '1 session takes' : `${simulation.count} sessions take`;
-  return `  Sessions        ${sessions} ~${simulation.span} lines end to end, ~${over} over the critical path · idle ${idle} % of the time\n`;
+  return `  Sessions        ${describeSimulation(health, simulation)}\n`;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { analyze, weigh } from './roadmap.analysis.service.ts';
+import { analyze, type Shape, weigh } from './roadmap.analysis.service.ts';
 import type { Roadmap, Task } from './roadmap.model.ts';
 
 export type Simulation = {
@@ -8,6 +8,11 @@ export type Simulation = {
   span: number;
   /** The share of that time, over all the sessions, in which a session had no task to take. */
   idle: number;
+  /**
+   * About how many sessions reach the critical path, past which more only sit idle. A reference, not a proven minimum:
+   * it comes from this simulation's way of handing out tasks.
+   */
+  enough: number;
 };
 
 type Running = { task: Task; ends: number };
@@ -19,6 +24,29 @@ type Running = { task: Task; ends: number };
  */
 export function simulateSessions(roadmap: Roadmap, count: number): Simulation {
   const shape = analyze(roadmap);
+  const span = measureSpan(shape, count);
+  const idle = span === 0 ? 0 : 1 - shape.work / (count * span);
+  return { count, span, idle, enough: findEnough(shape) };
+}
+
+/**
+ * The fewest sessions whose span is the critical path, by halving: with one per task every task starts as soon as it
+ * can, so that many always reach it, and fewer sessions are taken never to do better than more.
+ */
+function findEnough(shape: Shape): number {
+  let low = 1;
+  let high = shape.order.length;
+  if (high === 0) return 0;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (measureSpan(shape, middle) <= shape.span) high = middle;
+    else low = middle + 1;
+  }
+  return low;
+}
+
+/** How long `count` sessions take to work the plan of `shape`, in lines of work done end to end. */
+function measureSpan(shape: Shape, count: number): number {
   const pending = new Map(shape.order.map((task) => [task.id, task]));
   const waitsOn = new Map(shape.order.map((task) => [task.id, task.requires.filter((id) => pending.has(id)).length]));
   const rank = (task: Task) => shape.tasks.get(task.id)?.bottomLevel ?? 0;
@@ -35,7 +63,7 @@ export function simulateSessions(roadmap: Roadmap, count: number): Simulation {
     running = running.filter((each) => each.ends !== now);
     ready = [...ready, ...release(shape.order, finished, waitsOn)];
   }
-  return { count, span: now, idle: now === 0 ? 0 : 1 - shape.work / (count * now) };
+  return now;
 }
 
 /** The tasks that waited only on `finished` ones, in the plan's order; `waitsOn` counts what each still waits on. */
