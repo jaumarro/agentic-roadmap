@@ -3,4 +3,3 @@ blocks: [COR, QRY, PAR, DOC, AGT, REV, ANL, CLI, EDT]
 # A small package: a block of one or two slices is enough here.
 warnings:
   blockSize: [1, 25]
-focus: [ANL.8, ANL.7, ANL.12, ANL.9, ANL.11, DOC.3]
