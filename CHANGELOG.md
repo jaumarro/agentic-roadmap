@@ -3,7 +3,7 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
-## Unreleased
+## 0.4.0
 
 - `warnings.taskSize` in `roadmap.yaml` sets the size above which `health` calls a task oversized, 150 lines unless
   set. The oversized problem carries its `cap` in `health --json`.
