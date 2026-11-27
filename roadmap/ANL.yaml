@@ -79,6 +79,7 @@ tasks:
     title: Say how many dependency questions health left out
     doneWhen: health shows up to five questions and, past that, how many more health --json lists
     lines: 15
+    commit: '96acd38'
   - id: ANL.17
     title: Say about how many sessions reach the critical path
     doneWhen: health --sessions N ends by saying about how many sessions reach the critical path, in both of its wordings, and --json gives it as enough
