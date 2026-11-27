@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import type { Problem } from './check.service.ts';
 import { ROADMAP_DIR, RoadmapError, type Block, type Roadmap, type Task } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
@@ -18,18 +18,39 @@ function escapeCell(text: string): string {
   return text.replaceAll('|', '\\|');
 }
 
-function renderRow(task: Task, withRef: boolean): string {
+// Nothing in either that could close the link early or open another piece of Markdown.
+const WEB_LINK = /^https?:\/\/[^\s()<>[\]|\\`]+$/;
+const REPO_PATH = /^[\w@~.-]+(\/[\w@~.-]+)*(#[\w.-]*)?$/;
+const FILE_NAME = /\.[A-Za-z]\w*$/;
+
+/**
+ * A ref as Markdown: a link when it is a web address or a path from the folder holding roadmap/, which is rewritten
+ * to start at `from`, the folder the copy sits in, so it opens from there in any viewer. Anything else is text, with
+ * what could start a link or a tag escaped.
+ */
+function renderRef(ref: string, from: string): string {
+  if (WEB_LINK.test(ref)) return `[${ref}](${ref})`;
+  const [path = '', anchor] = ref.split('#');
+  // `v1.2` or `LOG-3` name no file: a path has a folder, or ends as a file name does.
+  const isPath = REPO_PATH.test(ref) && (path.includes('/') || FILE_NAME.test(path)) && !path.split('/').includes('..');
+  if (!isPath) return ref.replaceAll(/[[\]<>`\\]/g, (mark) => `\\${mark}`);
+  const section = anchor === undefined ? '' : `#${anchor}`;
+  return `[${ref}](${posix.relative(from, path)}${section})`;
+}
+
+function renderRow(task: Task, withRef: boolean, from: string): string {
   const done = task.commit === undefined ? '' : DONE_MARK;
   const risky = task.risky === true ? RISKY_MARK : '';
   const requires = task.requires.length === 0 ? '—' : task.requires.join(', ');
   const doneWhen = task.commit === undefined ? task.doneWhen : `${task.commit}: ${task.doneWhen}`;
   const lines = task.lines === 'doc' ? 'doc' : `~${task.lines}`;
-  const ref = withRef ? [task.ref ?? '—'] : [];
+  const shownRef = task.ref === undefined ? '—' : renderRef(task.ref, from);
+  const ref = withRef ? [shownRef] : [];
   const cells = [`${done}${task.id}${risky}`, task.title, requires, doneWhen, lines, ...ref].map(escapeCell);
   return `| ${cells.join(' | ')} |\n`;
 }
 
-function renderBlock(block: Block): string {
+function renderBlock(block: Block, from: string): string {
   const intro = block.intro === undefined || block.intro === '' ? '' : `${block.intro.trim()}\n\n`;
   const heading = `## ${block.code} · ${block.name}\n\n${intro}`;
   if (block.tasks.length === 0) return `${heading}No tasks yet.\n`;
@@ -38,7 +59,7 @@ function renderBlock(block: Block): string {
   const table = withRef
     ? '| Id | Task | Requires | Done when | Lines | Ref |\n| - | - | - | - | - | - |\n'
     : '| Id | Task | Requires | Done when | Lines |\n| - | - | - | - | - |\n';
-  return heading + table + block.tasks.map((task) => renderRow(task, withRef)).join('');
+  return heading + table + block.tasks.map((task) => renderRow(task, withRef, from)).join('');
 }
 
 /**
@@ -49,7 +70,9 @@ export function renderMarkdown(roadmap: Roadmap): string {
   const focus = roadmap.focus ?? [];
   const focused = focus.length === 0 ? '' : `Focus: ${focus.join(', ')}\n\n`;
   const note = `<!-- Generated from ${ROADMAP_DIR}/ by agentic-roadmap render. Edit the YAML, then run render. -->\n\n`;
-  return `# Roadmap\n\n${note}${focused}${roadmap.blocks.map(renderBlock).join('\n')}`;
+  const from = posix.dirname(readMarkdownPath(roadmap).replaceAll('\\', '/'));
+  const blocks = roadmap.blocks.map((block) => renderBlock(block, from));
+  return `# Roadmap\n\n${note}${focused}${blocks.join('\n')}`;
 }
 
 /** Writes the Markdown where the config says; the path written. */
