@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
+import { type Document, isMap, isSeq, type Node, parseDocument, YAMLSeq } from 'yaml';
 import { describeProblems } from './check.service.ts';
 import { InvalidPlan, readTask, ROADMAP_DIR, RoadmapError, type Roadmap, type Task } from './roadmap.model.ts';
 import { readCode } from './roadmap.repository.ts';
@@ -40,6 +40,23 @@ export function checkNewTask(id: string, task: NewTask): void {
   }
 }
 
+/** `task` as `id`, as an entry for a block file's list of tasks. */
+export function createTaskNode(doc: Document, id: string, task: NewTask): Node {
+  const node = doc.createNode({
+    id,
+    title: task.title,
+    ...(task.requires.length > 0 ? { requires: task.requires } : {}),
+    doneWhen: task.doneWhen,
+    lines: task.lines,
+    ...(task.risky === true ? { risky: true } : {}),
+    ...(task.ref === undefined ? {} : { ref: task.ref }),
+  });
+  // Requirements read best on one line, as the rest of the plan writes them.
+  const requires = isMap(node) ? node.get('requires', true) : undefined;
+  if (requires instanceof YAMLSeq) requires.flow = true;
+  return node;
+}
+
 /** Writes `task` as `id` at the end of block `code`'s file, as it is: whoever calls it has checked the plan. */
 export function appendTask(root: string, code: string, id: string, task: NewTask): void {
   const name = `${ROADMAP_DIR}/${code}.yaml`;
@@ -48,20 +65,8 @@ export function appendTask(root: string, code: string, id: string, task: NewTask
     const doc = parseDocument(readFileSync(path, 'utf8'));
     const tasks = doc.get('tasks');
     if (!isSeq(tasks)) throw new RoadmapError(`${name} has no task list to add to.`);
-    const node = doc.createNode({
-      id,
-      title: task.title,
-      ...(task.requires.length > 0 ? { requires: task.requires } : {}),
-      doneWhen: task.doneWhen,
-      lines: task.lines,
-      ...(task.risky === true ? { risky: true } : {}),
-      ...(task.ref === undefined ? {} : { ref: task.ref }),
-    });
-    // Requirements read best on one line, as the rest of the plan writes them.
-    const requires = isMap(node) ? node.get('requires', true) : undefined;
-    if (requires instanceof YAMLSeq) requires.flow = true;
     tasks.flow = false;
-    tasks.items.push(node);
+    tasks.items.push(createTaskNode(doc, id, task));
     writeInside(root, name, doc.toString({ lineWidth: 0, flowCollectionPadding: false }));
   } catch (error) {
     if (error instanceof RoadmapError) throw error;
