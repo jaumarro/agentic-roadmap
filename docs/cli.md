@@ -249,8 +249,9 @@ saving says where a second look pays most, and what dropping that one requiremen
 three largest, each as a question: "Does LOG.4 need LOG.3?". A requirement another route still reaches, or one on a
 path that ties with another, saves nothing, so it is left out.
 
-A queue finding requires more than two pending tasks and parallelism below 1.5. Bottleneck findings use the returned
-top three bottlenecks whose share is at least 0.4, whose requirements are not yet done, and whose slack is at most a
+A queue finding requires more than two pending tasks and parallelism below 1.5. Bottleneck findings are up
+to three tasks, of all those that block work, whose share is at least 0.4, whose requirements are not yet done, and
+whose slack is at most a
 tenth of the critical path: a small base task with room to slip is normal and is not reported. The finding's `large`
 says whether the task is over half the size cap; only then is the advice to split it. `readyNow` and `width`
 describe dependency structure; neither is a count of unclaimed tasks available from `free`.

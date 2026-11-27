@@ -80,9 +80,10 @@ A block has a one-line `name`, optional Markdown `intro`, and a `tasks` list, wh
 | `ref`      | Optional one-line pointer to where the task is specified: a link or a section    |
 
 `ref` is shown by `show` and in the generated Markdown. The tool never opens or fetches it. In the Markdown it is a
-link when it is an `http(s)` address or a path: write a path from the folder holding `roadmap/`, as
+link when it is an `http(s)` address or a path to a file: write the path from the folder holding `roadmap/`, as
 `docs/login-spec.md#sessions`, and the copy links to it from wherever it sits, so it opens in GitHub and in a local
-viewer alike. Anything else, as `section 3 of the spec`, stays text.
+viewer alike. A path is told by its file extension, so a folder, `owner/repo#12` and `section 3 of the spec` stay
+text. Give a web address its `https://`: `example.com` alone reads as a file of that name.
 
 A block's `intro` is copied as written, so a link in it is read from the Markdown copy's folder, not from `roadmap/`.
 

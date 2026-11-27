@@ -5,7 +5,7 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 ## Unreleased
 
-- `list --by wave` shows each task's slack, the lines of work it can slip by without the plan taking longer, and
+- `list --by wave` shows each task's slack, as `(slack ~70 lines)`: the lines of work it can slip by without the plan taking longer, and
   `list --json` gives it as `slack`.
 - `health` asks about the requirements whose absence would shorten the critical path, as "Does LOG.4 need LOG.3?", the
   three largest in the text and all of them as `savings` in `health --json`. It edits nothing, and they are not
@@ -18,8 +18,10 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 - `health` no longer prints "Across blocks": the figure gave nothing to act on. `health --json` keeps
   `crossBlockShare`.
 - The health problem for a requirement on a later block says that `check` does not fail on it.
-- A task's `ref` is a link in the Markdown copy when it is an `http(s)` address or a path from the folder holding
-  `roadmap/`, rewritten to open from where the copy sits. A plan with refs and a Markdown copy needs `render` once.
+- Breaking: a task's `ref` is a link in the Markdown copy when it is an `http(s)` address or a path to a file from the
+  folder holding `roadmap/`, rewritten to open from where the copy sits. On a plan with refs and a Markdown copy,
+  `check` fails after the upgrade until `render` is run once.
+- `health` no longer misses a waiting bottleneck on the critical path when three tasks with slack block more work.
 
 ## 0.4.0
 
