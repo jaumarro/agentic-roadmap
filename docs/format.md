@@ -20,7 +20,7 @@ chapters:
   - name: First release
     blocks: [LOG, PAY]
 warnings:
-  blockSize: [5, 25]
+  blockSize: [1, 25]
   chain: 5
   blocksWaitedOn: 3
   taskSize: 150
@@ -42,8 +42,8 @@ letters. `ROADMAP` is reserved because its file would collide with the config on
 `blocksWaitedOn` affect `check`; `taskSize` affects `health`. `blockSize` counts all tasks in a block; `chain` counts
 pending tasks in a dependency chain within one block; `blocksWaitedOn` counts distinct other blocks its pending tasks
 require within its chapter, or across the plan when there are no chapters. `taskSize` is the number of lines above which
-`health` reports a pending task as oversized. Set it to match the size of change your repo reviews in one go, and widen
-`blockSize` for a plan of small blocks, so these reports stay worth reading.
+`health` reports a pending task as oversized. Set it to match the size of change your repo reviews in one go, so its reports stay worth reading. By default only an
+empty block or one over 25 tasks warns; raise the minimum, as `blockSize: [5, 25]`, to hear about small blocks too.
 
 ## Blocks and tasks
 

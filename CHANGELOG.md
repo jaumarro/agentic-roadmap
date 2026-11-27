@@ -13,6 +13,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 - `health` reports a waiting bottleneck only on the critical path or with slack under a tenth of it, and advises a
   split only for a task over half the size cap. Each bottleneck carries its `slack`, and the problem says whether it is
   `large`.
+- `check` warns by default only of an empty block or one over 25 tasks; a small block no longer warns. Set
+  `warnings.blockSize: [5, 25]` for the old limits.
 
 ## 0.4.0
 
