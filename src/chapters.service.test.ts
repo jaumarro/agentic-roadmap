@@ -22,7 +22,8 @@ function plan(config: string, blocks: Record<string, string[]>): string {
   initRoadmap(root);
   writeFileSync(join(root, 'roadmap', 'roadmap.yaml'), config);
   for (const [code, tasks] of Object.entries(blocks)) {
-    writeFileSync(join(root, 'roadmap', `${code}.yaml`), `name: Block ${code}\ntasks:\n${tasks.join('')}`);
+    const list = tasks.length === 0 ? ' []\n' : `\n${tasks.join('')}`;
+    writeFileSync(join(root, 'roadmap', `${code}.yaml`), `name: Block ${code}\ntasks:${list}`);
   }
   return root;
 }
@@ -60,8 +61,7 @@ describe('chapters', () => {
     );
 
     expect(capture(['check'], root).text).toBe(
-      'The plan has problems:\n  a chapter names block NOPE, which the plan does not list\n  block ONE is in more than one chapter\n' +
-        'Warnings, which do not fail it:\n  ONE has 1 task, outside 5 to 25 (warnings.blockSize)\n',
+      'The plan has problems:\n  a chapter names block NOPE, which the plan does not list\n  block ONE is in more than one chapter\n',
     );
   });
 
@@ -75,18 +75,24 @@ describe('chapters', () => {
 });
 
 describe('warnings', () => {
-  it('warns on a block outside 5 to 25 tasks and a long chain, without failing check', () => {
+  it('warns on an empty block and a long chain, not on a small block, without failing check', () => {
     const chain = ['ONE.1', 'ONE.2', 'ONE.3', 'ONE.4', 'ONE.5', 'ONE.6'].map((id, at, ids) =>
       task(id, at === 0 ? [] : [ids[at - 1] ?? '']),
     );
-    const root = plan('blocks: [ONE, TWO]\n', { ONE: chain, TWO: [task('TWO.1')] });
+    const root = plan('blocks: [ONE, TWO, NEW]\n', { ONE: chain, TWO: [task('TWO.1')], NEW: [] });
 
     expect(capture(['check'], root)).toEqual({
       code: 0,
       text:
-        'The plan is sound.\nWarnings, which do not fail it:\n  TWO has 1 task, outside 5 to 25 (warnings.blockSize)\n' +
+        'The plan is sound.\nWarnings, which do not fail it:\n  NEW has 0 tasks, outside 1 to 25 (warnings.blockSize)\n' +
         '  ONE.6 ends a chain of 6 pending tasks in its block\n',
     });
+  });
+
+  it('warns on a small block when roadmap.yaml asks for bigger ones', () => {
+    const root = plan('blocks: [ONE]\nwarnings:\n  blockSize: [5, 25]\n', { ONE: [task('ONE.1')] });
+
+    expect(capture(['check'], root).text).toContain('  ONE has 1 task, outside 5 to 25 (warnings.blockSize)\n');
   });
 
   it('warns on a block waiting on more blocks than the config allows', () => {
