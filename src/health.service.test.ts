@@ -260,8 +260,8 @@ describe('a health problem in words', () => {
       'ABC.1 is ~400 lines, over the cap of 150 (warnings.taskSize): split it into slices',
       'The plan is a queue: parallelism 1.0, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need',
       'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
-      'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so look at its chain: the questions ask about it, and --json lists every one',
-      'ABC.2 blocks 50 % of the rest of the work while it waits: it is within the size cap, so take what it requires first',
+      'ABC.2 blocks 50 % of the rest of the work while it waits, within the size cap: see the questions above',
+      'ABC.2 blocks 50 % of the rest of the work while it waits, within the size cap: take what it requires first',
       'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
       'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml if you can; check does not fail on this',
     ]);
