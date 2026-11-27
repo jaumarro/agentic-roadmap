@@ -156,7 +156,8 @@ export function describeHealthProblem(problem: HealthProblem): string {
     }
     case 'backward': {
       const pairs = problem.requirements.map((each) => `${each.id} → ${each.requires}`);
-      return `Requirements on a block listed later: ${pairs.join(', ')}: reorder the blocks in roadmap.yaml`;
+      // Said in full, as it reads like an error: the plan still works, and reordering is not always possible.
+      return `Requirements on a block listed later: ${pairs.join(', ')}: reorder the blocks in roadmap.yaml if you can; check does not fail on this`;
     }
   }
   return problem satisfies never;
