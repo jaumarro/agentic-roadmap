@@ -156,12 +156,10 @@ function rankProblems(
  * questions already ask about, so the advice sends the reader there instead of saying it twice.
  */
 function adviseOnBottleneck(problem: { large: boolean; asked: boolean }): string {
-  if (problem.large) return 'split it';
-  // The text shows only the largest questions, so the advice names where every one is.
-  if (problem.asked) {
-    return 'it is within the size cap, so look at its chain: the questions ask about it, and --json lists every one';
-  }
-  return 'it is within the size cap, so take what it requires first';
+  if (problem.large) return ': split it';
+  // Kept short, as several of these read one under another; the questions say where --json lists every one.
+  if (problem.asked) return ', within the size cap: see the questions above';
+  return ', within the size cap: take what it requires first';
 }
 
 /** A health problem in words, with what to do. */
@@ -172,7 +170,7 @@ export function describeHealthProblem(problem: HealthProblem): string {
     case 'queue':
       return `The plan is a queue: parallelism ${problem.parallelism.toFixed(1)}, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need`;
     case 'bottleneck':
-      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits: ${adviseOnBottleneck(problem)}`;
+      return `${problem.task} blocks ${readPercent(problem.share)} of the rest of the work while it waits${adviseOnBottleneck(problem)}`;
     case 'redundant': {
       const pairs = problem.requirements.map((each) => `${each.id} → ${each.requires} (via ${each.through})`);
       return `Requirements another one already implies: ${pairs.join(', ')}: drop them`;
