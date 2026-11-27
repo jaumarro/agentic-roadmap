@@ -56,6 +56,7 @@ tasks:
     title: Warn by default only of an empty block or one over 25 tasks
     doneWhen: a plan with blocks of 1 to 25 tasks gives no block-size warning with no warnings set, and init's example gives none
     lines: 15
+    commit: '18b8684'
   - id: ANL.13
     title: Simulate the plan worked by N sessions
     requires: [ANL.10]
