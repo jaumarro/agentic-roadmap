@@ -48,6 +48,14 @@ describe('health', () => {
     expect(text).toContain('1. The plan is a queue');
   });
 
+  it('asks about the requirements whose absence would shorten the critical path', () => {
+    expect(capture(['health'], roadmap(QUEUE)).text).toContain(
+      'Worth asking, as a no shortens the critical path:\n' +
+        '  Does GET.2 need GET.1? Without it, ~40 lines shorter.\n' +
+        '  Does GET.3 need GET.2? Without it, ~40 lines shorter.\n',
+    );
+  });
+
   it('fails with --strict when there is a problem', () => {
     expect(capture(['health', '--strict'], roadmap(QUEUE)).code).toBe(1);
   });

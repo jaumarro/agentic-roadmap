@@ -175,6 +175,37 @@ describe('the problems it ranks', () => {
     const health = measureHealth({ ...plan(...tasks), warnings: { taskSize: 500 } });
     expect(health.problems).toEqual([{ kind: 'oversized', task: 'ABC.2', lines: 600, cap: 500 }]);
   });
+
+  it('says what dropping each requirement on the critical path would save, largest first', () => {
+    const chain = [task('ABC.1', [], 100), task('ABC.2', ['ABC.1'], 50), task('ABC.3', ['ABC.2'], 30)];
+    const health = measureHealth(plan(...chain, task('ABC.4', [], 60), task('ABC.5', ['ABC.4'], 10)));
+
+    expect(health.savings).toEqual([
+      { id: 'ABC.2', requires: 'ABC.1', saves: 80 },
+      { id: 'ABC.3', requires: 'ABC.2', saves: 30 },
+    ]);
+    expect(health.problems.map((problem) => problem.kind)).toEqual(['queue']);
+  });
+
+  it('counts no saving for a requirement another route still reaches', () => {
+    const tasks = [task('ABC.1', [], 50), task('ABC.2', ['ABC.1'], 50), task('ABC.3', ['ABC.1', 'ABC.2'], 50)];
+
+    expect(measureHealth(plan(...tasks)).savings.map((each) => `${each.id} → ${each.requires}`)).toEqual([
+      'ABC.2 → ABC.1',
+      'ABC.3 → ABC.2',
+    ]);
+  });
+
+  it('counts no saving where another path is as long', () => {
+    const tied = [
+      task('ABC.1', [], 50),
+      task('ABC.2', ['ABC.1'], 50),
+      task('ABC.3', [], 50),
+      task('ABC.4', ['ABC.3'], 50),
+    ];
+
+    expect(measureHealth(plan(...tied)).savings).toEqual([]);
+  });
 });
 
 describe('a health problem in words', () => {
