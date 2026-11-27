@@ -112,8 +112,9 @@ describe('split', () => {
       'Say when the second part is done: --done-when TEXT.\n',
     );
     expect(capture(['split', 'GET.2', 'a\nb', '--done-when', 'x', '--lines', '5'], root).text).toBe(
-      'Not added: title holds a line break, and it is one line.\n',
+      'Not split: title holds a line break, and it is one line.\n',
     );
+    expect(capture(['split', '../../x.1', ...SECOND], root).text).toBe('No task ../../x.1 in this roadmap.\n');
     expect(readFiles(root)).toBe(before);
   });
 });
