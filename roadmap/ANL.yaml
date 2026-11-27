@@ -74,6 +74,7 @@ tasks:
     title: Point a bottleneck under the size cap at the questions, not at a split
     doneWhen: a waiting critical task under the size cap that a question asks about is reported with the questions as what to look at, and split it is said only over the cap
     lines: 30
+    commit: '031aa38'
   - id: ANL.16
     title: Say how many dependency questions health left out
     doneWhen: health shows up to five questions and, past that, how many more health --json lists
