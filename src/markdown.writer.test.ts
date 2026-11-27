@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './cli.ts';
+import { renderMarkdown } from './markdown.writer.ts';
 import { initRoadmap } from './roadmap.repository.ts';
 
 const BLOCK = `name: Getting started
@@ -111,8 +112,35 @@ describe('render', () => {
     expect(readRendered(root)).toContain(
       '| Id | Task | Requires | Done when | Lines | Ref |\n| - | - | - | - | - | - |\n',
     );
-    expect(readRendered(root)).toContain('| GET.4 | Fourth | — | x | ~5 | spec.md#4 |\n');
+    expect(readRendered(root)).toContain('| GET.4 | Fourth | — | x | ~5 | [spec.md#4](../spec.md#4) |\n');
     expect(capture(['check'], root).text).not.toContain('docs/roadmap.md');
+  });
+
+  it.each([
+    ['a path in the repo, from where the copy sits', 'docs/spec.md#login', '[docs/spec.md#login](spec.md#login)'],
+    ['a path in another folder', 'src/cli.ts', '[src/cli.ts](../src/cli.ts)'],
+    [
+      'a web address',
+      'https://example.com/spec?id=3',
+      '[https://example.com/spec?id=3](https://example.com/spec?id=3)',
+    ],
+    ['plain words as text', 'section 3 of the spec', 'section 3 of the spec'],
+    ['a version as text, as it names no file', 'v1.2', 'v1.2'],
+    ['a path that climbs out as text', '../secrets.md', '../secrets.md'],
+    ['text that tries to be a link as text', '[x](javascript:alert(1))', '\\[x\\](javascript:alert(1))'],
+    ['a tag as text', '<img src=x>', '\\<img src=x\\>'],
+  ])('renders a ref that is %s', (_, ref, cell) => {
+    const task = { id: 'GET.1', title: 'T', requires: [], doneWhen: 'x', lines: 5, ref };
+    const roadmap = { markdown: 'docs/roadmap.md', blocks: [{ code: 'GET', name: 'G', tasks: [task] }] };
+
+    expect(renderMarkdown(roadmap)).toContain(`| GET.1 | T | — | x | ~5 | ${cell} |\n`);
+  });
+
+  it('starts a path at the repo when the copy sits there', () => {
+    const task = { id: 'GET.1', title: 'T', requires: [], doneWhen: 'x', lines: 5, ref: 'docs/spec.md' };
+    const roadmap = { markdown: 'PLAN.md', blocks: [{ code: 'GET', name: 'G', tasks: [task] }] };
+
+    expect(renderMarkdown(roadmap)).toContain('| [docs/spec.md](docs/spec.md) |\n');
   });
 
   it('keeps it current when a task is closed', () => {
