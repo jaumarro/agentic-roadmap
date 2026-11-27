@@ -3,7 +3,7 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
-## Unreleased
+## 0.6.0
 
 - `requires <ID> --add ID,ID --drop ID,ID` adds and drops requirements of a task, keeping the file's comments. It
   refuses a change that leaves the plan unsound and ends with the health delta.
