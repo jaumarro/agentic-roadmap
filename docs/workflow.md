@@ -81,7 +81,9 @@ leaves a row without one.
 Use small tasks with an observable result. Estimate lines of logic, excluding tests, or use `doc` for documentation.
 `health` flags tasks over 150 lines, or over `warnings.taskSize` when `roadmap.yaml` sets it. Require only results the
 task uses; an unnecessary dependency prevents parallel work. Change a task's requirements with
-`roadmap requires LOG.4 --add LOG.2 --drop LOG.3`, which refuses a change that breaks the plan. Edit titles,
+`roadmap requires LOG.4 --add LOG.2 --drop LOG.3`, which refuses a change that breaks the plan. Split a task that is
+too big with `roadmap split LOG.4 "Second half" --done-when "..." --lines 80`: `LOG.4` stays as the first part, and
+what waited on it now waits on the new second part. Edit titles,
 acceptance criteria, estimates and risk flags in the block YAML when needed. Keep IDs stable and let `close` write
 commits.
 

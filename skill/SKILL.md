@@ -127,9 +127,11 @@ as a quoted SHA, using a one-off script kept outside the repo. Then `check` must
 commit exists.
 
 To change a task's requirements, run `agentic-roadmap requires <ID> --add ID,ID --drop ID,ID`: it checks the plan
-first and reports the health delta. To change a title, criterion, estimate or `risky`, edit the block YAML. Keep IDs
-stable. A new block is
-appended to `blocks`; reorder the list when needed. With chapters configured, place it in a chapter unless it should
+first and reports the health delta. To split a task `health` calls oversized, run
+`agentic-roadmap split <ID> "<second part>" --done-when "<text>" --lines <N>`: the ID stays with the first part, the
+second gets a new one, and what waited on the task moves to the second. Then edit the first part's `doneWhen` in the
+block YAML so it describes only that part. To change a title, criterion, estimate or `risky`, edit the block YAML. Keep
+IDs stable. A new block is appended to `blocks`; reorder the list when needed. With chapters configured, place it in a chapter unless it should
 remain a parallel track.
 
 After plan changes:

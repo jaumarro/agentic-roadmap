@@ -7,6 +7,8 @@ version may break the YAML, a command or its `--json` output, and a patch never 
 
 - `requires <ID> --add ID,ID --drop ID,ID` adds and drops requirements of a task, keeping the file's comments. It
   refuses a change that leaves the plan unsound and ends with the health delta.
+- `split <ID> <TITLE> --done-when TEXT --lines N|doc` splits a pending task in two. The ID stays with the first part,
+  the second comes after it with a new ID, and every task that required the original now requires the second.
 
 ## 0.5.0
 

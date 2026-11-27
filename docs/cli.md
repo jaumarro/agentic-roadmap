@@ -16,17 +16,18 @@ accept it. Writes produce human-readable output.
 
 ### Create and change a plan
 
-| Command                                                                  | Behavior                                                                         |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| `init`                                                                   | Creates config and a tutorial block; refuses an existing roadmap here or above   |
-| `add-block <CODE> <NAME>`                                                | Creates an empty block and appends its code to the config                        |
-| `add <BLOCK> <TITLE> --done-when TEXT --lines N\|doc [--requires ID,ID]` | Allocates an ID and validates the new task before writing                        |
-| `add --from FILE\|-`                                                     | Imports the table under `<!-- roadmap -->`; `-` reads stdin                      |
-| `requires <ID> [--add ID,ID] [--drop ID,ID]`                             | Adds and drops requirements of a task; refuses a change that breaks the plan     |
-| `focus <CODE\|ID>...`                                                    | Saves priority entries in order; shared through `roadmap.yaml`                   |
-| `focus --clear`                                                          | Clears the saved preference                                                      |
-| `close <ID> [--commit REVISION]`                                         | Records a work commit once requirements are done                                 |
-| `render`                                                                 | Writes the Markdown copy; uses `docs/roadmap.md` if no `markdown:` is configured |
+| Command                                                                  | Behavior                                                                           |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `init`                                                                   | Creates config and a tutorial block; refuses an existing roadmap here or above     |
+| `add-block <CODE> <NAME>`                                                | Creates an empty block and appends its code to the config                          |
+| `add <BLOCK> <TITLE> --done-when TEXT --lines N\|doc [--requires ID,ID]` | Allocates an ID and validates the new task before writing                          |
+| `add --from FILE\|-`                                                     | Imports the table under `<!-- roadmap -->`; `-` reads stdin                        |
+| `requires <ID> [--add ID,ID] [--drop ID,ID]`                             | Adds and drops requirements of a task; refuses a change that breaks the plan       |
+| `split <ID> <TITLE> --done-when TEXT --lines N\|doc [--keep N\|doc]`     | Splits a pending task in two; the second part gets a new ID and requires the first |
+| `focus <CODE\|ID>...`                                                    | Saves priority entries in order; shared through `roadmap.yaml`                     |
+| `focus --clear`                                                          | Clears the saved preference                                                        |
+| `close <ID> [--commit REVISION]`                                         | Records a work commit once requirements are done                                   |
+| `render`                                                                 | Writes the Markdown copy; uses `docs/roadmap.md` if no `markdown:` is configured   |
 
 Names and titles containing spaces need shell quotes. `--lines` is a positive whole number estimating logic, excluding
 tests, or `doc`. `add` also takes `--ref TEXT`, a link or a section of a document where the task is specified. `add` has
@@ -35,6 +36,12 @@ no `--risky` flag: use the table's ⚠︎ marker or edit the task's YAML. See th
 
 `requires` keeps the block file's comments, checks the plan with the change before writing, and ends with the health
 delta, as `add` does. A dropped requirement also leaves the task's `confirmed` list.
+
+`split` keeps the task's ID, title and acceptance criterion for the first part and takes the title, `--done-when` and
+`--lines` given for the second, which is written right after it with the next free ID. The first part keeps its size
+less the second's, or what `--keep` says. Every task that required the original now requires the second part, in any
+block, and all the files change or none does. The second part inherits `risky` and `ref`. The first part's acceptance
+criterion is left as written, so edit it in the YAML to describe only that part.
 
 `--from` paths are relative to the current working directory, even with `--root`. Blocks must already exist. Import
 validates all rows together; failed later block writes roll back earlier ones. When a write reports that the YAML
