@@ -53,6 +53,7 @@ tasks:
     title: Say that a requirement on a later block does not fail check
     doneWhen: the health problem for a requirement on a later block says check does not fail on it, beside reordering the blocks
     lines: 10
+    commit: '8e74804'
   - id: ANL.12
     title: Warn by default only of an empty block or one over 25 tasks
     doneWhen: a plan with blocks of 1 to 25 tasks gives no block-size warning with no warnings set, and init's example gives none
