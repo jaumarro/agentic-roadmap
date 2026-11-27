@@ -52,10 +52,24 @@ describe('health', () => {
 
   it('asks about the requirements whose absence would shorten the critical path', () => {
     expect(capture(['health'], roadmap(QUEUE)).text).toContain(
-      'Worth asking, as a no shortens the critical path:\n' +
+      "Worth asking, as a no shortens the critical path; a yes goes under the task's confirmed: and is not asked again:\n" +
         '  Does GET.2 need GET.1? Without it, ~40 lines shorter.\n' +
         '  Does GET.3 need GET.2? Without it, ~40 lines shorter.\n',
     );
+  });
+
+  it('stops asking about a requirement the task lists as confirmed', () => {
+    const confirmed = QUEUE.replace('    requires: [GET.1]\n', '    requires: [GET.1]\n    confirmed: [GET.1]\n');
+    const text = capture(['health'], roadmap(confirmed)).text;
+
+    expect(text).not.toContain('Does GET.2 need GET.1?');
+    expect(text).toContain('Does GET.3 need GET.2?');
+  });
+
+  it('fails check on a confirmed requirement the task does not have', () => {
+    const stray = QUEUE.replace('    requires: [GET.1]\n', '    requires: [GET.1]\n    confirmed: [GET.3]\n');
+
+    expect(capture(['check'], roadmap(stray)).text).toContain('  GET.2 confirms GET.3, which it does not require\n');
   });
 
   it('fails with --strict when there is a problem', () => {
