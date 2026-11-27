@@ -129,16 +129,20 @@ function rankProblems(
   // And only with little slack: a small base task off the critical path is normal, and delays nothing.
   const tight = health.criticalPath.lines * NEAR_CRITICAL;
   // From every candidate, not the few `bottlenecks` lists: ones this filter drops would use up their places.
+  // The queue problem already sends the reader to the critical path's requirements: one within the cap that a
+  // question asks about would only say it again for its own task.
+  const isCovered = (large: boolean, asked: boolean) => queue.length > 0 && !large && asked;
   const bottlenecks = candidates
     .filter((each) => each.share >= BOTTLENECK_SHARE && !each.ready && each.slack <= tight)
-    .slice(0, BOTTLENECKS_SHOWN)
-    .map((each): HealthProblem => ({
-      kind: 'bottleneck',
+    .map((each) => ({
+      kind: 'bottleneck' as const,
       task: each.id,
       share: each.share,
       large: (sizes.get(each.id) ?? 0) > cap,
       asked: health.savings.some((saving) => saving.id === each.id || saving.requires === each.id),
-    }));
+    }))
+    .filter((each) => !isCovered(each.large, each.asked))
+    .slice(0, BOTTLENECKS_SHOWN);
   // All in one problem, so one pass drops them all instead of one per run.
   const redundant: HealthProblem[] =
     health.redundant.length === 0 ? [] : [{ kind: 'redundant', requirements: health.redundant }];
@@ -153,7 +157,10 @@ function rankProblems(
  */
 function adviseOnBottleneck(problem: { large: boolean; asked: boolean }): string {
   if (problem.large) return 'split it';
-  if (problem.asked) return 'it is within the size cap, so look at its chain, which the questions ask about';
+  // The text shows only the largest questions, so the advice names where every one is.
+  if (problem.asked) {
+    return 'it is within the size cap, so look at its chain: the questions ask about it, and --json lists every one';
+  }
   return 'it is within the size cap, so take what it requires first';
 }
 
