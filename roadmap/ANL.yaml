@@ -70,3 +70,15 @@ tasks:
     doneWhen: a requirement listed under a task's confirmed is left out of health's questions and of savings, and one that names no requirement of the task fails check
     lines: 50
     commit: '8ae7637'
+  - id: ANL.15
+    title: Point a bottleneck under the size cap at the questions, not at a split
+    doneWhen: a waiting critical task under the size cap that a question asks about is reported with the questions as what to look at, and split it is said only over the cap
+    lines: 30
+  - id: ANL.16
+    title: Say how many dependency questions health left out
+    doneWhen: health shows up to five questions and, past that, how many more health --json lists
+    lines: 15
+  - id: ANL.17
+    title: Say about how many sessions reach the critical path
+    doneWhen: health --sessions N ends by saying about how many sessions reach the critical path, in both of its wordings, and --json gives it as enough
+    lines: 50
