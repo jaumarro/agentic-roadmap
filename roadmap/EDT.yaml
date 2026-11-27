@@ -12,3 +12,4 @@ tasks:
     confirmed: [EDT.1]
     doneWhen: split ABC.4 leaves ABC.4 as the first part and a new task as the second, which requires it, and every task that required ABC.4 now requires the second
     lines: 120
+    commit: '1118be5'
