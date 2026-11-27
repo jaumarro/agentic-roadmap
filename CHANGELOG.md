@@ -3,7 +3,7 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
-## Unreleased
+## 0.5.0
 
 - `list --by wave` shows each task's slack, as `(slack ~70 lines)`: the lines of work it can slip by without the plan
   taking longer. `list --json` gives it as `slack`.
