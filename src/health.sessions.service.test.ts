@@ -15,7 +15,7 @@ const PLAN = plan(task('ABC.1', [], 100), task('ABC.2', ['ABC.1'], 50), task('AB
 
 describe('simulateSessions', () => {
   it('takes all the work, one task after another, with one session', () => {
-    expect(simulateSessions(PLAN, 1)).toEqual({ count: 1, span: 250, idle: 0 });
+    expect(simulateSessions(PLAN, 1)).toEqual({ count: 1, span: 250, idle: 0, enough: 2 });
   });
 
   it('reaches the critical path with two sessions here, one of them idle a sixth of the time', () => {
@@ -42,6 +42,19 @@ describe('simulateSessions', () => {
 
   it('leaves done tasks out and has nothing to simulate once all is done', () => {
     expect(simulateSessions(plan(task('ABC.1', [], 100, 'abc1234'), task('ABC.2', ['ABC.1'], 50)), 2).span).toBe(50);
-    expect(simulateSessions(plan(task('ABC.1', [], 100, 'abc1234')), 2)).toEqual({ count: 2, span: 0, idle: 0 });
+    expect(simulateSessions(plan(task('ABC.1', [], 100, 'abc1234')), 2)).toEqual({
+      count: 2,
+      span: 0,
+      idle: 0,
+      enough: 0,
+    });
+  });
+
+  it('says about how many sessions reach the critical path, whatever number was asked about', () => {
+    const loose = plan(task('ABC.1', [], 50), task('ABC.2', [], 50), task('ABC.3', [], 50), task('ABC.4', [], 50));
+
+    expect(simulateSessions(loose, 1).enough).toBe(4);
+    expect(simulateSessions(loose, 9).enough).toBe(4);
+    expect(simulateSessions(PLAN, 9).enough).toBe(2);
   });
 });

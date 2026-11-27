@@ -97,16 +97,28 @@ describe('health', () => {
     const root = roadmap(QUEUE);
 
     expect(capture(['health', '--sessions', '2'], root).text).toContain(
-      '  Sessions        2 sessions take ~120 lines end to end, ~0 over the critical path · idle 50 % of the time\n',
+      '  Sessions        2 sessions reach the critical path, ~120 lines: ~1 is enough · idle 50 %\n',
+    );
+    expect(capture(['health', '--sessions', '1'], root).text).toContain(
+      "  Sessions        1 session reaches the critical path, ~120 lines: more don't shorten it · idle 0 %\n",
     );
     const health: unknown = JSON.parse(capture(['health', '--sessions', '2', '--json'], root).text);
-    expect(health).toMatchObject({ workLeft: 120, sessions: { count: 2, span: 120, idle: 0.5 } });
+    expect(health).toMatchObject({ workLeft: 120, sessions: { count: 2, span: 120, idle: 0.5, enough: 1 } });
     expect(capture(['health', '--sessions', 'many'], root)).toEqual({
       code: 1,
       text: '--sessions is a positive whole number of sessions.\n',
     });
     expect(capture(['health', '--sessions', '2', '--against', 'main'], root).text).toBe(
       'health takes --sessions or --against, not both.\n',
+    );
+  });
+
+  it('says about how many sessions reach the critical path when the ones asked about do not', () => {
+    const loose = [1, 2, 3, 4].map((at) => `  - id: GET.${at}\n    title: t\n    doneWhen: x\n    lines: 50\n`);
+    const text = capture(['health', '--sessions', '2'], roadmap(`name: G\ntasks:\n${loose.join('')}`)).text;
+
+    expect(text).toContain(
+      '  Sessions        2 sessions take ~100 lines end to end, ~50 over the critical path · idle 0 % · ~4 reach it\n',
     );
   });
 
