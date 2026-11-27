@@ -38,6 +38,11 @@ Commands:
   requires <ID> [--add ID,ID] [--drop ID,ID]
                              add requirements to a task and drop others, refusing what would leave the plan
                              unsound; it ends with what the change did to the plan's health
+  split <ID> <TITLE> --done-when TEXT --lines N|doc [--keep N|doc]
+                             split a task in two: it stays as the first part, and the second, with the title, done
+                             when and size given, comes after it and requires it; what waited on the task now waits
+                             on the second part; --keep says what the first part keeps, its size less the second's
+                             unless told
   install-hook               a pre-commit hook that runs check --staged when a commit touches the plan
   install-merge-driver       make git merge roadmap/*.yaml task by task, so parallel adds and closes merge cleanly
   install-skill              copy the agents' workflow into .claude/skills, next to roadmap/; again to update it
@@ -78,6 +83,7 @@ const OPTIONS = {
   ref: { type: 'string' },
   add: { type: 'string' },
   drop: { type: 'string' },
+  keep: { type: 'string' },
   against: { type: 'string' },
   clear: { type: 'boolean' },
   mermaid: { type: 'boolean' },
@@ -102,6 +108,7 @@ const FLAGS: Record<string, string[]> = {
   health: ['json', 'strict', 'against'],
   add: ['requires', 'done-when', 'lines', 'ref', 'from'],
   requires: ['add', 'drop'],
+  split: ['done-when', 'lines', 'keep'],
 };
 const EVERY_COMMAND = ['root', 'help', 'version'];
 
@@ -123,6 +130,7 @@ const ARITY: Record<string, number> = {
   add: 2,
   'add-block': 2,
   requires: 1,
+  split: 2,
   'install-hook': 0,
   'install-merge-driver': 0,
   'install-skill': 0,
@@ -148,6 +156,7 @@ export type Command = {
   ref: string | undefined;
   add: string | undefined;
   drop: string | undefined;
+  keep: string | undefined;
   against: string | undefined;
   clear: boolean;
   mermaid: boolean;
@@ -225,6 +234,7 @@ export function readCommand(args: string[], env: Record<string, string | undefin
     ref: values.ref,
     add: values.add,
     drop: values.drop,
+    keep: values.keep,
     against: values.against,
     clear: values.clear === true,
     mermaid: values.mermaid === true,

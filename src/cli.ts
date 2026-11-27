@@ -19,6 +19,7 @@ import { renderComparison, renderDelta, renderHealth } from './health.view.ts';
 import { compareHealth } from './health.compare.service.ts';
 import { closeTask } from './task.close.writer.ts';
 import { changeRequires } from './task.requires.writer.ts';
+import { splitTask } from './task.split.writer.ts';
 import {
   listAllBranches,
   isShallow,
@@ -79,11 +80,11 @@ export type Io = {
   err: (text: string) => void;
 };
 
-function readLines(value: string | undefined): number | 'doc' {
+function readLines(value: string | undefined, flag = '--lines'): number | 'doc' {
   if (value === 'doc') return value;
   const lines = Number(value);
   if (value === undefined || !Number.isInteger(lines) || lines <= 0) {
-    throw new RoadmapError('--lines is a positive whole number, or doc.');
+    throw new RoadmapError(`${flag} is a positive whole number, or doc.`);
   }
   return lines;
 }
@@ -174,6 +175,35 @@ function requires(root: string, command: Command, out: Io['out']): void {
   const shown = left.length === 0 ? 'nothing' : left.join(', ');
   syncAfterChange(root, after, `${id} now requires ${shown}.`);
   out(`${id} now requires ${shown}. Commit it as «docs: plan ${id}».\n`);
+  out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
+}
+
+function readSize(lines: number | 'doc'): string {
+  return lines === 'doc' ? 'a document' : `~${lines} lines`;
+}
+
+/** Splits a task in two with the id the tool picks for the second part; the plan is checked with it first. */
+function split(root: string, command: Command, out: Io['out']): void {
+  const [id, title] = command.operands;
+  if (id === undefined || title === undefined || title.trim() === '') {
+    throw new RoadmapError('Say the task and the second part: split <ID> <TITLE> --done-when TEXT --lines N|doc.');
+  }
+  if (command.doneWhen === undefined || command.doneWhen.trim() === '') {
+    throw new RoadmapError('Say when the second part is done: --done-when TEXT.');
+  }
+  const part = { title: title.trim(), doneWhen: command.doneWhen.trim(), lines: readLines(command.lines) };
+  const keep = command.keep === undefined ? undefined : readLines(command.keep, '--keep');
+  const roadmap = readSoundRoadmap(root);
+  const code = id.split('.')[0] ?? id;
+  const secondId = readNextId(roadmap, code, readElsewhere(root, code, listAllBranches(root)));
+  const done = splitTask(root, roadmap, id, secondId, part, keep);
+  const after = readRoadmap(root);
+  syncAfterChange(root, after, `Split ${id} into ${id} and ${secondId}.`);
+  out(
+    `Split ${id}: it keeps ${readSize(done.first.lines)}, and ${secondId} · ${part.title} takes the rest, after it.\n`,
+  );
+  if (done.moved.length > 0) out(`What waited on ${id} now waits on ${secondId}: ${done.moved.join(', ')}.\n`);
+  out(`Review ${id}'s «Done when» in ${ROADMAP_DIR}/${code}.yaml, then commit it as «docs: plan ${id}».\n`);
   out(renderDelta(compareHealth('before', measureHealth(roadmap), measureHealth(after))));
 }
 
@@ -482,6 +512,11 @@ export function run(args: string[], io: Io): number {
       case 'requires': {
         const at = root();
         withPlanLock(at, () => requires(at, command, io.out));
+        return 0;
+      }
+      case 'split': {
+        const at = root();
+        withPlanLock(at, () => split(at, command, io.out));
         return 0;
       }
       case 'health':
