@@ -46,6 +46,8 @@ describe('health', () => {
     expect(text).toContain('Critical path   ~120 lines over 3 tasks: GET.1 → GET.2 → GET.3');
     expect(text).toContain('Parallelism     1.0');
     expect(text).toContain('1. The plan is a queue');
+    // The share of requirements across blocks says nothing to act on: it stays in --json only.
+    expect(text).not.toContain('Across blocks');
   });
 
   it('asks about the requirements whose absence would shorten the critical path', () => {
