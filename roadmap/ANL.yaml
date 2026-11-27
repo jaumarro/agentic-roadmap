@@ -35,8 +35,8 @@ tasks:
     lines: 40
     commit: '834bd55'
   - id: ANL.8
-    title: Report what dropping each requirement on the critical path would save
-    doneWhen: health prints the largest savings, as dropping A → B saves ~N lines, health --json gives them all, and nothing is written
+    title: Ask about each requirement whose absence would shorten the critical path
+    doneWhen: health asks about the largest savings, as Does A need B? Without it, ~N lines shorter, health --json gives them all, and nothing is written
     lines: 90
     commit: '45b7b74'
   - id: ANL.9
