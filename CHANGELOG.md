@@ -3,7 +3,7 @@
 Each version's changes, newest first. The version follows [semver](https://semver.org): while it is 0.x, a minor
 version may break the YAML, a command or its `--json` output, and a patch never does.
 
-## Unreleased
+## 0.7.0
 
 - Breaking: in `health --json`, a bottleneck's `large` is true only over the size cap, where it was over half of it.
   A bottleneck within the cap is no longer told "split it": its problem points at the dependency questions when one
