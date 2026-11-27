@@ -239,7 +239,7 @@ describe('a health problem in words', () => {
       'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
       'ABC.2 blocks 50 % of the rest of the work while it waits: it is small, so take what it requires first',
       'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
-      'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml',
+      'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml if you can; check does not fail on this',
     ]);
   });
 
