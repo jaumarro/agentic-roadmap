@@ -48,7 +48,7 @@ export function setIdList(block: OpenBlock, node: YAMLMap, key: string, ids: str
 }
 
 /** Whether `name` holds `text` again, written back if it had changed. */
-function putBack(root: string, name: string, text: string): boolean {
+export function putBack(root: string, name: string, text: string): boolean {
   try {
     if (readFileSync(join(root, name), 'utf8') !== text) writeInside(root, name, text);
     return true;
