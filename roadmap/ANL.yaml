@@ -37,6 +37,7 @@ tasks:
     title: Report what dropping each requirement on the critical path would save
     doneWhen: health prints the largest savings, as dropping A → B saves ~N lines, health --json gives them all, and nothing is written
     lines: 90
+    commit: '45b7b74'
   - id: ANL.9
     title: Leave Across blocks out of health's text
     doneWhen: health prints no Across blocks line and health --json still gives crossBlockShare
