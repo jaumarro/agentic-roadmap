@@ -136,6 +136,17 @@ describe('the problems it ranks', () => {
     expect(flagged).toEqual(['ABC.2']);
   });
 
+  it('flags a waiting bottleneck only with little slack, and advises a split only for a large one', () => {
+    // ABC.2 waits on ABC.1 and eight tasks wait on it; XYZ.1 alone sets how long the plan is.
+    const fan = Array.from({ length: 8 }, (_, at) => task(`ABC.${at + 3}`, ['ABC.2'], 60));
+    const base = [task('ABC.1'), task('ABC.2', ['ABC.1']), ...fan];
+    const readBottlenecks = (longest: number) =>
+      measureHealth(plan(...base, task('XYZ.1', [], longest))).problems.filter((each) => each.kind === 'bottleneck');
+
+    expect(readBottlenecks(500)).toEqual([]);
+    expect(readBottlenecks(85)).toMatchObject([{ task: 'ABC.2', large: false }]);
+  });
+
   it('gives every redundant requirement in one problem', () => {
     const health = measureHealth(
       plan(
@@ -213,7 +224,8 @@ describe('a health problem in words', () => {
     const words = [
       describeHealthProblem({ kind: 'oversized', task: 'ABC.1', lines: 400, cap: 150 }),
       describeHealthProblem({ kind: 'queue', parallelism: 1.04 }),
-      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5 }),
+      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: true }),
+      describeHealthProblem({ kind: 'bottleneck', task: 'ABC.2', share: 0.5, large: false }),
       describeHealthProblem({
         kind: 'redundant',
         requirements: [{ id: 'ABC.3', requires: 'ABC.1', through: 'ABC.2' }],
@@ -225,6 +237,7 @@ describe('a health problem in words', () => {
       'ABC.1 is ~400 lines, over the cap of 150 (warnings.taskSize): split it into slices',
       'The plan is a queue: parallelism 1.0, so a second session mostly waits; split the tasks on the critical path, or drop requirements they do not need',
       'ABC.2 blocks 50 % of the rest of the work while it waits: split it',
+      'ABC.2 blocks 50 % of the rest of the work while it waits: it is small, so take what it requires first',
       'Requirements another one already implies: ABC.3 → ABC.1 (via ABC.2): drop them',
       'Requirements on a block listed later: ABC.1 → XYZ.1: reorder the blocks in roadmap.yaml',
     ]);
