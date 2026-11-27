@@ -60,7 +60,9 @@ function describeSimulation(health: Health, simulation: Simulation): string {
   const over = span - health.criticalPath.lines;
   if (over > 0) {
     const took = countSessions(count, 'takes', 'take');
-    return `${took} ~${span} lines end to end, ~${over} over the critical path · ${idle} · ~${enough} reach it`;
+    // `enough` assumes more sessions never take longer, which this simulation does not promise: never under `count`.
+    const reaching = Math.max(enough, count + 1);
+    return `${took} ~${span} lines end to end, ~${over} over the critical path · ${idle} · ~${reaching} reach it`;
   }
   const reached = countSessions(count, 'reaches', 'reach');
   const spare = count > enough ? readEnough(enough) : "more don't shorten it";
