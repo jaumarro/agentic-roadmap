@@ -33,6 +33,7 @@ tasks:
     title: Flag a bottleneck only on or near the critical path, and advise a split only for a large one
     doneWhen: a waiting task most of the plan waits on gives no health problem while its slack is over a tenth of the critical path; one on the path or under that slack does, saying split only when it is over half the task size cap
     lines: 40
+    commit: '834bd55'
   - id: ANL.8
     title: Report what dropping each requirement on the critical path would save
     doneWhen: health prints the largest savings, as dropping A → B saves ~N lines, health --json gives them all, and nothing is written
