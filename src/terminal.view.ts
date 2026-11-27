@@ -9,7 +9,7 @@ const CRITICAL_MARK = ' (critical)';
 // Tasks of one wave start together but differ in size: slack says which can wait, and for how much work.
 function readSlackMark(row: Row): string {
   if (row.critical) return CRITICAL_MARK;
-  return row.slack === null ? '' : ` (slack ~${row.slack})`;
+  return row.slack === null ? '' : ` (slack ~${row.slack} lines)`;
 }
 
 function renderRow(row: Row, idWidth: number, stateWidth: number): string {
